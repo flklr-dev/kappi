@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "react-native-chart-kit": "^6.12.0"
+  }
+}
