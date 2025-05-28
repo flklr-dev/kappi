@@ -5,6 +5,17 @@ export interface IUser extends Document {
   fullName: string;
   email: string;
   password: string;
+  location?: {
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+    address: {
+      barangay: string;
+      cityMunicipality: string;
+      province: string;
+    };
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -29,6 +40,17 @@ const userSchema = new Schema<IUser>(
       required: true,
       minlength: 6,
     },
+    location: {
+      coordinates: {
+        latitude: Number,
+        longitude: Number
+      },
+      address: {
+        barangay: String,
+        cityMunicipality: String,
+        province: String
+      }
+    }
   },
   {
     timestamps: true,

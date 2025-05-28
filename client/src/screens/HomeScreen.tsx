@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -9,15 +9,164 @@ import {
   StatusBar,
   Image,
   Platform,
-  Dimensions
+  Dimensions,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import Header from '../components/Header';
+import * as Location from 'expo-location';
+import { useAuthStore } from '../stores/authStore';
 
 const { width } = Dimensions.get('window');
 
+interface LocationData {
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  address: {
+    barangay: string;
+    cityMunicipality: string;
+    province: string;
+  };
+}
+
 const HomeScreen = () => {
+  const [location, setLocation] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user, updateUserLocation } = useAuthStore();
+
+  const formatAddress = (address: Location.LocationGeocodedAddress): string => {
+    let barangay = '';
+    let cityMunicipality = '';
+    let province = '';
+
+    // Try to extract barangay
+    if (address.street?.toLowerCase().includes('barangay')) {
+      barangay = address.street;
+    } else if (address.district?.toLowerCase().includes('barangay')) {
+      barangay = address.district;
+    } else if (address.subregion?.toLowerCase().includes('barangay')) {
+      barangay = address.subregion;
+    }
+
+    // Try to get city/municipality
+    if (address.city) {
+      cityMunicipality = address.city;
+    } else if (address.subregion && !address.subregion.toLowerCase().includes('barangay')) {
+      cityMunicipality = address.subregion;
+    }
+
+    // Try to get province
+    if (address.region && !address.region.toLowerCase().includes('region')) {
+      province = address.region;
+    }
+
+    const parts = [barangay, cityMunicipality, province].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  const getCurrentLocation = async () => {
+    try {
+      setLoading(true);
+
+      // Get current location with high accuracy
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation
+      });
+      
+      // Get address from coordinates
+      const addresses = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+
+      if (addresses && addresses.length > 0) {
+        const address = addresses[0];
+        
+        // Extract address components
+        const addressComponents = {
+          barangay: '',
+          cityMunicipality: '',
+          province: ''
+        };
+
+        // Try to extract barangay
+        if (address.street?.toLowerCase().includes('barangay')) {
+          addressComponents.barangay = address.street.replace(/^barangay\s+/i, '');
+        } else if (address.district?.toLowerCase().includes('barangay')) {
+          addressComponents.barangay = address.district.replace(/^barangay\s+/i, '');
+        } else if (address.subregion?.toLowerCase().includes('barangay')) {
+          addressComponents.barangay = address.subregion.replace(/^barangay\s+/i, '');
+        }
+
+        // Try to get city/municipality
+        if (address.city) {
+          addressComponents.cityMunicipality = address.city;
+        } else if (address.subregion && !address.subregion.toLowerCase().includes('barangay')) {
+          addressComponents.cityMunicipality = address.subregion;
+        }
+
+        // Try to get province
+        if (address.region && !address.region.toLowerCase().includes('region')) {
+          addressComponents.province = address.region;
+        }
+
+        // Format display string
+        const displayParts = [
+          addressComponents.barangay ? `Barangay ${addressComponents.barangay}` : '',
+          addressComponents.cityMunicipality,
+          addressComponents.province
+        ].filter(Boolean);
+        
+        setLocation(displayParts.join(', '));
+
+        // Save location data
+        const locationData: LocationData = {
+          coordinates: {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+          },
+          address: addressComponents
+        };
+
+        await updateUserLocation(locationData);
+      } else {
+        setLocation('Location not found');
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      setLocation('Unable to get location');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        // Request location permissions
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Denied',
+            'Please grant location permissions to use this feature.',
+            [{ text: 'OK' }]
+          );
+          setLoading(false);
+          return;
+        }
+
+        await getCurrentLocation();
+      } catch (error) {
+        console.error('Error in location permission:', error);
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   // Right component for the header (notification icon)
   const headerRight = (
     <TouchableOpacity style={styles.notificationButton}>
@@ -38,15 +187,33 @@ const HomeScreen = () => {
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Location Status Widget */}
-        <View style={styles.locationWidget}>
+        <TouchableOpacity 
+          style={styles.locationWidget}
+          onPress={getCurrentLocation}
+        >
           <View style={styles.locationIconContainer}>
             <Ionicons name="location" size={24} color={COLORS.primary} />
           </View>
           <View style={styles.locationTextContainer}>
-            <Text style={styles.locationText}>📍 Your Location</Text>
-            <Text style={styles.locationValue}>Barangay Pico, La Trinidad</Text>
+            <Text style={styles.locationText}>Your Location</Text>
+            <View style={styles.locationValueContainer}>
+              {loading ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <Text style={styles.locationValue}>
+                  {location || 'Location not available'}
+                </Text>
+              )}
+            </View>
           </View>
-        </View>
+          <View style={styles.refreshIconContainer}>
+            <Ionicons 
+              name="refresh" 
+              size={20} 
+              color={COLORS.gray} 
+            />
+          </View>
+        </TouchableOpacity>
 
         {/* Quick Actions Section */}
         <View style={styles.section}>
@@ -251,10 +418,18 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginBottom: 4,
   },
+  locationValueContainer: {
+    minHeight: 24,
+    justifyContent: 'center',
+  },
   locationValue: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.black,
+  },
+  refreshIconContainer: {
+    marginLeft: 12,
+    padding: 8,
   },
   quickActionsGrid: {
     flexDirection: 'row',

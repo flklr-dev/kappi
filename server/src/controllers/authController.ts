@@ -1,6 +1,11 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User';
+import { User, IUser } from '../models/User';
+
+// Extend Request type to include user
+interface AuthRequest extends Request {
+  user?: IUser;
+}
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -74,5 +79,36 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Error logging in' });
+  }
+};
+
+export const updateLocation = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const userId = req.user._id;
+    const { coordinates, address } = req.body;
+
+    // Update user's location
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        location: {
+          coordinates,
+          address
+        }
+      },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating location' });
   }
 }; 

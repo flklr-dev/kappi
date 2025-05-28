@@ -20,6 +20,7 @@
     "expo": "~53.0.0",
     "expo-crypto": "^14.1.4",
     "expo-font": "~13.3.1",
+    "expo-location": "^18.1.5",
     "expo-status-bar": "~2.2.3",
     "lodash": "^4.17.21",
     "mobx": "^6.13.7",

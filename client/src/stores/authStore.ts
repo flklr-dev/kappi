@@ -3,10 +3,23 @@ import { authService } from '../services/api';
 import { secureStorage } from '../utils/secureStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+interface LocationData {
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  address: {
+    barangay: string;
+    cityMunicipality: string;
+    province: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   email: string;
+  location?: LocationData;
 }
 
 interface AuthResponse {
@@ -56,6 +69,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   loginAttempts: number;
   lockoutUntil: number | null;
+  updateUserLocation: (location: LocationData) => Promise<void>;
 }
 
 // Storage keys
@@ -358,6 +372,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loginAttempts: 0, lockoutUntil: null });
     } catch (error) {
       console.error('Error during logout:', error);
+    }
+  },
+
+  updateUserLocation: async (location: LocationData) => {
+    try {
+      const { user, setUser } = get();
+      if (!user) return;
+
+      // Update user object with new location
+      const updatedUser = {
+        ...user,
+        location
+      };
+
+      // Save to secure storage
+      await secureStorage.setItem(USER_KEY, updatedUser);
+      
+      // Update state
+      setUser(updatedUser);
+
+      // TODO: You might want to add an API call here to update the location on your backend
+      // await authService.updateLocation(location);
+      
+    } catch (error) {
+      console.error('Error updating location:', error);
     }
   },
 })); 
