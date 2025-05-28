@@ -89,7 +89,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-
+        
         {/* Recent Scans Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -97,9 +97,9 @@ const HomeScreen = () => {
             <TouchableOpacity style={styles.viewAllButton}>
               <Text style={styles.viewAllText}>View All</Text>
               <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
-            </TouchableOpacity>
-          </View>
-
+          </TouchableOpacity>
+        </View>
+        
           <View style={styles.scansContainer}>
             {/* Scan Card 1 */}
             <TouchableOpacity style={styles.scanCard}>
@@ -111,7 +111,7 @@ const HomeScreen = () => {
                 <View style={styles.scanHeader}>
                   <View style={[styles.statusBadge, { backgroundColor: '#F44336' }]}>
                     <Text style={styles.statusText}>Problem Found</Text>
-                  </View>
+              </View>
                   <Text style={styles.scanTime}>2h ago</Text>
                 </View>
                 <Text style={styles.scanTitle}>Coffee Leaf Rust</Text>
@@ -133,7 +133,7 @@ const HomeScreen = () => {
                 <View style={styles.scanHeader}>
                   <View style={[styles.statusBadge, { backgroundColor: '#4CAF50' }]}>
                     <Text style={styles.statusText}>Healthy</Text>
-                  </View>
+                </View>
                   <Text style={styles.scanTime}>Yesterday</Text>
                 </View>
                 <Text style={styles.scanTitle}>Healthy Plant</Text>
@@ -161,7 +161,7 @@ const HomeScreen = () => {
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
             </TouchableOpacity>
-
+            
             <TouchableOpacity style={styles.tipCard}>
               <View style={styles.tipIconContainer}>
                 <Ionicons name="camera" size={24} color={COLORS.primary} />

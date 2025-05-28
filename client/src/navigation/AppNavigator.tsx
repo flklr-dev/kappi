@@ -1,4 +1,4 @@
-import React, { useState, createContext } from 'react';
+import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
@@ -6,6 +6,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
+import { RootStackParamList, MainTabParamList } from './types';
+import { AuthProvider, AuthContext } from '../context/AuthContext';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
@@ -16,32 +18,9 @@ import RegisterScreen from '../screens/RegisterScreen';
 import ScanScreen from '../screens/ScanScreen';
 import ResultsScreen from '../screens/ResultsScreen';
 
-// Types
-export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Main: undefined;
-};
-
-export type MainTabParamList = {
-  Home: undefined;
-  Scan: undefined;
-  Reports: undefined;
-  Profile: undefined;
-  Results: {
-    imageUri: string;
-  };
-};
-
 // Create navigators
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
-
-// Create auth context
-export const AuthContext = createContext({
-  isAuthenticated: false,
-  setIsAuthenticated: (value: boolean) => {},
-});
 
 // Bottom Tab Navigator Component
 const BottomTabNavigator = () => {
@@ -98,26 +77,18 @@ const BottomTabNavigator = () => {
 
 // Main App Navigator
 const AppNavigator = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
+      <AuthProvider>
+        <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
-            {!isAuthenticated ? (
-              // Auth Stack
-              <>
-                <Stack.Screen name="Login" component={LoginScreen} />
-                <Stack.Screen name="Register" component={RegisterScreen} />
-              </>
-            ) : (
-              // Main App Stack
-              <Stack.Screen name="Main" component={BottomTabNavigator} />
-            )}
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="Main" component={BottomTabNavigator} />
+            <Stack.Screen name="Results" component={ResultsScreen} />
           </Stack.Navigator>
-        </AuthContext.Provider>
-      </NavigationContainer>
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 };

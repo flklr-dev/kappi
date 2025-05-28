@@ -15,25 +15,19 @@ import { COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MainTabParamList } from '../navigation/types';
+import { RootStackParamList } from '../navigation/types';
 
-type ScanScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'Results'>;
+type ScanScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
 const ScanScreen = () => {
   const navigation = useNavigation<ScanScreenNavigationProp>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
 
-  const handleCapture = () => {
-    setIsProcessing(true);
-    // Simulate processing time
-    setTimeout(() => {
-      setIsProcessing(false);
-      // Navigate to ResultsScreen with mock data
-      navigation.navigate('Results', {
-        imageUri: 'https://example.com/scan.jpg' // Replace with actual captured image URI
-      });
-    }, 2000);
+  const handleScan = () => {
+    // TODO: Implement camera functionality
+    // For now, just navigate to results with a dummy image
+    navigation.navigate('Results', { imageUri: 'dummy-uri' });
   };
 
   return (
@@ -94,7 +88,7 @@ const ScanScreen = () => {
 
           <TouchableOpacity 
             style={styles.captureButton}
-            onPress={handleCapture}
+            onPress={handleScan}
             disabled={isProcessing}
           >
             <View style={styles.captureButtonInner} />

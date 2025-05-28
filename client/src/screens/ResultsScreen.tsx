@@ -13,13 +13,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import Header from '../components/Header';
-import { NavigationProp, RouteProp } from '@react-navigation/native';
+import { NavigationProp, RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MainTabParamList } from '../navigation/types';
+import { RootStackParamList } from '../navigation/types';
 
-type ResultsScreenProps = NativeStackScreenProps<MainTabParamList, 'Results'>;
+type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
 
-const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
+const ResultsScreen = () => {
+  const route = useRoute<ResultsScreenRouteProp>();
   const { imageUri } = route.params;
 
   // Simplified data for farmers
@@ -131,7 +132,6 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
       <Header
         title="Scan Results"
         showBackButton
-        onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView style={styles.scrollView}>
@@ -145,7 +145,6 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
             />
             <TouchableOpacity 
               style={styles.retakeButton}
-              onPress={() => navigation.goBack()}
             >
               <Ionicons name="camera-outline" size={20} color={COLORS.white} />
               <Text style={styles.retakeButtonText}>Retake</Text>

@@ -16,7 +16,7 @@ import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { AuthContext } from '../navigation/RootNavigator';
+import { AuthContext } from '../context/AuthContext';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -48,7 +48,6 @@ const ProfileScreen = () => {
   };
 
   const handleLogout = () => {
-    // Directly set authentication state to false without confirmation
     setIsAuthenticated(false);
   };
 
