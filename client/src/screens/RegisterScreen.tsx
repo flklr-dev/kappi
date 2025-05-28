@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,19 +13,29 @@ import {
   Platform,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { AuthContext } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import PasswordComplexity from '../components/PasswordComplexity';
+import { useAuthStore } from '../stores/authStore';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
 const RegisterScreen = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
-  const { setIsAuthenticated } = useContext(AuthContext);
+  const { 
+    register, 
+    loading, 
+    error, 
+    validationErrors, 
+    touchedFields, 
+    validateField, 
+    resetValidation 
+  } = useAuthStore();
   
   // Form data
   const [fullName, setFullName] = useState('');
@@ -37,17 +47,36 @@ const RegisterScreen = () => {
   // UI state
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPasswordComplexity, setShowPasswordComplexity] = useState(false);
+
+  useEffect(() => {
+    // Reset validation when component mounts
+    resetValidation();
+  }, []);
 
   const handleRegister = async () => {
-    try {
-      if (password !== confirmPassword) {
-        Alert.alert('Error', 'Passwords do not match');
-        return;
-      }
-      // TODO: Implement actual registration logic
-      setIsAuthenticated(true);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to register. Please try again.');
+    if (!termsAgreed) {
+      Alert.alert('Error', 'Please agree to the Terms & Conditions');
+      return;
+    }
+
+    await register(fullName, email, password);
+    
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      Alert.alert(
+        'Success',
+        'Your account has been created successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.navigate('Login');
+            }
+          }
+        ]
+      );
     }
   };
 
@@ -61,7 +90,8 @@ const RegisterScreen = () => {
     console.log('Facebook sign up');
   };
 
-  const isFormValid = fullName && email && password && confirmPassword && termsAgreed && password === confirmPassword;
+  const isFormValid = fullName && email && password && confirmPassword && termsAgreed && 
+    password === confirmPassword && !validationErrors.password;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -81,18 +111,38 @@ const RegisterScreen = () => {
               <Text style={styles.title}>Create Account</Text>
               <Text style={styles.subtitle}>Sign up to get started</Text>
 
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color={COLORS.gray} style={styles.inputIcon} />
+              <View style={[
+                styles.inputContainer,
+                touchedFields.fullName && validationErrors.fullName && styles.inputError
+              ]}>
+                <Ionicons 
+                  name="person-outline" 
+                  size={20} 
+                  color={touchedFields.fullName && validationErrors.fullName ? 'red' : COLORS.gray} 
+                  style={styles.inputIcon} 
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Full Name"
                   value={fullName}
                   onChangeText={setFullName}
+                  onBlur={() => validateField('fullName', fullName)}
                 />
               </View>
+              {touchedFields.fullName && validationErrors.fullName && (
+                <Text style={styles.errorText}>{validationErrors.fullName}</Text>
+              )}
 
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color={COLORS.gray} style={styles.inputIcon} />
+              <View style={[
+                styles.inputContainer,
+                touchedFields.email && validationErrors.email && styles.inputError
+              ]}>
+                <Ionicons 
+                  name="mail-outline" 
+                  size={20} 
+                  color={touchedFields.email && validationErrors.email ? 'red' : COLORS.gray} 
+                  style={styles.inputIcon} 
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Email"
@@ -100,17 +150,34 @@ const RegisterScreen = () => {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  onBlur={() => validateField('email', email)}
                 />
               </View>
+              {touchedFields.email && validationErrors.email && (
+                <Text style={styles.errorText}>{validationErrors.email}</Text>
+              )}
 
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color={COLORS.gray} style={styles.inputIcon} />
+              <View style={[
+                styles.inputContainer,
+                touchedFields.password && validationErrors.password && styles.inputError
+              ]}>
+                <Ionicons 
+                  name="lock-closed-outline" 
+                  size={20} 
+                  color={touchedFields.password && validationErrors.password ? 'red' : COLORS.gray} 
+                  style={styles.inputIcon} 
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Password"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
+                  onFocus={() => setShowPasswordComplexity(true)}
+                  onBlur={() => {
+                    setShowPasswordComplexity(false);
+                    validateField('password', password);
+                  }}
                 />
                 <TouchableOpacity
                   style={styles.passwordVisibilityButton}
@@ -123,15 +190,33 @@ const RegisterScreen = () => {
                   />
                 </TouchableOpacity>
               </View>
+              {showPasswordComplexity && <PasswordComplexity password={password} />}
+              {touchedFields.password && validationErrors.password && (
+                <Text style={styles.errorText}>{validationErrors.password}</Text>
+              )}
 
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color={COLORS.gray} style={styles.inputIcon} />
+              <View style={[
+                styles.inputContainer,
+                touchedFields.confirmPassword && validationErrors.confirmPassword && styles.inputError
+              ]}>
+                <Ionicons 
+                  name="lock-closed-outline" 
+                  size={20} 
+                  color={touchedFields.confirmPassword && validationErrors.confirmPassword ? 'red' : COLORS.gray} 
+                  style={styles.inputIcon} 
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Confirm Password"
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    if (text) {
+                      validateField('confirmPassword', text, password);
+                    }
+                  }}
                   secureTextEntry={!showConfirmPassword}
+                  onBlur={() => validateField('confirmPassword', confirmPassword, password)}
                 />
                 <TouchableOpacity
                   style={styles.passwordVisibilityButton}
@@ -144,6 +229,9 @@ const RegisterScreen = () => {
                   />
                 </TouchableOpacity>
               </View>
+              {touchedFields.confirmPassword && validationErrors.confirmPassword && (
+                <Text style={styles.errorText}>{validationErrors.confirmPassword}</Text>
+              )}
 
               <View style={styles.termsContainer}>
                 <Switch
@@ -160,9 +248,15 @@ const RegisterScreen = () => {
               <TouchableOpacity 
                 style={[styles.registerButton, !isFormValid && styles.registerButtonDisabled]}
                 onPress={handleRegister}
-                disabled={!isFormValid}
+                disabled={!isFormValid || loading}
               >
-                <Text style={styles.registerButtonText}>Create Account</Text>
+                {loading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  </View>
+                ) : (
+                  <Text style={styles.registerButtonText}>Create Account</Text>
+                )}
               </TouchableOpacity>
 
               <View style={styles.dividerContainer}>
@@ -339,6 +433,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginLeft: 5,
+  },
+  inputError: {
+    borderColor: 'red',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: -12,
+    marginBottom: 8,
+    marginLeft: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

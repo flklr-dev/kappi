@@ -2,16 +2,14 @@
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
-  Main: undefined;
-  Results: {
-    imageUri: string;
-  };
+  ForgotPassword: undefined;
+  MainTabs: undefined;
 };
 
 // Main tab navigator params
 export type MainTabParamList = {
-  Home: undefined;
-  Scan: undefined;
-  Reports: undefined;
-  Profile: undefined;
+  HomeTab: undefined;
+  ScanTab: undefined;
+  ReportsTab: undefined;
+  ProfileTab: undefined;
 }; 
