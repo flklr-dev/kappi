@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authService } from '../services/api';
+import { secureStorage } from '../utils/secureStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface User {
@@ -25,6 +26,11 @@ interface ValidationErrors {
   confirmPassword?: string;
 }
 
+interface TokenData {
+  token: string;
+  expiresAt: number;
+}
+
 interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
@@ -48,7 +54,15 @@ interface AuthState {
   register: (fullName: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  loginAttempts: number;
+  lockoutUntil: number | null;
 }
+
+// Storage keys
+const TOKEN_KEY = '@kappi_auth_token';
+const USER_KEY = '@kappi_auth_user';
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
@@ -57,6 +71,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
   validationErrors: {},
   touchedFields: {},
+  loginAttempts: 0,
+  lockoutUntil: null,
 
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
@@ -184,15 +200,87 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return Object.keys(errors).length === 0;
   },
 
+  checkAuth: async () => {
+    const { setAuthenticated, setUser } = get();
+    try {
+      const tokenData = await secureStorage.getItem(TOKEN_KEY) as TokenData | null;
+      const user = await secureStorage.getItem(USER_KEY);
+      
+      if (tokenData && user) {
+        const { expiresAt } = tokenData;
+        
+        // Check if token is not expired
+        if (Date.now() < expiresAt) {
+          setAuthenticated(true);
+          setUser(user);
+        } else {
+          // Token is expired, clean up
+          await secureStorage.removeItem(TOKEN_KEY);
+          await secureStorage.removeItem(USER_KEY);
+          setAuthenticated(false);
+          setUser(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
+      // Clean up on error
+      await secureStorage.removeItem(TOKEN_KEY);
+      await secureStorage.removeItem(USER_KEY);
+      setAuthenticated(false);
+      setUser(null);
+    }
+  },
+
   login: async (email: string, password: string) => {
+    const state = get();
+    
+    // Check for lockout
+    if (state.lockoutUntil && Date.now() < state.lockoutUntil) {
+      const remainingMinutes = Math.ceil((state.lockoutUntil - Date.now()) / 60000);
+      set({ 
+        error: `Too many login attempts. Please try again in ${remainingMinutes} minutes.`,
+        loading: false 
+      });
+      return;
+    }
+
     try {
       set({ loading: true, error: null });
       const response = await authService.login(email, password) as AuthResponse;
       
       if (response.error) {
-        set({ error: response.error, loading: false });
+        // Increment login attempts on failure
+        const newAttempts = state.loginAttempts + 1;
+        if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+          set({
+            loginAttempts: 0,
+            lockoutUntil: Date.now() + LOCKOUT_DURATION,
+            error: 'Too many failed attempts. Account locked for 15 minutes.',
+            loading: false
+          });
+          return;
+        }
+        
+        set({ 
+          error: response.error, 
+          loading: false,
+          loginAttempts: newAttempts
+        });
         return;
       }
+      
+      // Reset login attempts on success
+      set({ loginAttempts: 0, lockoutUntil: null });
+      
+      // Calculate expiration (7 days from now)
+      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+      
+      // Store token and user data securely
+      await secureStorage.setItem(TOKEN_KEY, {
+        token: response.token,
+        expiresAt
+      });
+      await secureStorage.setItem(USER_KEY, response.user);
       
       set({ 
         isAuthenticated: true,
@@ -200,9 +288,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         loading: false,
         error: null 
       });
-      
-      await AsyncStorage.setItem('token', response.token);
-      await AsyncStorage.setItem('user', JSON.stringify(response.user));
     } catch (error: any) {
       let errorMessage = 'An unexpected error occurred';
       
@@ -267,24 +352,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       setAuthenticated(false);
       setUser(null);
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
+      await secureStorage.removeItem(TOKEN_KEY);
+      await secureStorage.removeItem(USER_KEY);
+      // Reset security-related state
+      set({ loginAttempts: 0, lockoutUntil: null });
     } catch (error) {
       console.error('Error during logout:', error);
-    }
-  },
-
-  checkAuth: async () => {
-    const { setAuthenticated, setUser } = get();
-    try {
-      const token = await AsyncStorage.getItem('token');
-      const user = await AsyncStorage.getItem('user');
-      if (token && user) {
-        setAuthenticated(true);
-        setUser(JSON.parse(user));
-      }
-    } catch (error) {
-      console.error('Error checking auth:', error);
     }
   },
 })); 

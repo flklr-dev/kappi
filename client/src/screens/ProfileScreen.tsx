@@ -17,12 +17,14 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { AuthContext } from '../context/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 
-type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
+type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ProfileScreen = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { setIsAuthenticated } = useContext(AuthContext);
+  const { logout, user } = useAuthStore();
 
   // Right component for the header (settings icon)
   const headerRight = (
@@ -48,7 +50,38 @@ const ProfileScreen = () => {
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+              // Navigation will be handled automatically by AppNavigator
+            } catch (error) {
+              Alert.alert("Error", "Failed to logout. Please try again.");
+            }
+          }
+        }
+      ],
+      { cancelable: true }
+    );
+  };
+
+  // Get user initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase();
   };
 
   return (
@@ -65,7 +98,7 @@ const ProfileScreen = () => {
         <View style={styles.profileHeader}>
           <View style={styles.profileImageContainer}>
             <View style={styles.profileImagePlaceholder}>
-              <Text style={styles.profileInitials}>JD</Text>
+              <Text style={styles.profileInitials}>{getInitials(user?.fullName || 'User Name')}</Text>
             </View>
             <TouchableOpacity style={styles.editImageButton}>
               <Ionicons name="camera" size={16} color={COLORS.white} />
@@ -73,8 +106,8 @@ const ProfileScreen = () => {
           </View>
           
           <View style={styles.userInfoContainer}>
-            <Text style={styles.userName}>Juan Dela Cruz</Text>
-            <Text style={styles.userRole}>Coffee Farmer</Text>
+            <Text style={styles.userName}>{user?.fullName || 'User Name'}</Text>
+            <Text style={styles.userEmail}>{user?.email || 'email@example.com'}</Text>
             <View style={styles.locationContainer}>
               <Ionicons name="location-outline" size={16} color={COLORS.gray} />
               <Text style={styles.userLocation}>Bukidnon, Philippines</Text>
@@ -216,6 +249,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.black,
     marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: 8,
   },
   userRole: {
     fontSize: 16,
