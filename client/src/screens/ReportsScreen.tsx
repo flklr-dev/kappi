@@ -55,7 +55,7 @@ const mockScans: ScanRecord[] = [
     id: '1',
     date: '2024-04-08',
     time: '10:30 AM',
-    imageUri: 'https://example.com/scan1.jpg',
+    imageUri: 'https://www.plantvillage.psu.edu/sites/default/files/styles/picture_large/public/coffee_leaf_rust_hemileia_vastatrix_4.jpg',
     disease: 'Coffee Leaf Rust',
     confidence: 94,
     healthStatus: 'infected',
@@ -72,7 +72,7 @@ const mockScans: ScanRecord[] = [
     id: '2',
     date: '2024-04-07',
     time: '09:15 AM',
-    imageUri: 'https://example.com/scan2.jpg',
+    imageUri: 'https://www.plantvillage.psu.edu/sites/default/files/styles/picture_large/public/brown_eye_spot_cercospora_coffeicola_2.jpg',
     disease: 'Brown Eye Spot',
     confidence: 87,
     healthStatus: 'infected',
@@ -89,7 +89,7 @@ const mockScans: ScanRecord[] = [
     id: '3',
     date: '2024-04-05',
     time: '11:45 AM',
-    imageUri: 'https://example.com/scan3.jpg',
+    imageUri: 'https://www.plantvillage.psu.edu/sites/default/files/styles/picture_large/public/coffee_healthy_leaf_3.jpg',
     disease: null,
     confidence: 98,
     healthStatus: 'healthy',
@@ -165,7 +165,6 @@ const mockDiseasePatterns = {
 
 // Component starts here
 const ReportsScreen = () => {
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeTimeFrame, setActiveTimeFrame] = useState<TimeFrame>('week');
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -246,67 +245,6 @@ const ReportsScreen = () => {
     </View>
   );
 
-  const renderFilterTabs = () => (
-    <View style={styles.filterContainer}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterContentContainer}
-      >
-        <TouchableOpacity
-          style={[styles.filterTab, activeFilter === 'all' && styles.activeFilterTab]}
-          onPress={() => setActiveFilter('all')}
-        >
-          <Text style={[styles.filterText, activeFilter === 'all' && styles.activeFilterText]}>
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterTab, activeFilter === 'healthy' && styles.activeFilterTab]}
-          onPress={() => setActiveFilter('healthy')}
-        >
-          <Ionicons 
-            name="checkmark-circle" 
-            size={16} 
-            color={activeFilter === 'healthy' ? '#fff' : '#4CAF50'} 
-            style={{marginRight: 5}}
-          />
-          <Text style={[styles.filterText, activeFilter === 'healthy' && styles.activeFilterText]}>
-            Healthy
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterTab, activeFilter === 'infected' && styles.activeFilterTab]}
-          onPress={() => setActiveFilter('infected')}
-        >
-          <Ionicons 
-            name="alert-circle" 
-            size={16} 
-            color={activeFilter === 'infected' ? '#fff' : '#F44336'} 
-            style={{marginRight: 5}}
-          />
-          <Text style={[styles.filterText, activeFilter === 'infected' && styles.activeFilterText]}>
-            Infected
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterTab, styles.riskTab, activeFilter === 'high_risk' && styles.activeFilterTab]}
-          onPress={() => setActiveFilter('high_risk')}
-        >
-          <Ionicons 
-            name="warning" 
-            size={16} 
-            color={activeFilter === 'high_risk' ? '#fff' : '#FFC107'} 
-            style={{marginRight: 5}}
-          />
-          <Text style={[styles.filterText, activeFilter === 'high_risk' && styles.activeFilterText]}>
-            At Risk
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
-  );
-
   const renderScanCard = ({ item }: { item: ScanRecord }) => {
     const isExpanded = expandedScanId === item.id;
     
@@ -321,6 +259,7 @@ const ReportsScreen = () => {
             <Image 
               source={{ uri: item.imageUri }}
               style={styles.scanThumbnail}
+              resizeMode="cover"
             />
             <View style={styles.scanInfo}>
               <View style={styles.scanDateRow}>
@@ -436,8 +375,6 @@ const ReportsScreen = () => {
         }
       />
 
-      {renderFilterTabs()}
-
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         style={styles.scrollView}
@@ -446,52 +383,24 @@ const ReportsScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
         }
       >
-        {/* Insights & Recommendations */}
+        {/* Advice Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Insights & Recommendations</Text>
+            <Text style={styles.sectionTitle}>Farming Advice</Text>
           </View>
           <View style={styles.insightsContainer}>
-            {mockInsights.map(item => (
-              <View 
-                key={item.id}
-                style={[
-                  styles.insightCard,
-                  item.type === 'warning' ? styles.warningCard : 
-                  item.type === 'recommendation' ? styles.recommendationCard : 
-                  styles.trendCard
-                ]}
-              >
-                <View style={styles.insightHeader}>
-                  <View style={[
-                    styles.insightIconContainer, 
-                    { backgroundColor: item.type === 'warning' ? '#FFF1F0' : (item.type === 'recommendation' ? '#EDFBEF' : '#EBF5FF') }
-                  ]}>
-                    <Ionicons 
-                      name={item.icon as any} 
-                      size={22} 
-                      color={item.type === 'warning' ? '#F44336' : (item.type === 'recommendation' ? '#4CAF50' : '#2196F3')} 
-                    />
+            {mockInsights
+              .filter(item => item.type === 'recommendation')
+              .map(item => (
+                <View key={item.id} style={styles.adviceCard}>
+                  <View style={styles.adviceIconContainer}>
+                    <Ionicons name={item.icon as any} size={24} color="#4CAF50" />
                   </View>
-                  <Text style={styles.insightType}>
-                    {item.type === 'trend' ? 'OBSERVATION' : (item.type === 'recommendation' ? 'ADVICE' : 'WARNING')}
-                  </Text>
+                  <View style={styles.adviceContent}>
+                    <Text style={styles.adviceMessage}>{item.message}</Text>
+                  </View>
                 </View>
-                <Text style={styles.insightMessage}>{item.message}</Text>
-                {item.actionable && (
-                  <TouchableOpacity 
-                    style={[
-                      styles.insightActionButtonFull,
-                      { backgroundColor: item.type === 'warning' ? '#F44336' : (item.type === 'recommendation' ? '#4CAF50' : '#2196F3') }
-                    ]}
-                  >
-                    <Text style={styles.insightActionTextFull}>
-                      {item.type === 'warning' ? 'Fix Problem Now' : 'Apply This Advice'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
+              ))}
           </View>
         </View>
 
@@ -537,142 +446,13 @@ const ReportsScreen = () => {
                 absolute
               />
             </View>
-            
-            {/* Disease Pattern Analysis */}
-            <View style={styles.chartCard}>
-              <View style={styles.chartTitleContainer}>
-                <Ionicons name="analytics" size={20} color={COLORS.primary} />
-                <Text style={styles.chartTitle}>Disease Pattern Analysis</Text>
-              </View>
-              
-              <View style={styles.viewModeToggle}>
-                <TouchableOpacity 
-                  style={[styles.toggleButton, viewMode === 'simple' && styles.activeToggleButton]}
-                  onPress={() => setViewMode('simple')}
-                >
-                  <Ionicons name="leaf-outline" size={16} color={viewMode === 'simple' ? COLORS.white : COLORS.primary} />
-                  <Text style={[styles.toggleText, viewMode === 'simple' && styles.activeToggleText]}>
-                    Simple Summary
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[styles.toggleButton, viewMode === 'detailed' && styles.activeToggleButton]}
-                  onPress={() => setViewMode('detailed')}
-                >
-                  <Ionicons name="analytics-outline" size={16} color={viewMode === 'detailed' ? COLORS.white : COLORS.primary} />
-                  <Text style={[styles.toggleText, viewMode === 'detailed' && styles.activeToggleText]}>
-                    Detailed View
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {viewMode === 'simple' ? (
-                <View style={styles.simpleView}>
-                  <View style={styles.simpleInsightCard}>
-                    <Ionicons name="water-outline" size={20} color="#FF6B6B" />
-                    <Text style={styles.insightText}>
-                      When humidity is high, disease tends to appear more.
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.simpleInsightCard}>
-                    <Ionicons name="sunny-outline" size={20} color="#FFB300" />
-                    <Text style={styles.insightText}>
-                      Leaf rust increases during hot and humid days.
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.simpleInsightCard}>
-                    <Ionicons name="trending-up-outline" size={20} color="#F44336" />
-                    <Text style={styles.insightText}>
-                      Disease risk increases with high UV Index and AQI.
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <View style={styles.detailedView}>
-                  <LineChart
-                    data={{
-                      labels: mockDiseasePatterns.labels,
-                      datasets: [
-                        {
-                          data: mockDiseasePatterns.diseaseData,
-                          color: (opacity = 1) => `rgba(244, 67, 54, ${opacity})`,
-                          strokeWidth: 2
-                        },
-                        {
-                          data: mockDiseasePatterns.humidityData,
-                          color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
-                          strokeWidth: 2
-                        },
-                        {
-                          data: mockDiseasePatterns.temperatureData,
-                          color: (opacity = 1) => `rgba(255, 152, 0, ${opacity})`,
-                          strokeWidth: 2
-                        },
-                        {
-                          data: mockDiseasePatterns.uvData,
-                          color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-                          strokeWidth: 2
-                        }
-                      ],
-                    }}
-                    width={screenWidth - 42}
-                    height={220}
-                    chartConfig={{
-                      backgroundColor: '#FFFFFF',
-                      backgroundGradientFrom: '#FFFFFF',
-                      backgroundGradientTo: '#FFFFFF',
-                      decimalPlaces: 0,
-                      color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                      style: {
-                        borderRadius: 16
-                      },
-                      propsForDots: {
-                        r: "4",
-                        strokeWidth: "2"
-                      }
-                    }}
-                    bezier
-                    style={styles.lineChart}
-                    withInnerLines={false}
-                    withOuterLines={true}
-                    fromZero
-                  />
-                  
-                  <View style={styles.legendContainer}>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, {backgroundColor: '#F44336'}]} />
-                      <Text style={styles.legendText}>Disease Cases</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, {backgroundColor: '#2196F3'}]} />
-                      <Text style={styles.legendText}>Humidity</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, {backgroundColor: '#FF9800'}]} />
-                      <Text style={styles.legendText}>Temperature</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, {backgroundColor: '#4CAF50'}]} />
-                      <Text style={styles.legendText}>UV Index</Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-            </View>
           </View>
         </View>
         
         {/* Scan History Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Scan History</Text>
-            <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
-              <Ionicons name="download-outline" size={16} color={COLORS.primary} />
-              <Text style={styles.exportButtonText}>Export</Text>
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>Recent Scans</Text>
           </View>
           
           <View style={styles.scansContainer}>
@@ -998,14 +778,16 @@ const styles = StyleSheet.create({
   scanCardRow: {
     flexDirection: 'row',
     flex: 1,
+    alignItems: 'center',
   },
   scanCardRight: {
     alignItems: 'flex-end',
   },
   scanThumbnail: {
-    width: 50,
-    height: 50,
+    width: 80,
+    height: 80,
     borderRadius: 8,
+    backgroundColor: COLORS.lightGray,
     marginRight: 12,
   },
   scanInfo: {
@@ -1169,6 +951,37 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.primary,
     marginRight: 5,
+  },
+  adviceCard: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  adviceIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#EDFBEF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  adviceContent: {
+    flex: 1,
+  },
+  adviceMessage: {
+    fontSize: 16,
+    color: COLORS.black,
+    lineHeight: 22,
   },
 });
 

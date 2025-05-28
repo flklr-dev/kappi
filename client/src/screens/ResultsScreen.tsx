@@ -17,52 +17,23 @@ import { NavigationProp, RouteProp } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainTabParamList } from '../navigation/types';
 
-type PlantPart = 'leaf' | 'bean' | 'stem';
-type IconName = 'leaf-outline' | 'cafe-outline' | 'git-branch-outline';
-
-interface ScanData {
-  imageUri: string;
-  plantPart: PlantPart;
-  timestamp: string;
-  location: string;
-  diseases: Array<{
-    name: string;
-    confidence: number;
-    scientificName: string;
-    severity: string;
-    treatment: {
-      chemical: string;
-      organic: string;
-      immediateSteps: string[];
-      prevention: string[];
-    };
-  }>;
-  environmental: {
-    riskLevel: string;
-    indicators: Array<{
-      name: string;
-      value: string;
-      risk: string;
-    }>;
-  };
-}
-
 type ResultsScreenProps = NativeStackScreenProps<MainTabParamList, 'Results'>;
 
 const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
   const { imageUri } = route.params;
 
-  // Mock data - replace with actual data from ML model
+  // Simplified data for farmers
   const scanData = {
     imageUri: imageUri || 'https://example.com/scan.jpg',
     diagnosis: {
       disease: 'Coffee Leaf Rust',
       confidence: 94,
       severity: 'high', // 'low' | 'medium' | 'high'
-      scientificName: 'Hemileia vastatrix',
+      stage: 'Progressive', // 'Early' | 'Progressive' | 'Severe'
+      variety: 'Robusta',
       treatment: {
-        fungicide: 'Copper-based fungicide (e.g., Copper Hydroxide)',
-        organic: 'Neem oil solution or baking soda spray',
+        fungicide: 'Copper-based fungicide',
+        organic: 'Neem oil solution',
         immediateSteps: [
           'Isolate affected plants',
           'Remove severely infected leaves',
@@ -97,15 +68,6 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
     }
   };
 
-  const getPlantPartIcon = (part: PlantPart): IconName => {
-    switch(part) {
-      case 'leaf': return 'leaf-outline';
-      case 'bean': return 'cafe-outline';
-      case 'stem': return 'git-branch-outline';
-      default: return 'leaf-outline';
-    }
-  };
-
   const getRiskColor = (risk: string) => {
     switch(risk.toLowerCase()) {
       case 'high': return '#F44336';
@@ -135,12 +97,30 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
     }
   };
 
-  const getSeverityIcon = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case 'low': return 'checkmark-circle';
-      case 'medium': return 'warning';
-      case 'high': return 'alert-circle';
+  const getStageColor = (stage: string) => {
+    switch (stage.toLowerCase()) {
+      case 'early': return '#4CAF50';
+      case 'progressive': return '#FFA000';
+      case 'severe': return '#F44336';
+      default: return '#9E9E9E';
+    }
+  };
+
+  const getStageIcon = (stage: string) => {
+    switch (stage.toLowerCase()) {
+      case 'early': return 'leaf';
+      case 'progressive': return 'warning';
+      case 'severe': return 'alert-circle';
       default: return 'help-circle';
+    }
+  };
+
+  const getStageDescription = (stage: string) => {
+    switch (stage.toLowerCase()) {
+      case 'early': return 'Early signs - Good chance to control';
+      case 'progressive': return 'Spreading - Needs immediate action';
+      case 'severe': return 'Advanced stage - Urgent care needed';
+      default: return 'Status unknown';
     }
   };
 
@@ -173,36 +153,50 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
           </View>
         </View>
 
-        {/* AI Diagnosis Summary */}
+        {/* Simple Diagnosis Card */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="analytics-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>AI Diagnosis Summary</Text>
+            <Ionicons name="leaf-outline" size={24} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Plant Health</Text>
           </View>
 
           <View style={styles.diagnosisCard}>
-            {/* Disease Info with Severity */}
             <View style={styles.diseaseHeader}>
-              <View style={styles.diseaseInfo}>
-                <Text style={styles.diseaseName}>{scanData.diagnosis.disease}</Text>
-                <Text style={styles.scientificName}>{scanData.diagnosis.scientificName}</Text>
-              </View>
+              <Text style={styles.diseaseName}>{scanData.diagnosis.disease}</Text>
               <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(scanData.diagnosis.severity) }]}>
-                <Ionicons 
-                  name={getSeverityIcon(scanData.diagnosis.severity)} 
-                  size={20} 
-                  color={COLORS.white} 
-                />
                 <Text style={styles.severityText}>{scanData.diagnosis.severity.toUpperCase()}</Text>
               </View>
             </View>
 
-            {/* Confidence Score with Visual Indicator */}
-            <View style={styles.confidenceSection}>
-              <View style={styles.confidenceHeader}>
-                <Text style={styles.confidenceLabel}>Confidence Score</Text>
-                <Text style={styles.confidenceValue}>{scanData.diagnosis.confidence}%</Text>
+            <View style={styles.varietyContainer}>
+              <View style={styles.varietyBadge}>
+                <Ionicons name="cafe" size={16} color={COLORS.primary} />
+                <Text style={styles.varietyText}>{scanData.diagnosis.variety} Coffee</Text>
               </View>
+            </View>
+
+            <View style={styles.stageContainer}>
+              <View style={[styles.stageCard, { backgroundColor: getStageColor(scanData.diagnosis.stage) + '15' }]}>
+                <View style={styles.stageIconContainer}>
+                  <Ionicons 
+                    name={getStageIcon(scanData.diagnosis.stage)} 
+                    size={24} 
+                    color={getStageColor(scanData.diagnosis.stage)} 
+                  />
+                </View>
+                <View style={styles.stageInfo}>
+                  <Text style={[styles.stageTitle, { color: getStageColor(scanData.diagnosis.stage) }]}>
+                    {scanData.diagnosis.stage} Stage
+                  </Text>
+                  <Text style={styles.stageDescription}>
+                    {getStageDescription(scanData.diagnosis.stage)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.confidenceSection}>
+              <Text style={styles.confidenceLabel}>Confidence: {scanData.diagnosis.confidence}%</Text>
               <View style={styles.confidenceBar}>
                 <View 
                   style={[
@@ -214,20 +208,15 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
                   ]} 
                 />
               </View>
-              <View style={styles.confidenceMarkers}>
-                <Text style={styles.confidenceMarker}>0%</Text>
-                <Text style={styles.confidenceMarker}>50%</Text>
-                <Text style={styles.confidenceMarker}>100%</Text>
-              </View>
             </View>
           </View>
         </View>
 
-        {/* Environmental Risk Snapshot */}
+        {/* Environmental Conditions */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="thermometer-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Environmental Risk Snapshot</Text>
+            <Text style={styles.sectionTitle}>Weather Conditions</Text>
           </View>
 
           <View style={styles.environmentalCard}>
@@ -260,11 +249,11 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
           </View>
         </View>
 
-        {/* Expert Recommendations */}
+        {/* Treatment Recommendations */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="bulb-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Expert Recommendations</Text>
+            <Text style={styles.sectionTitle}>Treatment Options</Text>
           </View>
 
           <View style={styles.recommendationsCard}>
@@ -272,21 +261,24 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
             <View style={styles.recommendationGroup}>
               <View style={styles.recommendationHeader}>
                 <Ionicons name="flask-outline" size={20} color={COLORS.primary} />
-                <Text style={styles.recommendationTitle}>Treatment Suggestions</Text>
+                <Text style={styles.recommendationTitle}>Chemical Treatment</Text>
               </View>
               
               <View style={styles.treatmentOption}>
                 <Ionicons name="flask" size={20} color="#FF6B6B" />
                 <View style={styles.treatmentContent}>
-                  <Text style={styles.treatmentLabel}>Fungicide</Text>
                   <Text style={styles.treatmentValue}>{scanData.diagnosis.treatment.fungicide}</Text>
                 </View>
+              </View>
+
+              <View style={styles.recommendationHeader}>
+                <Ionicons name="leaf-outline" size={20} color={COLORS.primary} />
+                <Text style={styles.recommendationTitle}>Natural Treatment</Text>
               </View>
 
               <View style={styles.treatmentOption}>
                 <Ionicons name="leaf-outline" size={20} color="#4CAF50" />
                 <View style={styles.treatmentContent}>
-                  <Text style={styles.treatmentLabel}>Organic Alternative</Text>
                   <Text style={styles.treatmentValue}>{scanData.diagnosis.treatment.organic}</Text>
                 </View>
               </View>
@@ -296,12 +288,14 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
             <View style={styles.recommendationGroup}>
               <View style={styles.recommendationHeader}>
                 <Ionicons name="alert-circle-outline" size={20} color={COLORS.primary} />
-                <Text style={styles.recommendationTitle}>Immediate Steps</Text>
+                <Text style={styles.recommendationTitle}>What to Do Now</Text>
               </View>
               
               {scanData.diagnosis.treatment.immediateSteps.map((step, index) => (
                 <View key={index} style={styles.stepItem}>
-                  <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+                  <View style={styles.stepNumberContainer}>
+                    <Text style={styles.stepNumber}>{index + 1}</Text>
+                  </View>
                   <Text style={styles.stepText}>{step}</Text>
                 </View>
               ))}
@@ -311,12 +305,14 @@ const ResultsScreen = ({ route, navigation }: ResultsScreenProps) => {
             <View style={styles.recommendationGroup}>
               <View style={styles.recommendationHeader}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
-                <Text style={styles.recommendationTitle}>Prevention Tips</Text>
+                <Text style={styles.recommendationTitle}>How to Prevent</Text>
               </View>
               
               {scanData.diagnosis.treatment.prevention.map((tip, index) => (
                 <View key={index} style={styles.stepItem}>
-                  <Ionicons name="checkmark-circle-outline" size={16} color="#4CAF50" />
+                  <View style={styles.stepIconContainer}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                  </View>
                   <Text style={styles.stepText}>{tip}</Text>
                 </View>
               ))}
@@ -373,7 +369,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    aspectRatio: 3/4,
+    aspectRatio: 16/9,
     borderRadius: 15,
     overflow: 'hidden',
     backgroundColor: COLORS.lightGray,
@@ -427,74 +423,43 @@ const styles = StyleSheet.create({
   diseaseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 20,
-  },
-  diseaseInfo: {
-    flex: 1,
-    marginRight: 15,
   },
   diseaseName: {
     fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 4,
-  },
-  scientificName: {
-    fontSize: 14,
-    color: COLORS.gray,
-    fontStyle: 'italic',
   },
   severityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    minWidth: 100,
-    justifyContent: 'center',
+    minWidth: 80,
+    alignItems: 'center',
   },
   severityText: {
     color: COLORS.white,
     fontSize: 12,
     fontWeight: 'bold',
-    marginLeft: 4,
   },
   confidenceSection: {
     marginTop: 15,
   },
-  confidenceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   confidenceLabel: {
-    fontSize: 14,
-    color: COLORS.gray,
-  },
-  confidenceValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.black,
+    marginBottom: 8,
   },
   confidenceBar: {
     height: 8,
     backgroundColor: '#E0E0E0',
     borderRadius: 4,
-    marginBottom: 4,
   },
   confidenceFill: {
     height: '100%',
     borderRadius: 4,
-  },
-  confidenceMarkers: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  confidenceMarker: {
-    fontSize: 10,
-    color: COLORS.gray,
   },
   environmentalCard: {
     backgroundColor: COLORS.white,
@@ -533,7 +498,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E0E0E0',
   },
   indicatorName: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.black,
   },
   indicatorValueContainer: {
@@ -541,7 +506,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   indicatorValue: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.black,
     marginRight: 8,
   },
@@ -568,7 +533,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   detailText: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.black,
     marginLeft: 10,
   },
@@ -576,6 +541,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginHorizontal: 20,
+    marginBottom: 30,
   },
   actionButton: {
     flex: 1,
@@ -627,36 +593,110 @@ const styles = StyleSheet.create({
   },
   treatmentOption: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    marginBottom: 16,
     backgroundColor: COLORS.background,
-    padding: 12,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   treatmentContent: {
     flex: 1,
-    marginLeft: 12,
-  },
-  treatmentLabel: {
-    fontSize: 14,
-    color: COLORS.gray,
-    marginBottom: 2,
+    marginLeft: 16,
   },
   treatmentValue: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.black,
-    fontWeight: '500',
+    lineHeight: 24,
   },
   stepItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+    backgroundColor: '#F5F5F5',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  stepNumberContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stepNumber: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  stepIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   stepText: {
-    fontSize: 14,
-    color: COLORS.black,
-    marginLeft: 8,
     flex: 1,
+    fontSize: 15,
+    color: COLORS.black,
+    lineHeight: 22,
+  },
+  varietyContainer: {
+    marginBottom: 16,
+  },
+  varietyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '15',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  varietyText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  stageContainer: {
+    marginBottom: 20,
+  },
+  stageCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+  },
+  stageIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stageInfo: {
+    flex: 1,
+  },
+  stageTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  stageDescription: {
+    fontSize: 14,
+    color: COLORS.gray,
+    lineHeight: 20,
   },
 });
 

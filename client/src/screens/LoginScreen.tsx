@@ -1,106 +1,86 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TextInput, 
-  TouchableOpacity, 
-  Image, 
-  SafeAreaView, 
-  KeyboardAvoidingView, 
-  Platform,
-  StatusBar 
+import React, { useState, useContext } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { COLORS } from '../constants/colors';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AuthStackParamList } from '../navigation/types';
-import Header from '../components/Header';
+import { MainTabParamList, AuthStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthContext } from '../navigation/RootNavigator';
 
-type LoginScreenProps = {
-  navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
-};
+type LoginScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'Home'>;
+type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigation = useNavigation<AuthNavigationProp>();
+  const { setIsAuthenticated } = useContext(AuthContext);
 
-  // In a real app, this would call an authentication API
   const handleLogin = () => {
-    // For testing, navigate to the Home screen directly
-    // We would normally use a context to set isAuthenticated to true
-    if (email && password) {
-      // @ts-ignore - This is a hack for testing, normally we would use a context
-      navigation.navigate('Main');
-    } else {
-      alert('Please enter both email and password');
-    }
+    // For UI testing, set isAuthenticated to true to navigate to the main app
+    console.log("Logging in...");
+    setIsAuthenticated(true);
+    console.log("Login complete!");
+  };
+
+  const handleRegister = () => {
+    // Navigate to the Register screen
+    navigation.navigate('Register');
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       
-      <Header title="Login" />
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
-        <View style={styles.logoContainer}>
-          <Text style={styles.title}>KAPPI</Text>
-          <Text style={styles.subtitle}>Philippine Coffee Crop Disease Detection</Text>
+      <View style={styles.logoContainer}>
+        <View style={styles.logoIconContainer}>
+          <Ionicons name="leaf" size={80} color={COLORS.primary} />
         </View>
+        <Text style={styles.title}>KAPPI</Text>
+        <Text style={styles.subtitle}>Your coffee crop health companion</Text>
+      </View>
 
-        <View style={styles.formContainer}>
-          <View style={styles.inputContainer}>
-            <View style={styles.inputIconContainer}>
-              <Ionicons name="mail-outline" size={20} color={COLORS.gray} />
-            </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email or phone"
-              placeholderTextColor={COLORS.gray}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+      <View style={styles.formContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-          <View style={styles.inputContainer}>
-            <View style={styles.inputIconContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color={COLORS.gray} />
-            </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your password"
-              placeholderTextColor={COLORS.gray}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+          <Text style={styles.loginButtonText}>Login</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.forgotPasswordContainer}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        <TouchableOpacity style={styles.forgotPasswordButton}>
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.registerContainer}>
+          <Text style={styles.registerText}>Don't have an account?</Text>
+          <TouchableOpacity onPress={handleRegister}>
+            <Text style={styles.registerButtonText}>Register</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.loginButton}
-            onPress={handleLogin}
-          >
-            <Text style={styles.loginButtonText}>Login</Text>
-          </TouchableOpacity>
-
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.registerLink}>Register</Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -108,90 +88,81 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
+    backgroundColor: COLORS.white,
   },
   logoContainer: {
     alignItems: 'center',
+    marginTop: 60,
     marginBottom: 40,
-    marginTop: 20,
+  },
+  logoIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   title: {
-    fontSize: 42,
+    fontSize: 32,
     fontWeight: 'bold',
     color: COLORS.primary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.accent,
+    color: COLORS.gray,
     textAlign: 'center',
-    maxWidth: '80%',
   },
   formContainer: {
-    width: '100%',
-  },
-  inputContainer: {
-    marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.secondary,
-    height: 55,
-  },
-  inputIconContainer: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 24,
   },
   input: {
-    flex: 1,
-    height: '100%',
+    height: 50,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
     fontSize: 16,
-    color: COLORS.black,
-  },
-  forgotPasswordContainer: {
-    alignSelf: 'flex-end',
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    color: COLORS.primary,
-    fontWeight: '500',
   },
   loginButton: {
     backgroundColor: COLORS.primary,
-    height: 55,
+    height: 50,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginTop: 8,
   },
   loginButtonText: {
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',
   },
+  forgotPasswordButton: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  forgotPasswordText: {
+    color: COLORS.primary,
+    fontSize: 14,
+  },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    marginTop: 30,
+    alignItems: 'center',
   },
   registerText: {
-    color: COLORS.black,
-    fontSize: 16,
+    color: COLORS.gray,
+    fontSize: 14,
   },
-  registerLink: {
+  registerButtonText: {
     color: COLORS.primary,
+    fontSize: 14,
     fontWeight: 'bold',
-    fontSize: 16,
+    marginLeft: 5,
   },
 });
 
