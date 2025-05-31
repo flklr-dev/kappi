@@ -96,7 +96,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setTouchedField: (field, value) => set((state) => ({
     touchedFields: { ...state.touchedFields, [field]: value }
   })),
-  resetValidation: () => set({ validationErrors: {}, touchedFields: {}, error: null }),
+  resetValidation: () => set((state) => ({ 
+    validationErrors: {}, 
+    touchedFields: {}, 
+    error: null,
+    loginAttempts: state.loginAttempts,
+    lockoutUntil: state.lockoutUntil
+  })),
 
   validateEmail: (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -114,56 +120,47 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   validateField: (field: string, value: string, confirmPassword?: string) => {
-    const { setTouchedField, setValidationErrors, validateEmail, validatePassword } = get();
+    const state = get();
+    const { setTouchedField, setValidationErrors, validateEmail, validatePassword } = state;
+    
+    // Start with a fresh validation state for this field
+    const currentErrors: ValidationErrors = {};
     setTouchedField(field, true);
 
     switch (field) {
       case 'fullName':
         if (!value.trim()) {
-          setValidationErrors({ fullName: 'Full name is required' });
-        } else {
-          const { fullName, ...rest } = get().validationErrors;
-          setValidationErrors(rest);
+          currentErrors.fullName = 'Full name is required';
         }
         break;
 
       case 'email':
         if (!value.trim()) {
-          setValidationErrors({ email: 'Email is required' });
+          currentErrors.email = 'Email is required';
         } else if (!validateEmail(value)) {
-          setValidationErrors({ email: 'Invalid email format' });
-        } else {
-          const { email, ...rest } = get().validationErrors;
-          setValidationErrors(rest);
+          currentErrors.email = 'Invalid email format';
         }
         break;
 
       case 'password':
         if (!value) {
-          setValidationErrors({ password: 'Password is required' });
-        } else if (value === 'valid') {
-          // Special case for login validation
-          const { password, ...rest } = get().validationErrors;
-          setValidationErrors(rest);
-        } else if (!validatePassword(value)) {
-          setValidationErrors({ password: 'Password does not meet requirements' });
-        } else {
-          const { password, ...rest } = get().validationErrors;
-          setValidationErrors(rest);
+          currentErrors.password = 'Password is required';
+        } else if (value !== 'valid' && !validatePassword(value)) {
+          currentErrors.password = 'Password does not meet requirements';
         }
         break;
 
       case 'confirmPassword':
         if (!value) {
-          setValidationErrors({ confirmPassword: 'Please confirm your password' });
+          currentErrors.confirmPassword = 'Please confirm your password';
         } else if (value !== confirmPassword) {
-          setValidationErrors({ confirmPassword: 'Passwords do not match' });
-        } else {
-          const { confirmPassword, ...rest } = get().validationErrors;
-          setValidationErrors(rest);
+          currentErrors.confirmPassword = 'Passwords do not match';
         }
         break;
     }
+
+    // Only set errors for the current field being validated
+    setValidationErrors(currentErrors);
   },
 
   validateRegistration: (fullName: string, email: string, password: string, confirmPassword: string): boolean => {

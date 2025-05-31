@@ -4,6 +4,10 @@ export type RootStackParamList = {
   Register: undefined;
   ForgotPassword: undefined;
   MainTabs: undefined;
+  Results: {
+    imageUri: string;
+    scanType: 'leaf' | 'cherry' | 'stem';
+  };
 };
 
 // Main tab navigator params

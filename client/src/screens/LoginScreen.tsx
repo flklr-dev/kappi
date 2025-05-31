@@ -15,7 +15,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { COLORS } from '../constants/colors';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,10 +42,20 @@ const LoginScreen = () => {
   // UI state
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    // Reset validation when component mounts
-    resetValidation();
-  }, []);
+  // Reset form state when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const resetForm = () => {
+        setEmail('');
+        setPassword('');
+        setShowPassword(false);
+        resetValidation();
+      };
+
+      resetForm();
+      return () => resetValidation(); // Reset validation when leaving screen
+    }, [resetValidation])
+  );
 
   const handleLogin = async () => {
     try {
@@ -57,6 +67,12 @@ const LoginScreen = () => {
       if (currentError) {
         Alert.alert('Error', currentError);
       } else {
+        // Reset form before navigating
+        setEmail('');
+        setPassword('');
+        setShowPassword(false);
+        resetValidation();
+        
         Alert.alert(
           'Success',
           'Welcome back!',
@@ -87,15 +103,18 @@ const LoginScreen = () => {
 
   const validateLoginField = (field: string, value: string) => {
     if (field === 'email') {
-      validateField('email', value);
+      if (value.trim()) {
+        validateField('email', value);
+      } else {
+        // Clear validation for empty field
+        resetValidation();
+      }
     } else if (field === 'password') {
-      // For login, we only check if password is not empty
-      if (!value) {
+      if (value.trim()) {
         validateField('password', value);
       } else {
-        // Clear any existing password validation errors
-        const { password, ...rest } = validationErrors;
-        validateField('password', 'valid');
+        // Clear validation for empty field
+        resetValidation();
       }
     }
   };
@@ -277,6 +296,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     fontSize: 16,
+    color: COLORS.black,
   },
   forgotPasswordButton: {
     alignSelf: 'flex-end',

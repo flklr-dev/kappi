@@ -16,7 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { COLORS } from '../constants/colors';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,10 +49,47 @@ const RegisterScreen = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showPasswordComplexity, setShowPasswordComplexity] = useState(false);
 
-  useEffect(() => {
-    // Reset validation when component mounts
-    resetValidation();
-  }, []);
+  // Reset form state when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const resetForm = () => {
+        setFullName('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+        setTermsAgreed(false);
+        setShowPasswordComplexity(false);
+        resetValidation();
+      };
+
+      resetForm();
+      return () => resetValidation(); // Reset validation when leaving screen
+    }, [resetValidation])
+  );
+
+  const validateRegisterField = (field: string, value: string) => {
+    if (!value.trim()) {
+      resetValidation();
+      return;
+    }
+
+    switch (field) {
+      case 'fullName':
+        validateField('fullName', value);
+        break;
+      case 'email':
+        validateField('email', value);
+        break;
+      case 'password':
+        validateField('password', value);
+        break;
+      case 'confirmPassword':
+        validateField('confirmPassword', value, password);
+        break;
+    }
+  };
 
   const handleRegister = async () => {
     if (!termsAgreed) {
@@ -65,6 +102,16 @@ const RegisterScreen = () => {
     if (error) {
       Alert.alert('Error', error);
     } else {
+      // Reset form before navigating
+      setFullName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+      setTermsAgreed(false);
+      resetValidation();
+
       Alert.alert(
         'Success',
         'Your account has been created successfully!',
@@ -126,7 +173,7 @@ const RegisterScreen = () => {
                   placeholder="Full Name"
                   value={fullName}
                   onChangeText={setFullName}
-                  onBlur={() => validateField('fullName', fullName)}
+                  onBlur={() => validateRegisterField('fullName', fullName)}
                 />
               </View>
               {touchedFields.fullName && validationErrors.fullName && (
@@ -150,7 +197,7 @@ const RegisterScreen = () => {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  onBlur={() => validateField('email', email)}
+                  onBlur={() => validateRegisterField('email', email)}
                 />
               </View>
               {touchedFields.email && validationErrors.email && (
@@ -176,7 +223,7 @@ const RegisterScreen = () => {
                   onFocus={() => setShowPasswordComplexity(true)}
                   onBlur={() => {
                     setShowPasswordComplexity(false);
-                    validateField('password', password);
+                    validateRegisterField('password', password);
                   }}
                 />
                 <TouchableOpacity
@@ -212,11 +259,11 @@ const RegisterScreen = () => {
                   onChangeText={(text) => {
                     setConfirmPassword(text);
                     if (text) {
-                      validateField('confirmPassword', text, password);
+                      validateRegisterField('confirmPassword', text);
                     }
                   }}
                   secureTextEntry={!showConfirmPassword}
-                  onBlur={() => validateField('confirmPassword', confirmPassword, password)}
+                  onBlur={() => validateRegisterField('confirmPassword', confirmPassword)}
                 />
                 <TouchableOpacity
                   style={styles.passwordVisibilityButton}
@@ -344,6 +391,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     fontSize: 16,
+    color: COLORS.black,
   },
   passwordVisibilityButton: {
     paddingHorizontal: 16,
