@@ -3,12 +3,24 @@ import { authService } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { socialAuthService } from '../services/socialAuthService';
 import { Alert } from 'react-native';
+import { secureStorage } from '../utils/secureStorage';
 
 interface User {
   id: string;
   fullName: string;
   email: string;
   providers?: string[];
+  location?: {
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+    address: {
+      barangay: string;
+      cityMunicipality: string;
+      province: string;
+    };
+  };
 }
 
 interface AuthResponse {
@@ -23,6 +35,11 @@ interface ValidationErrors {
   password?: string;
   confirmPassword?: string;
 }
+
+// Storage keys
+const TOKEN_KEY = '@kappi_auth_token';
+const USER_KEY = '@kappi_auth_user';
+const TOKEN_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
 class AuthViewModel {
   isAuthenticated = false;
@@ -73,9 +90,36 @@ class AuthViewModel {
 
   private async checkAuth() {
     try {
+      // Try to get token from secure storage first
+      const tokenData = await secureStorage.getItem(TOKEN_KEY);
+      const userData = await secureStorage.getItem(USER_KEY);
+      
+      // If secure storage has the data, use it
+      if (tokenData && userData) {
+        const { token, expiresAt } = tokenData;
+        
+        // Check if token is not expired
+        if (Date.now() < expiresAt) {
+          this.setAuthenticated(true);
+          this.setUser(userData);
+          return;
+        }
+      }
+      
+      // Fallback to AsyncStorage for backward compatibility
       const token = await AsyncStorage.getItem('token');
       const user = await AsyncStorage.getItem('user');
+      
       if (token && user) {
+        // Migrate to secure storage
+        const expiresAt = Date.now() + TOKEN_EXPIRY;
+        await secureStorage.setItem(TOKEN_KEY, { token, expiresAt });
+        await secureStorage.setItem(USER_KEY, JSON.parse(user));
+        
+        // Clean up old storage
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+        
         this.setAuthenticated(true);
         this.setUser(JSON.parse(user));
       }
@@ -212,10 +256,22 @@ class AuthViewModel {
       this.setLoginAttempts(0);
       this.setLockoutUntil(null);
       
+      // Calculate expiration (7 days from now)
+      const expiresAt = Date.now() + TOKEN_EXPIRY;
+      
+      // Store token and user data securely
+      await secureStorage.setItem(TOKEN_KEY, {
+        token: response.token,
+        expiresAt
+      });
+      await secureStorage.setItem(USER_KEY, response.user);
+      
+      // Remove old storage
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      
       this.setAuthenticated(true);
       this.setUser(response.user);
-      await AsyncStorage.setItem('token', response.token);
-      await AsyncStorage.setItem('user', JSON.stringify(response.user));
     } catch (error: any) {
       const newAttempts = this.loginAttempts + 1;
       
@@ -258,10 +314,23 @@ class AuthViewModel {
       this.setLoading(true);
       this.setError(null);
       const response = await authService.register(fullName, email, password) as AuthResponse;
+      
+      // Calculate expiration (7 days from now)
+      const expiresAt = Date.now() + TOKEN_EXPIRY;
+      
+      // Store token and user data securely
+      await secureStorage.setItem(TOKEN_KEY, {
+        token: response.token,
+        expiresAt
+      });
+      await secureStorage.setItem(USER_KEY, response.user);
+      
+      // Remove old storage
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      
       this.setAuthenticated(true);
       this.setUser(response.user);
-      await AsyncStorage.setItem('token', response.token);
-      await AsyncStorage.setItem('user', JSON.stringify(response.user));
     } catch (error: any) {
       if (error.response) {
         switch (error.response.status) {
@@ -299,10 +368,22 @@ class AuthViewModel {
           return null;
         }
         
+        // Calculate expiration (7 days from now)
+        const expiresAt = Date.now() + TOKEN_EXPIRY;
+        
+        // Store token and user data securely
+        await secureStorage.setItem(TOKEN_KEY, {
+          token: response.token,
+          expiresAt
+        });
+        await secureStorage.setItem(USER_KEY, response.user);
+        
+        // Remove old storage
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+        
         this.setAuthenticated(true);
         this.setUser(response.user);
-        await AsyncStorage.setItem('token', response.token);
-        await AsyncStorage.setItem('user', JSON.stringify(response.user));
         
         // Let the UI know authentication was successful
         // The AppNavigator will handle navigation based on isAuthenticated state
@@ -340,10 +421,22 @@ class AuthViewModel {
           return null;
         }
         
+        // Calculate expiration (7 days from now)
+        const expiresAt = Date.now() + TOKEN_EXPIRY;
+        
+        // Store token and user data securely
+        await secureStorage.setItem(TOKEN_KEY, {
+          token: response.token,
+          expiresAt
+        });
+        await secureStorage.setItem(USER_KEY, response.user);
+        
+        // Remove old storage
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+        
         this.setAuthenticated(true);
         this.setUser(response.user);
-        await AsyncStorage.setItem('token', response.token);
-        await AsyncStorage.setItem('user', JSON.stringify(response.user));
         
         // Let the UI know authentication was successful
         // The AppNavigator will handle navigation based on isAuthenticated state
@@ -376,12 +469,12 @@ class AuthViewModel {
       this.setLoading(true);
       this.setError(null);
       
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
+      const tokenData = await secureStorage.getItem(TOKEN_KEY);
+      if (!tokenData) {
         throw new Error('Authentication token not found');
       }
       
-      await socialAuthService.linkGoogleAccount(token);
+      await socialAuthService.linkGoogleAccount(tokenData.token);
       
       const updatedUser = {
         ...this.user,
@@ -389,7 +482,7 @@ class AuthViewModel {
       };
       
       this.setUser(updatedUser);
-      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      await secureStorage.setItem(USER_KEY, updatedUser);
       
       Alert.alert('Success', 'Your Google account has been linked successfully');
     } catch (error: any) {
@@ -416,12 +509,12 @@ class AuthViewModel {
       this.setLoading(true);
       this.setError(null);
       
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
+      const tokenData = await secureStorage.getItem(TOKEN_KEY);
+      if (!tokenData) {
         throw new Error('Authentication token not found');
       }
       
-      await socialAuthService.linkFacebookAccount(token);
+      await socialAuthService.linkFacebookAccount(tokenData.token);
       
       const updatedUser = {
         ...this.user,
@@ -429,7 +522,7 @@ class AuthViewModel {
       };
       
       this.setUser(updatedUser);
-      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      await secureStorage.setItem(USER_KEY, updatedUser);
       
       Alert.alert('Success', 'Your Facebook account has been linked successfully');
     } catch (error: any) {
@@ -450,6 +543,8 @@ class AuthViewModel {
     try {
       this.setAuthenticated(false);
       this.setUser(null);
+      await secureStorage.removeItem(TOKEN_KEY);
+      await secureStorage.removeItem(USER_KEY);
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
       this.setLoginAttempts(0);

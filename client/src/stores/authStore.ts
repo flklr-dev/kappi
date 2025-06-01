@@ -29,6 +29,8 @@ interface AuthResponse {
     id: string;
     fullName: string;
     email: string;
+    location?: LocationData;
+    providers?: string[];
   };
   error?: string;
 }
@@ -78,6 +80,7 @@ const TOKEN_KEY = '@kappi_auth_token';
 const USER_KEY = '@kappi_auth_user';
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+const TOKEN_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
@@ -215,29 +218,55 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     const { setAuthenticated, setUser } = get();
     try {
+      // Try to get token from secure storage first
       const tokenData = await secureStorage.getItem(TOKEN_KEY) as TokenData | null;
-      const user = await secureStorage.getItem(USER_KEY);
+      const userData = await secureStorage.getItem(USER_KEY) as User | null;
       
-      if (tokenData && user) {
+      if (tokenData && userData) {
         const { expiresAt } = tokenData;
         
         // Check if token is not expired
         if (Date.now() < expiresAt) {
           setAuthenticated(true);
-          setUser(user);
+          setUser(userData);
+          return;
         } else {
           // Token is expired, clean up
           await secureStorage.removeItem(TOKEN_KEY);
           await secureStorage.removeItem(USER_KEY);
-          setAuthenticated(false);
-          setUser(null);
         }
+      }
+      
+      // Fallback to AsyncStorage for backward compatibility
+      const token = await AsyncStorage.getItem('token');
+      const user = await AsyncStorage.getItem('user');
+      
+      if (token && user) {
+        // Migrate to secure storage
+        const expiresAt = Date.now() + TOKEN_EXPIRY;
+        await secureStorage.setItem(TOKEN_KEY, {
+          token,
+          expiresAt
+        });
+        await secureStorage.setItem(USER_KEY, JSON.parse(user));
+        
+        // Clean up old storage
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+        
+        setAuthenticated(true);
+        setUser(JSON.parse(user));
+      } else {
+        setAuthenticated(false);
+        setUser(null);
       }
     } catch (error) {
       console.error('Error checking auth:', error);
       // Clean up on error
       await secureStorage.removeItem(TOKEN_KEY);
       await secureStorage.removeItem(USER_KEY);
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
       setAuthenticated(false);
       setUser(null);
     }
@@ -285,7 +314,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loginAttempts: 0, lockoutUntil: null });
       
       // Calculate expiration (7 days from now)
-      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+      const expiresAt = Date.now() + TOKEN_EXPIRY;
       
       // Store token and user data securely
       await secureStorage.setItem(TOKEN_KEY, {
@@ -293,6 +322,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         expiresAt
       });
       await secureStorage.setItem(USER_KEY, response.user);
+      
+      // Clean up old storage
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
       
       set({ 
         isAuthenticated: true,
@@ -302,6 +335,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (error: any) {
       let errorMessage = 'An unexpected error occurred';
+      
+      // Increment login attempts on failure
+      const newAttempts = state.loginAttempts + 1;
+      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+        set({
+          loginAttempts: 0,
+          lockoutUntil: Date.now() + LOCKOUT_DURATION,
+          error: 'Too many failed attempts. Account locked for 15 minutes.',
+          loading: false
+        });
+        return;
+      }
       
       if (error.response) {
         switch (error.response.status) {
@@ -318,7 +363,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         errorMessage = 'Network error. Please check your connection';
       }
       
-      set({ error: errorMessage, loading: false });
+      set({ 
+        error: errorMessage, 
+        loading: false,
+        loginAttempts: newAttempts
+      });
     }
   },
 
@@ -333,10 +382,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       setLoading(true);
       setError(null);
       const response = await authService.register(fullName, email, password) as AuthResponse;
+      
+      // Calculate expiration (7 days from now)
+      const expiresAt = Date.now() + TOKEN_EXPIRY;
+      
+      // Store token and user data securely
+      await secureStorage.setItem(TOKEN_KEY, {
+        token: response.token,
+        expiresAt
+      });
+      await secureStorage.setItem(USER_KEY, response.user);
+      
+      // Clean up old storage
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      
       setAuthenticated(true);
       setUser(response.user);
-      await AsyncStorage.setItem('token', response.token);
-      await AsyncStorage.setItem('user', JSON.stringify(response.user));
     } catch (error: any) {
       if (error.response) {
         switch (error.response.status) {
@@ -366,6 +428,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       setUser(null);
       await secureStorage.removeItem(TOKEN_KEY);
       await secureStorage.removeItem(USER_KEY);
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
       // Reset security-related state
       set({ loginAttempts: 0, lockoutUntil: null });
     } catch (error) {
@@ -390,9 +454,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Update state
       setUser(updatedUser);
 
-      // TODO: You might want to add an API call here to update the location on your backend
-      // await authService.updateLocation(location);
-      
+      // Get token for API call
+      const tokenData = await secureStorage.getItem(TOKEN_KEY) as TokenData | null;
+      if (!tokenData) return;
+
+      // Send update to backend
+      try {
+        await authService.updateLocation(location, tokenData.token);
+      } catch (error) {
+        console.error('Failed to update location on server:', error);
+        // Still keep the local update even if server update fails
+      }
     } catch (error) {
       console.error('Error updating location:', error);
     }

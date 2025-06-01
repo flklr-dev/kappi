@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -20,6 +20,7 @@ import { RootStackParamList } from '../navigation/types';
 import { AuthContext } from '../context/AuthContext';
 import { useAuthStore } from '../stores/authStore';
 import { authViewModel } from '../viewmodels/AuthViewModel';
+import { secureStorage } from '../utils/secureStorage';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -27,11 +28,27 @@ const ProfileScreen = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { setIsAuthenticated } = useContext(AuthContext);
   const { logout, user } = useAuthStore();
+  const [loading, setLoading] = useState(false);
   const [linkingLoading, setLinkingLoading] = useState({
     google: false,
     facebook: false
   });
   const [showAccountSelector, setShowAccountSelector] = useState(false);
+  
+  // Fetch user data when component mounts
+  useEffect(() => {
+    const checkUserData = async () => {
+      // If user data is not in store, try to get from secure storage
+      if (!user) {
+        const userData = await secureStorage.getItem('@kappi_auth_user');
+        if (userData) {
+          useAuthStore.getState().setUser(userData);
+        }
+      }
+    };
+    
+    checkUserData();
+  }, [user]);
 
   // Check if user has linked providers
   const hasProvider = (provider: string) => {
@@ -75,10 +92,13 @@ const ProfileScreen = () => {
           style: "destructive",
           onPress: async () => {
             try {
+              setLoading(true);
               await logout();
               // Navigation will be handled automatically by AppNavigator
             } catch (error) {
               Alert.alert("Error", "Failed to logout. Please try again.");
+            } finally {
+              setLoading(false);
             }
           }
         }
@@ -199,6 +219,15 @@ const ProfileScreen = () => {
     }
   };
 
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
@@ -213,20 +242,26 @@ const ProfileScreen = () => {
         <View style={styles.profileHeader}>
           <View style={styles.userInfoContainer}>
             <View style={styles.nameEmailContainer}>
-            <Text style={styles.userName}>{user?.fullName || 'User Name'}</Text>
-            <Text style={styles.userEmail}>{user?.email || 'email@example.com'}</Text>
+              <Text style={styles.userName}>{user.fullName}</Text>
+              <Text style={styles.userEmail}>{user.email}</Text>
             </View>
             
             <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
               <Ionicons name="pencil-outline" size={16} color={COLORS.white} />
-              <Text style={styles.editProfileText}>Edit Profile</Text>
+              <Text style={styles.editProfileText}>Edit</Text>
             </TouchableOpacity>
           </View>
           
-          <View style={styles.locationContainer}>
-            <Ionicons name="location-outline" size={18} color={COLORS.primary} />
-            <Text style={styles.userLocation}>Bukidnon, Philippines</Text>
-          </View>
+          {user.location && (
+            <View style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.userLocation}>
+                {user.location.address?.barangay && `${user.location.address.barangay}, `}
+                {user.location.address?.cityMunicipality && `${user.location.address.cityMunicipality}, `}
+                {user.location.address?.province || 'Location not set'}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Farm Activity Summary */}
@@ -272,10 +307,17 @@ const ProfileScreen = () => {
                   <Text style={styles.linkedText}>Linked</Text>
                 </View>
               ) : (
-                <View style={styles.notLinkedBadge}>
-                  <Ionicons name="close-circle" size={20} color={COLORS.gray} />
-                  <Text style={styles.notLinkedText}>Not Linked</Text>
-                </View>
+                <TouchableOpacity 
+                  style={styles.linkButton}
+                  onPress={handleLinkGoogle}
+                  disabled={linkingLoading.google}
+                >
+                  {linkingLoading.google ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <Text style={styles.linkButtonText}>Link</Text>
+                  )}
+                </TouchableOpacity>
               )}
             </View>
             
@@ -293,10 +335,17 @@ const ProfileScreen = () => {
                   <Text style={styles.linkedText}>Linked</Text>
                 </View>
               ) : (
-                <View style={styles.notLinkedBadge}>
-                  <Ionicons name="close-circle" size={20} color={COLORS.gray} />
-                  <Text style={styles.notLinkedText}>Not Linked</Text>
-                </View>
+                <TouchableOpacity 
+                  style={styles.linkButton}
+                  onPress={handleLinkFacebook}
+                  disabled={linkingLoading.facebook}
+                >
+                  {linkingLoading.facebook ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <Text style={styles.linkButtonText}>Link</Text>
+                  )}
+                </TouchableOpacity>
               )}
             </View>
           </View>
@@ -343,9 +392,19 @@ const ProfileScreen = () => {
             <Text style={styles.loginWithText}>Login with Different Account</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color="white" style={styles.logoutIcon} />
-            <Text style={styles.logoutText}>Logout</Text>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <>
+                <Ionicons name="log-out-outline" size={20} color="white" style={styles.logoutIcon} />
+                <Text style={styles.logoutText}>Logout</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
@@ -417,6 +476,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.gray,
   },
   headerIcon: {
     padding: 5,
@@ -584,6 +654,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 15,
     marginBottom: 15,
+    minHeight: 50,
   },
   logoutIcon: {
     marginRight: 8,
@@ -635,13 +706,16 @@ const styles = StyleSheet.create({
     color: COLORS.success,
     fontWeight: '500',
   },
-  notLinkedBadge: {
-    flexDirection: 'row',
+  linkButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 15,
+    borderRadius: 15,
+    minWidth: 70,
     alignItems: 'center',
   },
-  notLinkedText: {
-    marginLeft: 5,
-    color: COLORS.gray,
+  linkButtonText: {
+    color: COLORS.white,
     fontWeight: '500',
   },
   accountLinkingNote: {

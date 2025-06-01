@@ -157,6 +157,29 @@ export const authService = {
       }
     }
   },
+  
+  updateLocation: async (location: { 
+    coordinates: { latitude: number; longitude: number; }, 
+    address: { barangay: string; cityMunicipality: string; province: string; } 
+  }, token?: string) => {
+    try {
+      const headers: { Authorization?: string } = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await api.put('/auth/location', location, { headers });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
 };
 
 export default api; 
