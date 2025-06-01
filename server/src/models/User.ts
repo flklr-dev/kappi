@@ -1,10 +1,17 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// Provider interface for social logins
+interface Provider {
+  provider: string;
+  providerId: string;
+}
+
 export interface IUser extends Document {
   fullName: string;
   email: string;
-  password: string;
+  password?: string;
+  providers?: Provider[];
   location?: {
     coordinates: {
       latitude: number;
@@ -20,6 +27,18 @@ export interface IUser extends Document {
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
+
+const providerSchema = new Schema({
+  provider: {
+    type: String,
+    required: true,
+    enum: ['google', 'facebook']
+  },
+  providerId: {
+    type: String,
+    required: true
+  }
+});
 
 const userSchema = new Schema<IUser>(
   {
@@ -37,9 +56,12 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: function() {
+        return !this.providers || this.providers.length === 0;
+      },
       minlength: 6,
     },
+    providers: [providerSchema],
     location: {
       coordinates: {
         latitude: Number,
@@ -59,7 +81,7 @@ const userSchema = new Schema<IUser>(
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -72,6 +94,7 @@ userSchema.pre('save', async function (next) {
 
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

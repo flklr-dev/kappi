@@ -20,6 +20,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../stores/authStore';
+import { authViewModel } from '../viewmodels/AuthViewModel';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -41,6 +42,10 @@ const LoginScreen = () => {
   
   // UI state
   const [showPassword, setShowPassword] = useState(false);
+  const [socialLoading, setSocialLoading] = useState({
+    google: false,
+    facebook: false
+  });
 
   // Reset form state when screen comes into focus
   useFocusEffect(
@@ -50,6 +55,7 @@ const LoginScreen = () => {
         setPassword('');
         setShowPassword(false);
         resetValidation();
+        setSocialLoading({ google: false, facebook: false });
       };
 
       resetForm();
@@ -67,7 +73,7 @@ const LoginScreen = () => {
       if (currentError) {
         Alert.alert('Error', currentError);
       } else {
-        // Reset form before navigating
+        // Reset form before showing success
         setEmail('');
         setPassword('');
         setShowPassword(false);
@@ -80,7 +86,13 @@ const LoginScreen = () => {
             {
               text: 'OK',
               onPress: () => {
-                navigation.navigate('MainTabs');
+                // Force authentication state update
+                useAuthStore.getState().setAuthenticated(true);
+                // Force app reload to trigger navigation
+                setTimeout(() => {
+                  console.log('Forcing navigation to home screen');
+                  useAuthStore.getState().setAuthenticated(true);
+                }, 100);
               }
             }
           ]
@@ -91,14 +103,84 @@ const LoginScreen = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google login
-    console.log('Google login');
+  const handleGoogleLogin = async () => {
+    try {
+      setSocialLoading({ ...socialLoading, google: true });
+      const response = await authViewModel.googleLogin(false);
+      
+      // Check error state after login attempt
+      const currentError = authViewModel.error;
+      
+      if (currentError) {
+        Alert.alert('Error', currentError);
+      } else if (response) {
+        // Show success message
+        Alert.alert(
+          'Success',
+          'Welcome to KAPPI!',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Force authentication state update
+                useAuthStore.getState().setAuthenticated(true);
+                // Force app reload to trigger navigation
+                setTimeout(() => {
+                  console.log('Forcing navigation to home screen');
+                  useAuthStore.getState().setAuthenticated(true);
+                }, 100);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error: any) {
+      if (!error.message?.includes('cancelled')) {
+        Alert.alert('Error', 'Failed to sign in with Google');
+      }
+    } finally {
+      setSocialLoading({ ...socialLoading, google: false });
+    }
   };
 
-  const handleFacebookLogin = () => {
-    // TODO: Implement Facebook login
-    console.log('Facebook login');
+  const handleFacebookLogin = async () => {
+    try {
+      setSocialLoading({ ...socialLoading, facebook: true });
+      const response = await authViewModel.facebookLogin(false);
+      
+      // Check error state after login attempt
+      const currentError = authViewModel.error;
+      
+      if (currentError) {
+        Alert.alert('Error', currentError);
+      } else if (response) {
+        // Show success message
+        Alert.alert(
+          'Success',
+          'Welcome to KAPPI!',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Force authentication state update
+                useAuthStore.getState().setAuthenticated(true);
+                // Force app reload to trigger navigation
+                setTimeout(() => {
+                  console.log('Forcing navigation to home screen');
+                  useAuthStore.getState().setAuthenticated(true);
+                }, 100);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error: any) {
+      if (!error.message?.includes('cancelled')) {
+        Alert.alert('Error', 'Failed to sign in with Facebook');
+      }
+    } finally {
+      setSocialLoading({ ...socialLoading, facebook: false });
+    }
   };
 
   const validateLoginField = (field: string, value: string) => {
@@ -224,20 +306,40 @@ const LoginScreen = () => {
               </View>
 
               <View style={styles.socialButtonsContainer}>
-                <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
-                  <Image 
-                    source={require('../assets/google-icon.png')} 
-                    style={styles.socialIcon}
-                  />
-                  <Text style={styles.socialButtonText}>Google</Text>
+                <TouchableOpacity 
+                  style={styles.socialButton} 
+                  onPress={handleGoogleLogin}
+                  disabled={socialLoading.google || socialLoading.facebook || loading}
+                >
+                  {socialLoading.google ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <>
+                      <Image 
+                        source={require('../assets/google-icon.png')} 
+                        style={styles.socialIcon}
+                      />
+                      <Text style={styles.socialButtonText}>Google</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.socialButton} onPress={handleFacebookLogin}>
-                  <Image 
-                    source={require('../assets/facebook-icon.png')} 
-                    style={styles.socialIcon}
-                  />
-                  <Text style={styles.socialButtonText}>Facebook</Text>
+                <TouchableOpacity 
+                  style={styles.socialButton} 
+                  onPress={handleFacebookLogin}
+                  disabled={socialLoading.facebook || socialLoading.google || loading}
+                >
+                  {socialLoading.facebook ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <>
+                      <Image 
+                        source={require('../assets/facebook-icon.png')} 
+                        style={styles.socialIcon}
+                      />
+                      <Text style={styles.socialButtonText}>Facebook</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
 

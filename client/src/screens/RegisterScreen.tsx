@@ -22,6 +22,7 @@ import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import PasswordComplexity from '../components/PasswordComplexity';
 import { useAuthStore } from '../stores/authStore';
+import { authViewModel } from '../viewmodels/AuthViewModel';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -48,6 +49,10 @@ const RegisterScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showPasswordComplexity, setShowPasswordComplexity] = useState(false);
+  const [socialLoading, setSocialLoading] = useState({
+    google: false,
+    facebook: false
+  });
 
   // Reset form state when screen comes into focus
   useFocusEffect(
@@ -61,6 +66,7 @@ const RegisterScreen = () => {
         setShowConfirmPassword(false);
         setTermsAgreed(false);
         setShowPasswordComplexity(false);
+        setSocialLoading({ google: false, facebook: false });
         resetValidation();
       };
 
@@ -100,9 +106,13 @@ const RegisterScreen = () => {
     await register(fullName, email, password);
     
     if (error) {
-      Alert.alert('Error', error);
+      if (error.includes('already exists')) {
+        Alert.alert('Error', 'Email already exists. Please log in instead.');
+      } else {
+        Alert.alert('Error', error);
+      }
     } else {
-      // Reset form before navigating
+      // Reset form before showing success
       setFullName('');
       setEmail('');
       setPassword('');
@@ -114,11 +124,12 @@ const RegisterScreen = () => {
 
       Alert.alert(
         'Success',
-        'Your account has been created successfully!',
+        'Account successfully registered.',
         [
           {
             text: 'OK',
             onPress: () => {
+              // Navigate to Login screen
               navigation.navigate('Login');
             }
           }
@@ -127,14 +138,122 @@ const RegisterScreen = () => {
     }
   };
 
-  const handleGoogleSignUp = () => {
-    // TODO: Implement Google sign up
-    console.log('Google sign up');
+  const handleGoogleSignUp = async () => {
+    try {
+      setSocialLoading({ ...socialLoading, google: true });
+      
+      // Pass isRegistration=true to indicate this is a registration attempt
+      const response = await authViewModel.googleLogin(true);
+      
+      // Check error state after login attempt
+      const currentError = authViewModel.error;
+      
+      if (currentError) {
+        if (currentError.includes('already registered') || currentError.includes('already exists')) {
+          Alert.alert(
+            'Account Already Exists',
+            'This email is already registered. Please login instead.',
+            [
+              {
+                text: 'Go to Login',
+                onPress: () => navigation.navigate('Login')
+              },
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Error', currentError);
+        }
+      } else if (response && response.isNewUser === true) {
+        // Show success message for new accounts only
+        Alert.alert(
+          'Success',
+          'Account successfully registered.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Force authentication state update
+                useAuthStore.getState().setAuthenticated(true);
+                // Force app reload to trigger navigation
+                setTimeout(() => {
+                  console.log('Forcing navigation to home screen');
+                  useAuthStore.getState().setAuthenticated(true);
+                }, 100);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error: any) {
+      if (!error.message?.includes('cancelled')) {
+        Alert.alert('Error', 'Failed to sign up with Google');
+      }
+    } finally {
+      setSocialLoading({ ...socialLoading, google: false });
+    }
   };
 
-  const handleFacebookSignUp = () => {
-    // TODO: Implement Facebook sign up
-    console.log('Facebook sign up');
+  const handleFacebookSignUp = async () => {
+    try {
+      setSocialLoading({ ...socialLoading, facebook: true });
+      
+      // Pass isRegistration=true to indicate this is a registration attempt
+      const response = await authViewModel.facebookLogin(true);
+      
+      // Check error state after login attempt
+      const currentError = authViewModel.error;
+      
+      if (currentError) {
+        if (currentError.includes('already registered') || currentError.includes('already exists')) {
+          Alert.alert(
+            'Account Already Exists',
+            'This email is already registered. Please use the login screen instead.',
+            [
+              {
+                text: 'Go to Login',
+                onPress: () => navigation.navigate('Login')
+              },
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Error', currentError);
+        }
+      } else if (response && response.isNewUser === true) {
+        // Show success message for new accounts only
+        Alert.alert(
+          'Success',
+          'Account successfully registered.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Force authentication state update
+                useAuthStore.getState().setAuthenticated(true);
+                // Force app reload to trigger navigation
+                setTimeout(() => {
+                  console.log('Forcing navigation to home screen');
+                  useAuthStore.getState().setAuthenticated(true);
+                }, 100);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error: any) {
+      if (!error.message?.includes('cancelled')) {
+        Alert.alert('Error', 'Failed to sign up with Facebook');
+      }
+    } finally {
+      setSocialLoading({ ...socialLoading, facebook: false });
+    }
   };
 
   const isFormValid = fullName && email && password && confirmPassword && termsAgreed && 
@@ -313,20 +432,40 @@ const RegisterScreen = () => {
               </View>
 
               <View style={styles.socialButtonsContainer}>
-                <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignUp}>
-                  <Image 
-                    source={require('../assets/google-icon.png')} 
-                    style={styles.socialIcon}
-                  />
-                  <Text style={styles.socialButtonText}>Google</Text>
+                <TouchableOpacity 
+                  style={styles.socialButton} 
+                  onPress={handleGoogleSignUp}
+                  disabled={socialLoading.google || socialLoading.facebook || loading}
+                >
+                  {socialLoading.google ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <>
+                      <Image 
+                        source={require('../assets/google-icon.png')} 
+                        style={styles.socialIcon}
+                      />
+                      <Text style={styles.socialButtonText}>Google</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.socialButton} onPress={handleFacebookSignUp}>
-                  <Image 
-                    source={require('../assets/facebook-icon.png')} 
-                    style={styles.socialIcon}
-                  />
-                  <Text style={styles.socialButtonText}>Facebook</Text>
+                <TouchableOpacity 
+                  style={styles.socialButton} 
+                  onPress={handleFacebookSignUp}
+                  disabled={socialLoading.facebook || socialLoading.google || loading}
+                >
+                  {socialLoading.facebook ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <>
+                      <Image 
+                        source={require('../assets/facebook-icon.png')} 
+                        style={styles.socialIcon}
+                      />
+                      <Text style={styles.socialButtonText}>Facebook</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
 

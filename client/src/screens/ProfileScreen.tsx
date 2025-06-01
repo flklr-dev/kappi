@@ -7,8 +7,9 @@ import {
   StatusBar, 
   ScrollView, 
   TouchableOpacity,
-  Image,
-  Alert
+  Alert,
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -18,6 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { AuthContext } from '../context/AuthContext';
 import { useAuthStore } from '../stores/authStore';
+import { authViewModel } from '../viewmodels/AuthViewModel';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,6 +27,16 @@ const ProfileScreen = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { setIsAuthenticated } = useContext(AuthContext);
   const { logout, user } = useAuthStore();
+  const [linkingLoading, setLinkingLoading] = useState({
+    google: false,
+    facebook: false
+  });
+  const [showAccountSelector, setShowAccountSelector] = useState(false);
+
+  // Check if user has linked providers
+  const hasProvider = (provider: string) => {
+    return user?.providers?.includes(provider) ?? false;
+  };
 
   // Right component for the header (settings icon)
   const headerRight = (
@@ -75,13 +87,116 @@ const ProfileScreen = () => {
     );
   };
 
-  // Get user initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase();
+  const handleGoogleLogin = async () => {
+    try {
+      setShowAccountSelector(false);
+      setLinkingLoading({ ...linkingLoading, google: true });
+      const response = await authViewModel.googleLogin(false);
+      
+      if (!response && !authViewModel.error) {
+        console.log('Google sign-in cancelled');
+      } else if (authViewModel.error) {
+        Alert.alert('Error', 'Failed to sign in with Google account. Please try again.');
+      } else if (response) {
+        // Show success message
+        Alert.alert(
+          'Success',
+          'Signed in successfully with Google account!',
+          [{ 
+            text: 'OK',
+            onPress: () => {
+              // Force authentication state update
+              useAuthStore.getState().setAuthenticated(true);
+              // Force app reload to trigger navigation
+              setTimeout(() => {
+                console.log('Forcing navigation to home screen');
+                useAuthStore.getState().setAuthenticated(true);
+              }, 100);
+            }
+          }]
+        );
+      }
+    } catch (error: any) {
+      if (!error.message?.includes('cancelled')) {
+        Alert.alert('Error', 'Failed to sign in with Google account. Please try again.');
+      }
+    } finally {
+      setLinkingLoading({ ...linkingLoading, google: false });
+    }
+  };
+
+  const handleFacebookLogin = async () => {
+    try {
+      setShowAccountSelector(false);
+      setLinkingLoading({ ...linkingLoading, facebook: true });
+      const response = await authViewModel.facebookLogin(false);
+      
+      if (!response && !authViewModel.error) {
+        console.log('Facebook sign-in cancelled');
+      } else if (authViewModel.error) {
+        Alert.alert('Error', 'Failed to sign in with Facebook account. Please try again.');
+      } else if (response) {
+        // Show success message
+        Alert.alert(
+          'Success',
+          'Signed in successfully with Facebook account!',
+          [{ 
+            text: 'OK',
+            onPress: () => {
+              // Force authentication state update
+              useAuthStore.getState().setAuthenticated(true);
+              // Force app reload to trigger navigation
+              setTimeout(() => {
+                console.log('Forcing navigation to home screen');
+                useAuthStore.getState().setAuthenticated(true);
+              }, 100);
+            }
+          }]
+        );
+      }
+    } catch (error: any) {
+      if (!error.message?.includes('cancelled')) {
+        Alert.alert('Error', 'Failed to sign in with Facebook account. Please try again.');
+      }
+    } finally {
+      setLinkingLoading({ ...linkingLoading, facebook: false });
+    }
+  };
+
+  const handleLinkGoogle = async () => {
+    if (hasProvider('google')) {
+      Alert.alert('Account Already Linked', 'Your Google account is already linked to your profile.');
+      return;
+    }
+
+    try {
+      setLinkingLoading({ ...linkingLoading, google: true });
+      await authViewModel.linkGoogleAccount();
+    } catch (error: any) {
+      if (!error.message?.includes('cancelled')) {
+        Alert.alert('Error', 'Failed to link Google account. Please try again.');
+      }
+    } finally {
+      setLinkingLoading({ ...linkingLoading, google: false });
+    }
+  };
+
+  const handleLinkFacebook = async () => {
+    if (hasProvider('facebook')) {
+      Alert.alert('Account Already Linked', 'Your Facebook account is already linked to your profile.');
+      return;
+    }
+
+    try {
+      setLinkingLoading({ ...linkingLoading, facebook: true });
+      await authViewModel.linkFacebookAccount();
+    } catch (error: any) {
+      if (!error.message?.includes('cancelled')) {
+        Alert.alert('Error', 'Failed to link Facebook account. Please try again.');
+      }
+    } finally {
+      setLinkingLoading({ ...linkingLoading, facebook: false });
+    }
   };
 
   return (
@@ -96,26 +211,21 @@ const ProfileScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* User Information Section */}
         <View style={styles.profileHeader}>
-          <View style={styles.profileImageContainer}>
-            <View style={styles.profileImagePlaceholder}>
-              <Text style={styles.profileInitials}>{getInitials(user?.fullName || 'User Name')}</Text>
-            </View>
-            <TouchableOpacity style={styles.editImageButton}>
-              <Ionicons name="camera" size={16} color={COLORS.white} />
-            </TouchableOpacity>
-          </View>
-          
           <View style={styles.userInfoContainer}>
+            <View style={styles.nameEmailContainer}>
             <Text style={styles.userName}>{user?.fullName || 'User Name'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'email@example.com'}</Text>
-            <View style={styles.locationContainer}>
-              <Ionicons name="location-outline" size={16} color={COLORS.gray} />
-              <Text style={styles.userLocation}>Bukidnon, Philippines</Text>
             </View>
+            
             <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
               <Ionicons name="pencil-outline" size={16} color={COLORS.white} />
               <Text style={styles.editProfileText}>Edit Profile</Text>
             </TouchableOpacity>
+          </View>
+          
+          <View style={styles.locationContainer}>
+            <Ionicons name="location-outline" size={18} color={COLORS.primary} />
+            <Text style={styles.userLocation}>Bukidnon, Philippines</Text>
           </View>
         </View>
 
@@ -142,6 +252,58 @@ const ProfileScreen = () => {
               </View>
             </View>
           </View>
+        </View>
+
+        {/* Connected Accounts */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Connected Accounts</Text>
+          <View style={styles.menuContainer}>
+            <View style={styles.linkedAccountItem}>
+              <View style={styles.linkedAccountInfo}>
+                <View style={[styles.accountIconContainer, { backgroundColor: '#4285F4' }]}>
+                  <Ionicons name="logo-google" size={18} color={COLORS.white} />
+                </View>
+                <Text style={styles.linkedAccountText}>Google Account</Text>
+              </View>
+              
+              {hasProvider('google') ? (
+                <View style={styles.linkedBadge}>
+                  <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                  <Text style={styles.linkedText}>Linked</Text>
+                </View>
+              ) : (
+                <View style={styles.notLinkedBadge}>
+                  <Ionicons name="close-circle" size={20} color={COLORS.gray} />
+                  <Text style={styles.notLinkedText}>Not Linked</Text>
+                </View>
+              )}
+            </View>
+            
+            <View style={styles.linkedAccountItem}>
+              <View style={styles.linkedAccountInfo}>
+                <View style={[styles.accountIconContainer, { backgroundColor: '#3b5998' }]}>
+                  <Ionicons name="logo-facebook" size={18} color={COLORS.white} />
+                </View>
+                <Text style={styles.linkedAccountText}>Facebook Account</Text>
+              </View>
+              
+              {hasProvider('facebook') ? (
+                <View style={styles.linkedBadge}>
+                  <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                  <Text style={styles.linkedText}>Linked</Text>
+                </View>
+              ) : (
+                <View style={styles.notLinkedBadge}>
+                  <Ionicons name="close-circle" size={20} color={COLORS.gray} />
+                  <Text style={styles.notLinkedText}>Not Linked</Text>
+                </View>
+              )}
+            </View>
+          </View>
+          
+          <Text style={styles.accountLinkingNote}>
+            Note: Accounts are automatically linked when you log in with Google or Facebook using the same email address.
+          </Text>
         </View>
 
         {/* Account Management */}
@@ -173,6 +335,14 @@ const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
 
+          <TouchableOpacity 
+            style={styles.loginWithButton} 
+            onPress={() => setShowAccountSelector(true)}
+          >
+            <Ionicons name="people-outline" size={20} color={COLORS.white} style={styles.loginWithIcon} />
+            <Text style={styles.loginWithText}>Login with Different Account</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={20} color="white" style={styles.logoutIcon} />
             <Text style={styles.logoutText}>Logout</Text>
@@ -183,6 +353,62 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Account Selector Modal */}
+      <Modal
+        visible={showAccountSelector}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAccountSelector(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Choose Account</Text>
+              <TouchableOpacity onPress={() => setShowAccountSelector(false)}>
+                <Ionicons name="close" size={24} color={COLORS.black} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.modalSubtitle}>Select an account to sign in with</Text>
+            
+            <TouchableOpacity 
+              style={styles.accountOption}
+              onPress={handleGoogleLogin}
+              disabled={linkingLoading.google}
+            >
+              <View style={[styles.accountIconContainer, { backgroundColor: '#4285F4' }]}>
+                <Ionicons name="logo-google" size={18} color={COLORS.white} />
+              </View>
+              <Text style={styles.accountOptionText}>Google</Text>
+              {linkingLoading.google && (
+                <ActivityIndicator size="small" color={COLORS.primary} style={styles.accountLoader} />
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.accountOption}
+              onPress={handleFacebookLogin}
+              disabled={linkingLoading.facebook}
+            >
+              <View style={[styles.accountIconContainer, { backgroundColor: '#3b5998' }]}>
+                <Ionicons name="logo-facebook" size={18} color={COLORS.white} />
+              </View>
+              <Text style={styles.accountOptionText}>Facebook</Text>
+              {linkingLoading.facebook && (
+                <ActivityIndicator size="small" color={COLORS.primary} style={styles.accountLoader} />
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => setShowAccountSelector(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -210,42 +436,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  profileImageContainer: {
+  userInfoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
-    position: 'relative',
   },
-  profileImagePlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileInitials: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: COLORS.white,
-  },
-  editImageButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: COLORS.accent,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  userInfoContainer: {
-    alignItems: 'center',
+  nameEmailContainer: {
+    flex: 1,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.black,
     marginBottom: 4,
@@ -253,22 +454,15 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: COLORS.gray,
-    marginBottom: 8,
-  },
-  userRole: {
-    fontSize: 16,
-    color: COLORS.primary,
-    marginBottom: 8,
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
   },
   userLocation: {
     fontSize: 14,
     color: COLORS.gray,
-    marginLeft: 4,
+    marginLeft: 8,
   },
   editProfileButton: {
     flexDirection: 'row',
@@ -365,6 +559,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.black,
   },
+  loginWithButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    marginBottom: 15,
+  },
+  loginWithIcon: {
+    marginRight: 8,
+  },
+  loginWithText: {
+    fontSize: 16,
+    color: COLORS.white,
+    fontWeight: '600',
+  },
   logoutButton: {
     backgroundColor: '#F43F5E',
     borderRadius: 15,
@@ -389,6 +600,116 @@ const styles = StyleSheet.create({
   deleteAccountText: {
     fontSize: 14,
     color: '#F43F5E',
+  },
+  linkedAccountItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.secondary + '20',
+  },
+  linkedAccountInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  accountIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  linkedAccountText: {
+    fontSize: 16,
+    color: COLORS.black,
+  },
+  linkedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  linkedText: {
+    marginLeft: 5,
+    color: COLORS.success,
+    fontWeight: '500',
+  },
+  notLinkedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notLinkedText: {
+    marginLeft: 5,
+    color: COLORS.gray,
+    fontWeight: '500',
+  },
+  accountLinkingNote: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.black,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: 20,
+  },
+  accountOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  accountOptionText: {
+    fontSize: 16,
+    color: COLORS.black,
+    flex: 1,
+    marginLeft: 10,
+  },
+  accountLoader: {
+    marginLeft: 10,
+  },
+  cancelButton: {
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
 });
 

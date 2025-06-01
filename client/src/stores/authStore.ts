@@ -20,6 +20,7 @@ interface User {
   fullName: string;
   email: string;
   location?: LocationData;
+  providers?: string[];
 }
 
 interface AuthResponse {

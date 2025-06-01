@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
@@ -14,16 +14,22 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { checkAuth, isAuthenticated } = useAuthStore();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const navigationRef = useRef(null);
 
   useEffect(() => {
     const initializeAuth = async () => {
-      await checkAuth();
+      await useAuthStore.getState().checkAuth();
       setIsLoading(false);
     };
 
     initializeAuth();
   }, []);
+
+  // Log authentication state changes
+  useEffect(() => {
+    console.log('Auth state changed:', isAuthenticated ? 'authenticated' : 'not authenticated');
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -34,8 +40,15 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer 
+      ref={navigationRef}
+      onStateChange={() => {
+        // Log navigation state changes for debugging
+        console.log('Navigation state changed');
+      }}
+    >
       <Stack.Navigator 
+        key={isAuthenticated ? 'authenticated' : 'unauthenticated'}
         initialRouteName={isAuthenticated ? "MainTabs" : "Login"}
         screenOptions={{
           headerShown: false

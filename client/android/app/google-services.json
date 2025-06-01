@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "648552085310",
+    "project_id": "kappi-aa9dc",
+    "storage_bucket": "kappi-aa9dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:648552085310:android:2b0f9c99f4e503b98e5e6f",
+        "android_client_info": {
+          "package_name": "com.kappi.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "648552085310-4l2cqd63bu2atq5rpcumunebf6afa8aq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kappi.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "648552085310-ru35gbue67d8ug16litf5mn3fne5mer6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kappi.app",
+            "certificate_hash": "424af1da53ea5c42cf4cff0f1fdbd5eeec41c960"
+          }
+        },
+        {
+          "client_id": "648552085310-plufhtimu2j3i9l6q6fnu70d2rtspgtc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrjWZAQm5aPn6Mrf9CBvv_TFLX8OBBKEk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "648552085310-plufhtimu2j3i9l6q6fnu70d2rtspgtc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "648552085310-hq3klu7t90lcp5bbaogbu5euksb4qsis.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.kappi.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
