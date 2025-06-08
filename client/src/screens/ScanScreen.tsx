@@ -10,7 +10,9 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  Linking
+  Linking,
+  Modal,
+  ScrollView
 } from 'react-native';
 import {
   Camera,
@@ -22,7 +24,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import Header from '../components/Header';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 
@@ -34,15 +36,35 @@ const ScanScreen = () => {
   const navigation = useNavigation<ScanScreenNavigationProp>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
+  const [showTipsModal, setShowTipsModal] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(true);
+  const [initialModalShown, setInitialModalShown] = useState(false);
   const camera = useRef<Camera>(null);
   
   const { hasPermission: hasCameraPermission, requestPermission: requestCameraPermission } = useCameraPermission();
   const { hasPermission: hasMicPermission, requestPermission: requestMicPermission } = useMicrophonePermission();
   const device = useCameraDevice('back');
 
+  // Show tips modal when screen first loads
   useEffect(() => {
+    if (!initialModalShown) {
+      setShowTipsModal(true);
+      setInitialModalShown(true);
+    }
     checkPermissions();
   }, []);
+
+  // Handle camera activation based on screen focus
+  useFocusEffect(
+    useCallback(() => {
+      setIsCameraActive(true);
+      
+      return () => {
+        // Disable camera when navigating away
+        setIsCameraActive(false);
+      };
+    }, [])
+  );
 
   const checkPermissions = useCallback(async () => {
     if (!hasCameraPermission) {
@@ -126,12 +148,12 @@ const ScanScreen = () => {
       <View style={styles.content}>
         {/* Camera Preview */}
         <View style={styles.cameraContainer}>
-          {hasCameraPermission && device && (
+          {hasCameraPermission && device && isCameraActive && (
             <Camera
               ref={camera}
               style={StyleSheet.absoluteFill}
               device={device}
-              isActive={true}
+              isActive={isCameraActive}
               photo={true}
               enableZoomGesture
             />
@@ -177,13 +199,13 @@ const ScanScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.flashButton, flashEnabled && styles.flashButtonActive]}
-            onPress={() => setFlashEnabled(!flashEnabled)}
+            style={styles.infoButton}
+            onPress={() => setShowTipsModal(true)}
           >
             <Ionicons 
-              name={flashEnabled ? "flash" : "flash-outline"} 
+              name="information-circle-outline" 
               size={28} 
-              color={flashEnabled ? COLORS.white : COLORS.primary} 
+              color={COLORS.primary} 
             />
           </TouchableOpacity>
         </View>
@@ -219,6 +241,108 @@ const ScanScreen = () => {
           </View>
         </View>
       </View>
+
+      {/* Scanning Tips Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showTipsModal}
+        onRequestClose={() => setShowTipsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Scanning Tips</Text>
+              <TouchableOpacity onPress={() => setShowTipsModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.black} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.modalSection}>
+                <Text style={styles.sectionTitle}>Important Reminder</Text>
+                <Text style={styles.sectionText}>
+                  Only scan coffee plant parts with these specific diseases:
+                </Text>
+              </View>
+
+              <View style={styles.diseaseSection}>
+                <View style={styles.diseaseCategory}>
+                  <View style={styles.diseaseCategoryHeader}>
+                    <Ionicons name="leaf-outline" size={20} color={COLORS.primary} />
+                    <Text style={styles.diseaseCategoryTitle}>Leaves</Text>
+                  </View>
+                  <View style={styles.diseaseList}>
+                    <Text style={styles.diseaseItem}>• Coffee Leaf Rust</Text>
+                    <Text style={styles.diseaseItem}>• Thread Blight</Text>
+                    <Text style={styles.diseaseItem}>• Anthracnose</Text>
+                  </View>
+                </View>
+
+                <View style={styles.diseaseCategory}>
+                  <View style={styles.diseaseCategoryHeader}>
+                    <Ionicons name="git-branch-outline" size={20} color={COLORS.primary} />
+                    <Text style={styles.diseaseCategoryTitle}>Stems</Text>
+                  </View>
+                  <View style={styles.diseaseList}>
+                    <Text style={styles.diseaseItem}>• Coffee Wilt Disease</Text>
+                  </View>
+                </View>
+
+                <View style={styles.diseaseCategory}>
+                  <View style={styles.diseaseCategoryHeader}>
+                    <Ionicons name="ellipse-outline" size={20} color={COLORS.primary} />
+                    <Text style={styles.diseaseCategoryTitle}>Berries</Text>
+                  </View>
+                  <View style={styles.diseaseList}>
+                    <Text style={styles.diseaseItem}>• Coffee Berry Disease</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.modalSection}>
+                <Text style={styles.sectionTitle}>For Best Results</Text>
+                <View style={styles.bestResultsList}>
+                  <View style={styles.modalTipItem}>
+                    <View style={styles.tipIcon}>
+                      <Ionicons name="sunny-outline" size={18} color={COLORS.primary} />
+                    </View>
+                    <Text style={styles.modalTipText}>Use good lighting</Text>
+                  </View>
+                  
+                  <View style={styles.modalTipItem}>
+                    <View style={styles.tipIcon}>
+                      <Ionicons name="scan-outline" size={18} color={COLORS.primary} />
+                    </View>
+                    <Text style={styles.modalTipText}>Keep subject centered</Text>
+                  </View>
+                  
+                  <View style={styles.modalTipItem}>
+                    <View style={styles.tipIcon}>
+                      <Ionicons name="hand-left-outline" size={18} color={COLORS.primary} />
+                    </View>
+                    <Text style={styles.modalTipText}>Hold camera steady</Text>
+                  </View>
+                  
+                  <View style={styles.modalTipItem}>
+                    <View style={styles.tipIcon}>
+                      <Ionicons name="crop-outline" size={18} color={COLORS.primary} />
+                    </View>
+                    <Text style={styles.modalTipText}>Capture close-up of affected area</Text>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity 
+              style={styles.modalButton} 
+              onPress={() => setShowTipsModal(false)}
+            >
+              <Text style={styles.modalButtonText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -323,7 +447,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: COLORS.primary,
   },
-  flashButton: {
+  infoButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
@@ -335,9 +459,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-  },
-  flashButtonActive: {
-    backgroundColor: COLORS.primary,
   },
   tipsContainer: {
     backgroundColor: COLORS.white,
@@ -389,6 +510,113 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.black,
     fontWeight: '500',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    padding: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: `${COLORS.gray}30`,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.black,
+  },
+  modalContent: {
+    maxHeight: '70%',
+  },
+  modalSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 10,
+  },
+  sectionText: {
+    fontSize: 16,
+    color: COLORS.black,
+    marginBottom: 10,
+  },
+  diseaseSection: {
+    marginBottom: 20,
+  },
+  diseaseCategory: {
+    marginBottom: 15,
+    backgroundColor: `${COLORS.primary}10`,
+    borderRadius: 10,
+    padding: 12,
+  },
+  diseaseCategoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  diseaseCategoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginLeft: 8,
+  },
+  diseaseList: {
+    paddingLeft: 10,
+  },
+  diseaseItem: {
+    fontSize: 15,
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  modalTipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: `${COLORS.primary}10`,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  modalTipText: {
+    fontSize: 15,
+    color: COLORS.black,
+    fontWeight: '500',
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  modalButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  bestResultsList: {
+    flexDirection: 'column',
   },
 });
 
