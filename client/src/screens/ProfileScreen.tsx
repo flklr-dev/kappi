@@ -9,7 +9,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Modal
+  Modal,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -54,13 +55,6 @@ const ProfileScreen = () => {
   const hasProvider = (provider: string) => {
     return user?.providers?.includes(provider) ?? false;
   };
-
-  // Right component for the header (settings icon)
-  const headerRight = (
-    <TouchableOpacity style={styles.headerIcon}>
-      <Ionicons name="settings-outline" size={24} color={COLORS.white} />
-    </TouchableOpacity>
-  );
 
   const handleEditProfile = () => {
     // Implement edit profile logic
@@ -234,34 +228,45 @@ const ProfileScreen = () => {
       
       <Header
         title="Profile"
-        rightComponent={headerRight}
       />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* User Information Section */}
-        <View style={styles.profileHeader}>
-          <View style={styles.userInfoContainer}>
-            <View style={styles.nameEmailContainer}>
-              <Text style={styles.userName}>{user.fullName}</Text>
-              <Text style={styles.userEmail}>{user.email}</Text>
+        {/* User Information Section - Redesigned */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileImageContainer}>
+            <View style={styles.profileImagePlaceholder}>
+              <Text style={styles.profileInitials}>
+                {user.fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+              </Text>
             </View>
-            
-            <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
-              <Ionicons name="pencil-outline" size={16} color={COLORS.white} />
-              <Text style={styles.editProfileText}>Edit</Text>
+            <TouchableOpacity style={styles.editImageButton}>
+              <Ionicons name="camera-outline" size={16} color={COLORS.white} />
             </TouchableOpacity>
           </View>
           
-          {user.location && (
-            <View style={styles.locationContainer}>
-              <Ionicons name="location-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.userLocation}>
-                {user.location.address?.barangay && `${user.location.address.barangay}, `}
-                {user.location.address?.cityMunicipality && `${user.location.address.cityMunicipality}, `}
-                {user.location.address?.province || 'Location not set'}
-              </Text>
+          <View style={styles.profileDetails}>
+            <Text style={styles.userName}>{user.fullName}</Text>
+            <View style={styles.emailContainer}>
+              <Ionicons name="mail-outline" size={16} color={COLORS.gray} />
+              <Text style={styles.userEmail}>{user.email}</Text>
             </View>
-          )}
+            
+            {user.location && (
+              <View style={styles.locationContainer}>
+                <Ionicons name="location-outline" size={16} color={COLORS.gray} />
+                <Text style={styles.userLocation}>
+                  {user.location.address?.barangay && `${user.location.address.barangay}, `}
+                  {user.location.address?.cityMunicipality && `${user.location.address.cityMunicipality}, `}
+                  {user.location.address?.province || 'Location not set'}
+                </Text>
+              </View>
+            )}
+            
+            <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
+              <Ionicons name="pencil-outline" size={16} color={COLORS.white} />
+              <Text style={styles.editProfileText}>Edit Profile</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Farm Activity Summary */}
@@ -488,64 +493,97 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.gray,
   },
-  headerIcon: {
-    padding: 5,
-  },
   scrollContent: {
     paddingBottom: 40,
   },
-  profileHeader: {
+  // New profile card styles
+  profileCard: {
     backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderRadius: 20,
+    margin: 16,
     padding: 20,
-    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
-  },
-  userInfoContainer: {
+    elevation: 3,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
   },
-  nameEmailContainer: {
+  profileImageContainer: {
+    position: 'relative',
+    marginRight: 16,
+  },
+  profileImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${COLORS.primary}30`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInitials: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  editImageButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: COLORS.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  profileDetails: {
     flex: 1,
   },
   userName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 4,
+    marginBottom: 8,
+  },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   userEmail: {
     fontSize: 14,
     color: COLORS.gray,
+    marginLeft: 6,
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
   },
   userLocation: {
     fontSize: 14,
     color: COLORS.gray,
-    marginLeft: 8,
+    marginLeft: 6,
+    flexShrink: 1,
   },
   editProfileButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    alignSelf: 'flex-start',
   },
   editProfileText: {
     color: COLORS.white,
     marginLeft: 6,
     fontWeight: '500',
+    fontSize: 14,
   },
   activityContainer: {
     padding: 20,
