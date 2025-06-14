@@ -7,6 +7,19 @@ export type RootStackParamList = {
   Results: {
     imageUri: string;
     scanType: 'leaf' | 'cherry' | 'stem';
+    diagnosis?: {
+      disease: string;
+      confidence: number;
+      severity: 'low' | 'medium' | 'high';
+      stage: 'Early' | 'Progressive' | 'Severe';
+      variety: string;
+      treatment: {
+        fungicide: string;
+        organic: string;
+        immediateSteps: string[];
+        prevention: string[];
+      };
+    };
   };
 };
 

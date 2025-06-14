@@ -12,7 +12,8 @@ import {
   Platform,
   Linking,
   Modal,
-  ScrollView
+  ScrollView,
+  NativeModules
 } from 'react-native';
 import {
   Camera,
@@ -31,6 +32,8 @@ import { RootStackParamList } from '../navigation/types';
 type ScanScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width, height } = Dimensions.get('window');
+
+const { TensorFlowModule } = NativeModules;
 
 const ScanScreen = () => {
   const navigation = useNavigation<ScanScreenNavigationProp>();
@@ -95,13 +98,38 @@ const ScanScreen = () => {
         flash: flashEnabled ? 'on' : 'off',
       });
 
+      // Classify the image using TensorFlow
+      const result = await TensorFlowModule.classifyImage(`file://${photo.path}`);
+      
       navigation.navigate('Results', { 
         imageUri: `file://${photo.path}`,
-        scanType: 'leaf' // default type
+        scanType: 'leaf',
+        diagnosis: {
+          disease: result.disease,
+          confidence: Math.round(result.confidence * 100),
+          severity: result.severity,
+          stage: result.severity === 'high' ? 'Severe' : 
+                 result.severity === 'medium' ? 'Progressive' : 'Early',
+          variety: 'Robusta', // You might want to get this from user input
+          treatment: {
+            fungicide: 'Copper-based fungicide',
+            organic: 'Neem oil solution',
+            immediateSteps: [
+              'Isolate affected plants',
+              'Remove severely infected leaves',
+              'Apply treatment within 24 hours'
+            ],
+            prevention: [
+              'Maintain proper plant spacing',
+              'Regular monitoring during rainy season',
+              'Prune for better air circulation'
+            ]
+          }
+        }
       });
     } catch (error) {
-      console.error('Error capturing image:', error);
-      Alert.alert('Error', 'Failed to capture image. Please try again.');
+      console.error('Error capturing/processing image:', error);
+      Alert.alert('Error', 'Failed to process image. Please try again.');
     } finally {
       setIsProcessing(false);
     }

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { secureStorage } from '../utils/secureStorage';
 
-const API_URL = 'http://192.168.1.118:5000/api';
+const API_URL = 'http://192.168.254.139:5000/api';
 const TOKEN_KEY = '@kappi_auth_token';
 
 // Create axios instance with security headers
