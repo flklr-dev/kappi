@@ -1,3 +1,5 @@
+import { ScanResult } from '../viewmodels/ScanViewModel';
+
 // Root Stack contains both auth screens and main app
 export type RootStackParamList = {
   Login: undefined;
@@ -6,20 +8,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   Results: {
     imageUri: string;
-    scanType: 'leaf' | 'cherry' | 'stem';
-    diagnosis?: {
-      disease: string;
-      confidence: number;
-      severity: 'low' | 'medium' | 'high';
-      stage: 'Early' | 'Progressive' | 'Severe';
-      variety: string;
-      treatment: {
-        fungicide: string;
-        organic: string;
-        immediateSteps: string[];
-        prevention: string[];
-      };
-    };
+    diagnosis: ScanResult;
   };
 };
 

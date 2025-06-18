@@ -18,6 +18,7 @@ import org.tensorflow.lite.support.common.ops.NormalizeOp;
 import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.image.ops.ResizeOp;
+import org.tensorflow.lite.DataType;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,14 +26,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TensorFlowModule extends ReactContextBaseJavaModule {
     private static final String TAG = "TensorFlowModule";
     private final ReactApplicationContext reactContext;
     private Interpreter tflite;
     private ImageProcessor imageProcessor;
+    private static final int INPUT_SIZE = 224;  // Changed to 224 for MobileNetV2
+    private static final int NUM_CHANNELS = 3;
+    private static final int NUM_BYTES_PER_CHANNEL = 4;
+    private static final int NUM_CLASSES = 4;
 
     public TensorFlowModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -40,9 +49,10 @@ public class TensorFlowModule extends ReactContextBaseJavaModule {
         try {
             tflite = new Interpreter(loadModelFile());
             imageProcessor = new ImageProcessor.Builder()
-                    .add(new ResizeOp(224, 224, ResizeOp.ResizeMethod.BILINEAR))
+                    .add(new ResizeOp(INPUT_SIZE, INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
                     .add(new NormalizeOp(0f, 255f))
                     .build();
+            Log.d(TAG, "Model loaded successfully");
         } catch (IOException e) {
             Log.e(TAG, "Error loading model: " + e.getMessage());
         }
@@ -55,76 +65,114 @@ public class TensorFlowModule extends ReactContextBaseJavaModule {
 
     private MappedByteBuffer loadModelFile() throws IOException {
         String modelPath = "model.tflite";
-        File file = new File(reactContext.getFilesDir(), modelPath);
-        if (!file.exists()) {
-            // Copy from assets if not exists
-            try (InputStream inputStream = reactContext.getAssets().open(modelPath);
-                 FileOutputStream outputStream = new FileOutputStream(file)) {
-                byte[] buffer = new byte[1024];
-                int read;
-                while ((read = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, read);
-                }
-            }
-        }
-        return FileUtil.loadMappedFile(reactContext, modelPath);
+        FileInputStream inputStream = new FileInputStream(getReactApplicationContext().getAssets().openFd(modelPath).getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = getReactApplicationContext().getAssets().openFd(modelPath).getStartOffset();
+        long declaredLength = getReactApplicationContext().getAssets().openFd(modelPath).getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
     @ReactMethod
     public void classifyImage(String imagePath, Promise promise) {
         try {
-            // Load and preprocess image
-            Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
-            TensorImage tensorImage = new TensorImage();
-            tensorImage.load(bitmap);
-            tensorImage = imageProcessor.process(tensorImage);
+            // Load and resize the image
+            Bitmap bitmap = Bitmap.createScaledBitmap(
+                BitmapFactory.decodeFile(imagePath),
+                INPUT_SIZE,
+                INPUT_SIZE,
+                true
+            );
+
+            if (bitmap == null) {
+                promise.reject("ERROR", "Failed to load image");
+                return;
+            }
+
+            // Create input buffer with correct size
+            ByteBuffer inputBuffer = ByteBuffer.allocateDirect(
+                INPUT_SIZE * INPUT_SIZE * NUM_CHANNELS * NUM_BYTES_PER_CHANNEL
+            );
+            inputBuffer.order(ByteOrder.nativeOrder());
+
+            // Preprocess the image
+            int[] pixels = new int[INPUT_SIZE * INPUT_SIZE];
+            bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+            
+            for (int pixel : pixels) {
+                // Normalize pixel values to [0, 1]
+                inputBuffer.putFloat(((pixel >> 16) & 0xFF) / 255.0f);
+                inputBuffer.putFloat(((pixel >> 8) & 0xFF) / 255.0f);
+                inputBuffer.putFloat((pixel & 0xFF) / 255.0f);
+            }
+
+            // Log input shape
+            Log.d(TAG, "Input shape: [1, " + INPUT_SIZE + ", " + INPUT_SIZE + ", " + NUM_CHANNELS + "]");
+
+            // Output buffer for 4 classes
+            float[][] outputBuffer = new float[1][NUM_CLASSES];
 
             // Run inference
-            float[][] outputBuffer = new float[1][4]; // Adjust size based on your model's output
-            tflite.run(tensorImage.getBuffer(), outputBuffer);
+            tflite.run(inputBuffer, outputBuffer);
 
-            // Process results
+            // Log output shape and values
+            Log.d(TAG, "Output shape: [1, " + NUM_CLASSES + "]");
+            Log.d(TAG, "Output values: " + java.util.Arrays.toString(outputBuffer[0]));
+
+            // Find the class with highest probability
+            int maxIndex = 0;
+            float maxProb = outputBuffer[0][0];
+            for (int i = 1; i < NUM_CLASSES; i++) {
+                if (outputBuffer[0][i] > maxProb) {
+                    maxProb = outputBuffer[0][i];
+                    maxIndex = i;
+                }
+            }
+
+            // Map class index to disease and severity
+            String disease;
+            String severity;
+            String stage;
+            float confidence = maxProb;
+
+            switch (maxIndex) {
+                case 0:  // Healthy
+                    disease = "Healthy";
+                    severity = "None";
+                    stage = "Healthy";
+                    break;
+                case 1:  // Early
+                    disease = "Coffee Leaf Rust";
+                    severity = "Low";
+                    stage = "Early";
+                    break;
+                case 2:  // Progressive
+                    disease = "Coffee Leaf Rust";
+                    severity = "Medium";
+                    stage = "Progressive";
+                    break;
+                case 3:  // Severe
+                    disease = "Coffee Leaf Rust";
+                    severity = "High";
+                    stage = "Severe";
+                    break;
+                default:
+                    disease = "Unknown";
+                    severity = "Unknown";
+                    stage = "Unknown";
+            }
+
+            // Create result object
             WritableMap result = Arguments.createMap();
-            result.putDouble("confidence", outputBuffer[0][0]);
-            result.putString("disease", getDiseaseName(outputBuffer[0]));
-            result.putString("severity", getSeverity(outputBuffer[0]));
+            result.putString("disease", disease);
+            result.putString("severity", severity);
+            result.putString("stage", stage);
+            result.putDouble("confidence", confidence);
 
             promise.resolve(result);
+
         } catch (Exception e) {
+            Log.e(TAG, "Error classifying image: " + e.getMessage());
             promise.reject("ERROR", "Error classifying image: " + e.getMessage());
         }
-    }
-
-    private String getDiseaseName(float[] output) {
-        // Implement your disease classification logic here
-        // This is a placeholder - adjust based on your model's output
-        int maxIndex = 0;
-        float maxValue = output[0];
-        for (int i = 1; i < output.length; i++) {
-            if (output[i] > maxValue) {
-                maxValue = output[i];
-                maxIndex = i;
-            }
-        }
-
-        switch (maxIndex) {
-            case 0: return "Coffee Leaf Rust";
-            case 1: return "Thread Blight";
-            case 2: return "Anthracnose";
-            case 3: return "Healthy";
-            default: return "Unknown";
-        }
-    }
-
-    private String getSeverity(float[] output) {
-        // Implement your severity classification logic here
-        float maxValue = 0;
-        for (float value : output) {
-            if (value > maxValue) maxValue = value;
-        }
-
-        if (maxValue > 0.8) return "high";
-        if (maxValue > 0.5) return "medium";
-        return "low";
     }
 } 

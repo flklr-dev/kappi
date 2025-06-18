@@ -6,6 +6,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import BottomTabNavigator from './BottomTabNavigator';
+import ResultsScreen from '../screens/ResultsScreen';
 import { RootStackParamList } from './types';
 import { useAuthStore } from '../stores/authStore';
 import { COLORS } from '../constants/colors';
@@ -61,7 +62,10 @@ const AppNavigator = () => {
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           </>
         ) : (
-          <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+          <>
+            <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+            <Stack.Screen name="Results" component={ResultsScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

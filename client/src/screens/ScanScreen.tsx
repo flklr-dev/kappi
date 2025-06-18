@@ -13,13 +13,13 @@ import {
   Linking,
   Modal,
   ScrollView,
-  NativeModules
 } from 'react-native';
 import {
   Camera,
   useCameraDevice,
   useCameraPermission,
-  useMicrophonePermission
+  useMicrophonePermission,
+  PhotoFile
 } from 'react-native-vision-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,21 +28,21 @@ import Header from '../components/Header';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { useScanStore } from '../viewmodels/ScanViewModel';
 
 type ScanScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width, height } = Dimensions.get('window');
 
-const { TensorFlowModule } = NativeModules;
-
 const ScanScreen = () => {
   const navigation = useNavigation<ScanScreenNavigationProp>();
-  const [isProcessing, setIsProcessing] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [initialModalShown, setInitialModalShown] = useState(false);
   const camera = useRef<Camera>(null);
+  
+  const { isProcessing, classifyImage } = useScanStore();
   
   const { hasPermission: hasCameraPermission, requestPermission: requestCameraPermission } = useCameraPermission();
   const { hasPermission: hasMicPermission, requestPermission: requestMicPermission } = useMicrophonePermission();
@@ -93,24 +93,22 @@ const ScanScreen = () => {
     if (!camera.current || isProcessing) return;
 
     try {
-      setIsProcessing(true);
       const photo = await camera.current.takePhoto({
         flash: flashEnabled ? 'on' : 'off',
       });
 
-      // Classify the image using TensorFlow
-      const result = await TensorFlowModule.classifyImage(`file://${photo.path}`);
-      
+      // Classify the image using the store
+      const result = await classifyImage(photo.path);
+
       navigation.navigate('Results', { 
         imageUri: `file://${photo.path}`,
         scanType: 'leaf',
         diagnosis: {
           disease: result.disease,
-          confidence: Math.round(result.confidence * 100),
+          confidence: result.confidence,
           severity: result.severity,
-          stage: result.severity === 'high' ? 'Severe' : 
-                 result.severity === 'medium' ? 'Progressive' : 'Early',
-          variety: 'Robusta', // You might want to get this from user input
+          stage: result.stage,
+          variety: 'Robusta',
           treatment: {
             fungicide: 'Copper-based fungicide',
             organic: 'Neem oil solution',
@@ -130,24 +128,45 @@ const ScanScreen = () => {
     } catch (error) {
       console.error('Error capturing/processing image:', error);
       Alert.alert('Error', 'Failed to process image. Please try again.');
-    } finally {
-      setIsProcessing(false);
     }
   };
 
   const handleGalleryPick = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const pickerResult = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 1,
         allowsEditing: true,
         aspect: [4, 3],
       });
 
-      if (!result.canceled && result.assets[0]) {
+      if (!pickerResult.canceled && pickerResult.assets[0]) {
+        const result = await classifyImage(pickerResult.assets[0].uri);
+        
         navigation.navigate('Results', {
-          imageUri: result.assets[0].uri,
-          scanType: 'leaf' // default type
+          imageUri: pickerResult.assets[0].uri,
+          scanType: 'leaf',
+          diagnosis: {
+            disease: result.disease,
+            confidence: result.confidence,
+            severity: result.severity,
+            stage: result.stage,
+            variety: 'Robusta',
+            treatment: {
+              fungicide: 'Copper-based fungicide',
+              organic: 'Neem oil solution',
+              immediateSteps: [
+                'Isolate affected plants',
+                'Remove severely infected leaves',
+                'Apply treatment within 24 hours'
+              ],
+              prevention: [
+                'Maintain proper plant spacing',
+                'Regular monitoring during rainy season',
+                'Prune for better air circulation'
+              ]
+            }
+          }
         });
       }
     } catch (error) {
