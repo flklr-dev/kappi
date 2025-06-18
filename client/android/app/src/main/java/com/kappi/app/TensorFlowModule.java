@@ -116,7 +116,7 @@ public class TensorFlowModule extends ReactContextBaseJavaModule {
 
             // Log output shape and values
             Log.d(TAG, "Output shape: [1, " + NUM_CLASSES + "]");
-            Log.d(TAG, "Output values: " + java.util.Arrays.toString(outputBuffer[0]));
+            Log.d(TAG, "Raw output values: " + java.util.Arrays.toString(outputBuffer[0]));
 
             // Find the class with highest probability
             int maxIndex = 0;
@@ -127,6 +127,14 @@ public class TensorFlowModule extends ReactContextBaseJavaModule {
                     maxIndex = i;
                 }
             }
+
+            // Log the probabilities for each class
+            Log.d(TAG, "Class probabilities:");
+            Log.d(TAG, "Healthy: " + outputBuffer[0][0]);
+            Log.d(TAG, "Early: " + outputBuffer[0][1]);
+            Log.d(TAG, "Progressive: " + outputBuffer[0][2]);
+            Log.d(TAG, "Severe: " + outputBuffer[0][3]);
+            Log.d(TAG, "Selected class index: " + maxIndex);
 
             // Map class index to disease and severity
             String disease;
@@ -161,12 +169,56 @@ public class TensorFlowModule extends ReactContextBaseJavaModule {
                     stage = "Unknown";
             }
 
+            // Add confidence threshold for healthy classification
+            if (maxIndex == 0 && maxProb < 0.7) {
+                // If healthy confidence is low, check other classes
+                float secondHighestProb = 0;
+                int secondHighestIndex = 0;
+                for (int i = 1; i < NUM_CLASSES; i++) {
+                    if (outputBuffer[0][i] > secondHighestProb) {
+                        secondHighestProb = outputBuffer[0][i];
+                        secondHighestIndex = i;
+                    }
+                }
+                
+                // If second highest probability is significantly higher, use that instead
+                if (secondHighestProb > maxProb + 0.2) {
+                    maxIndex = secondHighestIndex;
+                    maxProb = secondHighestProb;
+                    
+                    // Update disease, severity, and stage based on new maxIndex
+                    switch (maxIndex) {
+                        case 1:  // Early
+                            disease = "Coffee Leaf Rust";
+                            severity = "Low";
+                            stage = "Early";
+                            break;
+                        case 2:  // Progressive
+                            disease = "Coffee Leaf Rust";
+                            severity = "Medium";
+                            stage = "Progressive";
+                            break;
+                        case 3:  // Severe
+                            disease = "Coffee Leaf Rust";
+                            severity = "High";
+                            stage = "Severe";
+                            break;
+                    }
+                }
+            }
+
             // Create result object
             WritableMap result = Arguments.createMap();
             result.putString("disease", disease);
             result.putString("severity", severity);
             result.putString("stage", stage);
             result.putDouble("confidence", confidence);
+
+            Log.d(TAG, "Final classification:");
+            Log.d(TAG, "Disease: " + disease);
+            Log.d(TAG, "Severity: " + severity);
+            Log.d(TAG, "Stage: " + stage);
+            Log.d(TAG, "Confidence: " + confidence);
 
             promise.resolve(result);
 

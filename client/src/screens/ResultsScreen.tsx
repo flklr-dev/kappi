@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import Header from '../components/Header';
-import { NavigationProp, RouteProp, useRoute } from '@react-navigation/native';
+import { NavigationProp, RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { ScanResult } from '../viewmodels/ScanViewModel';
@@ -22,12 +22,13 @@ type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
 
 const ResultsScreen = () => {
   const route = useRoute<ResultsScreenRouteProp>();
+  const navigation = useNavigation();
   const { imageUri, diagnosis } = route.params;
 
   if (!diagnosis) {
     return (
       <SafeAreaView style={styles.container}>
-        <Header title="Scan Results" showBackButton />
+        <Header title="Scan Results" showBackButton onBackPress={() => navigation.goBack()} />
         <View style={styles.centeredContainer}>
           <Text style={styles.errorText}>No diagnosis data available</Text>
         </View>
@@ -42,16 +43,6 @@ const ResultsScreen = () => {
       });
     } catch (error) {
       console.error('Error sharing:', error);
-    }
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case 'high': return '#F44336';
-      case 'medium': return '#FFC107';
-      case 'low': return '#4CAF50';
-      case 'healthy': return '#4CAF50';
-      default: return '#9E9E9E';
     }
   };
 
@@ -92,6 +83,7 @@ const ResultsScreen = () => {
       <Header
         title="Scan Results"
         showBackButton
+        onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView style={styles.scrollView}>
@@ -105,6 +97,7 @@ const ResultsScreen = () => {
             />
             <TouchableOpacity 
               style={styles.retakeButton}
+              onPress={() => navigation.goBack()}
             >
               <Ionicons name="camera-outline" size={20} color={COLORS.white} />
               <Text style={styles.retakeButtonText}>Retake</Text>
@@ -128,11 +121,6 @@ const ResultsScreen = () => {
           <View style={styles.diagnosisCard}>
             <View style={styles.diseaseHeader}>
               <Text style={styles.diseaseName}>{diagnosis.disease}</Text>
-              <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(diagnosis.severity) }]}>
-                <Text style={styles.severityText}>
-                  {diagnosis.stage === 'Healthy' ? 'HEALTHY' : diagnosis.severity.toUpperCase()}
-                </Text>
-              </View>
             </View>
 
             <View style={styles.stageContainer}>
@@ -163,7 +151,7 @@ const ResultsScreen = () => {
                     styles.confidenceFill, 
                     { 
                       width: `${diagnosis.confidence}%`,
-                      backgroundColor: getSeverityColor(diagnosis.severity)
+                      backgroundColor: getStageColor(diagnosis.stage)
                     }
                   ]} 
                 />
@@ -254,27 +242,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   diseaseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 20,
   },
   diseaseName: {
     fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.black,
-  },
-  severityBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  severityText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: 'bold',
   },
   confidenceSection: {
     marginTop: 15,
