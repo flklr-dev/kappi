@@ -76,6 +76,10 @@ const ResultsScreen = () => {
     }
   };
 
+  // Check if there's an error message
+  const hasError = diagnosis.error !== undefined;
+  const errorMessage = diagnosis.error;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
@@ -105,7 +109,22 @@ const ResultsScreen = () => {
           </View>
         </View>
 
-        {/* Diagnosis Card */}
+        {/* Error Message or Diagnosis Card */}
+        {hasError ? (
+          <View style={styles.section}>
+            <View style={styles.errorCard}>
+              <Ionicons name="alert-circle-outline" size={32} color={COLORS.error} />
+              <Text style={styles.errorMessage}>{errorMessage}</Text>
+              <TouchableOpacity 
+                style={styles.retakeButtonLarge}
+                onPress={() => navigation.goBack()}
+              >
+                <Ionicons name="camera-outline" size={24} color={COLORS.white} />
+                <Text style={styles.retakeButtonTextLarge}>Take New Photo</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons 
@@ -151,7 +170,7 @@ const ResultsScreen = () => {
                     styles.confidenceFill, 
                     { 
                       width: `${diagnosis.confidence}%`,
-                      backgroundColor: getStageColor(diagnosis.stage)
+                        backgroundColor: getStageColor(diagnosis.stage)
                     }
                   ]} 
                 />
@@ -159,8 +178,10 @@ const ResultsScreen = () => {
             </View>
           </View>
         </View>
+        )}
 
         {/* Action Buttons */}
+        {!hasError && (
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.actionButton}>
             <Ionicons name="save-outline" size={24} color={COLORS.white} />
@@ -172,6 +193,7 @@ const ResultsScreen = () => {
             <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>Share</Text>
           </TouchableOpacity>
         </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -337,6 +359,39 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  errorCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: COLORS.error,
+    textAlign: 'center',
+    marginVertical: 15,
+    lineHeight: 22,
+  },
+  retakeButtonLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 10,
+  },
+  retakeButtonTextLarge: {
+    color: COLORS.white,
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

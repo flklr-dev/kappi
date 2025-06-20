@@ -9,8 +9,9 @@ const MIN_PROCESSING_TIME = 2000; // 2 seconds
 export interface ScanResult {
   disease: string;
   confidence: number;
-  severity: 'low' | 'medium' | 'high' | 'healthy';
-  stage: 'Early' | 'Progressive' | 'Severe' | 'Healthy';
+  severity: 'low' | 'medium' | 'high' | 'healthy' | 'Unknown';
+  stage: 'Early' | 'Progressive' | 'Severe' | 'Healthy' | 'Unknown';
+  error?: string;  // Optional error message
 }
 
 interface ScanState {

@@ -38,6 +38,7 @@ const ScanScreen = () => {
   const navigation = useNavigation<ScanScreenNavigationProp>();
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
+  const [showUnknownModal, setShowUnknownModal] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [initialModalShown, setInitialModalShown] = useState(false);
   const camera = useRef<Camera>(null);
@@ -100,29 +101,23 @@ const ScanScreen = () => {
       // Classify the image using the store
       const result = await classifyImage(photo.path);
 
+      if (
+        result.disease === 'Unknown' ||
+        result.severity === 'Unknown' ||
+        result.stage === 'Unknown' ||
+        result.confidence === 0
+      ) {
+        setShowUnknownModal(true);
+        return;
+      }
+
       navigation.navigate('Results', { 
         imageUri: `file://${photo.path}`,
-        scanType: 'leaf',
         diagnosis: {
           disease: result.disease,
           confidence: result.confidence,
           severity: result.severity,
-          stage: result.stage,
-          variety: 'Robusta',
-          treatment: {
-            fungicide: 'Copper-based fungicide',
-            organic: 'Neem oil solution',
-            immediateSteps: [
-              'Isolate affected plants',
-              'Remove severely infected leaves',
-              'Apply treatment within 24 hours'
-            ],
-            prevention: [
-              'Maintain proper plant spacing',
-              'Regular monitoring during rainy season',
-              'Prune for better air circulation'
-            ]
-          }
+          stage: result.stage
         }
       });
     } catch (error) {
@@ -143,29 +138,23 @@ const ScanScreen = () => {
       if (!pickerResult.canceled && pickerResult.assets[0]) {
         const result = await classifyImage(pickerResult.assets[0].uri);
         
+        if (
+          result.disease === 'Unknown' ||
+          result.severity === 'Unknown' ||
+          result.stage === 'Unknown' ||
+          result.confidence === 0
+        ) {
+          setShowUnknownModal(true);
+          return;
+        }
+
         navigation.navigate('Results', {
           imageUri: pickerResult.assets[0].uri,
-          scanType: 'leaf',
           diagnosis: {
             disease: result.disease,
             confidence: result.confidence,
             severity: result.severity,
-            stage: result.stage,
-            variety: 'Robusta',
-            treatment: {
-              fungicide: 'Copper-based fungicide',
-              organic: 'Neem oil solution',
-              immediateSteps: [
-                'Isolate affected plants',
-                'Remove severely infected leaves',
-                'Apply treatment within 24 hours'
-              ],
-              prevention: [
-                'Maintain proper plant spacing',
-                'Regular monitoring during rainy season',
-                'Prune for better air circulation'
-              ]
-            }
+            stage: result.stage
           }
         });
       }
@@ -255,37 +244,6 @@ const ScanScreen = () => {
               color={COLORS.primary} 
             />
           </TouchableOpacity>
-        </View>
-
-        {/* Tips Section */}
-        <View style={styles.tipsContainer}>
-          <View style={styles.tipsHeader}>
-            <Ionicons name="bulb-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.tipsTitle}>Scanning Tips</Text>
-          </View>
-          
-          <View style={styles.tipsList}>
-            <View style={styles.tipItem}>
-              <View style={styles.tipIcon}>
-                <Ionicons name="sunny-outline" size={16} color={COLORS.primary} />
-              </View>
-              <Text style={styles.tipText}>Use good lighting</Text>
-            </View>
-            
-            <View style={styles.tipItem}>
-              <View style={styles.tipIcon}>
-                <Ionicons name="scan-outline" size={16} color={COLORS.primary} />
-              </View>
-              <Text style={styles.tipText}>Keep subject centered</Text>
-            </View>
-            
-            <View style={styles.tipItem}>
-              <View style={styles.tipIcon}>
-                <Ionicons name="hand-left-outline" size={16} color={COLORS.primary} />
-              </View>
-              <Text style={styles.tipText}>Hold camera steady</Text>
-            </View>
-          </View>
         </View>
       </View>
 
@@ -390,6 +348,29 @@ const ScanScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Unknown Result Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showUnknownModal}
+        onRequestClose={() => setShowUnknownModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Scan Unsuccessful</Text>
+            <Text style={styles.sectionText}>
+              We couldn't recognize a valid coffee plant part or disease. Please try again with a clearer image.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setShowUnknownModal(false)}
+            >
+              <Text style={styles.modalButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -416,8 +397,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cameraContainer: {
-    width: width,
-    height: width * (4/3),
+    flex: 1,
+    width: '100%',
     position: 'relative',
     backgroundColor: COLORS.black,
   },
@@ -454,8 +435,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 0,
     gap: 30,
+    backgroundColor: COLORS.background,
   },
   galleryButton: {
     width: 50,
