@@ -65,7 +65,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
       if (isHealthy) {
         const healthyResult = {
           disease: 'Healthy Plant',
-          confidence: Math.round(result.confidence * 100),
+          confidence: Math.round(result.confidence),
           severity: 'healthy' as const,
           stage: 'Healthy' as const
         };
@@ -92,7 +92,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
       
       const finalResult: ScanResult = {
         disease: formattedDiseaseName,
-        confidence: Math.round(result.confidence * 100),
+        confidence: Math.round(result.confidence),
         severity,
         stage
       };
