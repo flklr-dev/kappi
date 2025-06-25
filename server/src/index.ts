@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import authRoutes from './routes/auth';
+import scanRoutes from './routes/scan';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +29,7 @@ mongoose
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/scans', scanRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Kappi API' });

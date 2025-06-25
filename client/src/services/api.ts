@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { secureStorage } from '../utils/secureStorage';
 
-const API_URL = 'http://192.168.254.139:5000/api';
+const API_URL = 'http://192.168.1.118:5000/api';
 const TOKEN_KEY = '@kappi_auth_token';
 
 // Create axios instance with security headers
@@ -161,14 +161,9 @@ export const authService = {
   updateLocation: async (location: { 
     coordinates: { latitude: number; longitude: number; }, 
     address: { barangay: string; cityMunicipality: string; province: string; } 
-  }, token?: string) => {
+  }) => {
     try {
-      const headers: { Authorization?: string } = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      const response = await api.put('/auth/location', location, { headers });
+      const response = await api.put('/auth/location', location);
       return response.data;
     } catch (error: any) {
       if (error.response) {

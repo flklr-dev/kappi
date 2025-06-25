@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
-  Share
+  Share,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -16,7 +17,8 @@ import Header from '../components/Header';
 import { NavigationProp, RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { ScanResult } from '../viewmodels/ScanViewModel';
+import { ScanResult, useScanStore } from '../viewmodels/ScanViewModel';
+import { useAuthStore } from '../stores/authStore';
 
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
 
@@ -24,6 +26,8 @@ const ResultsScreen = () => {
   const route = useRoute<ResultsScreenRouteProp>();
   const navigation = useNavigation();
   const { imageUri, diagnosis } = route.params;
+  const saveScanResult = useScanStore((s) => s.saveScanResult);
+  const { user } = useAuthStore();
 
   if (!diagnosis) {
     return (
@@ -43,6 +47,20 @@ const ResultsScreen = () => {
       });
     } catch (error) {
       console.error('Error sharing:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await saveScanResult({
+        ...diagnosis,
+        imageUri,
+        coordinates: user?.location?.coordinates,
+        address: user?.location?.address,
+      });
+      Alert.alert('Saved', 'Scan result saved locally.');
+    } catch (e) {
+      Alert.alert('Error', 'Failed to save scan result.');
     }
   };
 
@@ -183,7 +201,7 @@ const ResultsScreen = () => {
         {/* Action Buttons */}
         {!hasError && (
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleSave}>
             <Ionicons name="save-outline" size={24} color={COLORS.white} />
             <Text style={styles.actionButtonText}>Save Report</Text>
           </TouchableOpacity>

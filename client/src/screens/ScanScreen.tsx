@@ -29,6 +29,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useScanStore } from '../viewmodels/ScanViewModel';
+import { useAuthStore } from '../stores/authStore';
 
 type ScanScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -44,6 +45,9 @@ const ScanScreen = () => {
   const camera = useRef<Camera>(null);
   
   const { isProcessing, classifyImage } = useScanStore();
+  const saveScanResult = useScanStore((s) => s.saveScanResult);
+  const syncScans = useScanStore((s) => s.syncScans);
+  const { user } = useAuthStore();
   
   const { hasPermission: hasCameraPermission, requestPermission: requestCameraPermission } = useCameraPermission();
   const { hasPermission: hasMicPermission, requestPermission: requestMicPermission } = useMicrophonePermission();
@@ -111,6 +115,15 @@ const ScanScreen = () => {
         return;
       }
 
+      // Automatically save scan result locally and sync to backend
+      await saveScanResult({
+        ...result,
+        imageUri: `file://${photo.path}`,
+        coordinates: user?.location?.coordinates,
+        address: user?.location?.address,
+      });
+      await syncScans();
+
       navigation.navigate('Results', { 
         imageUri: `file://${photo.path}`,
         diagnosis: {
@@ -147,6 +160,15 @@ const ScanScreen = () => {
           setShowUnknownModal(true);
           return;
         }
+
+        // Automatically save scan result locally and sync to backend
+        await saveScanResult({
+          ...result,
+          imageUri: pickerResult.assets[0].uri,
+          coordinates: user?.location?.coordinates,
+          address: user?.location?.address,
+        });
+        await syncScans();
 
         navigation.navigate('Results', {
           imageUri: pickerResult.assets[0].uri,

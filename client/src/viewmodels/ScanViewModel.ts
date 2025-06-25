@@ -1,10 +1,15 @@
 import { create } from 'zustand';
 import { NativeModules } from 'react-native';
+import { secureStorage } from '../utils/secureStorage';
+import { useAuthStore } from '../stores/authStore';
+import api from '../services/api';
 
 const { TensorFlowModule } = NativeModules;
 
 // Minimum processing time in milliseconds
 const MIN_PROCESSING_TIME = 2000; // 2 seconds
+
+const SCANS_KEY = '@kappi_scan_results';
 
 export interface ScanResult {
   disease: string;
@@ -14,6 +19,21 @@ export interface ScanResult {
   error?: string;  // Optional error message
 }
 
+interface LocalScanResult extends ScanResult {
+  id: string;
+  imageUri?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+  address?: {
+    barangay: string;
+    cityMunicipality: string;
+    province: string;
+  };
+  createdAt: number;
+}
+
 interface ScanState {
   isProcessing: boolean;
   error: string | null;
@@ -21,6 +41,9 @@ interface ScanState {
   setError: (error: string | null) => void;
   reset: () => void;
   classifyImage: (imagePath: string) => Promise<ScanResult>;
+  saveScanResult: (scan: Omit<LocalScanResult, 'id' | 'createdAt'>) => Promise<void>;
+  getLocalScans: () => Promise<LocalScanResult[]>;
+  syncScans: () => Promise<void>;
 }
 
 export const useScanStore = create<ScanState>((set, get) => ({
@@ -114,5 +137,55 @@ export const useScanStore = create<ScanState>((set, get) => ({
     } finally {
       set({ isProcessing: false });
     }
+  },
+
+  saveScanResult: async (scan) => {
+    // Generate a unique id and timestamp
+    const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const createdAt = Date.now();
+    const scanWithMeta: LocalScanResult = { ...scan, id, createdAt };
+    // Get existing scans
+    const existing = (await secureStorage.getItem(SCANS_KEY)) as LocalScanResult[] || [];
+    await secureStorage.setItem(SCANS_KEY, [scanWithMeta, ...existing]);
+  },
+
+  getLocalScans: async () => {
+    return (await secureStorage.getItem(SCANS_KEY)) as LocalScanResult[] || [];
+  },
+
+  syncScans: async () => {
+    const { user } = useAuthStore.getState();
+    const tokenData = await secureStorage.getItem('@kappi_auth_token');
+    if (!user || !tokenData) {
+      console.log('No user or token, skipping sync');
+      return;
+    }
+    let scans = (await secureStorage.getItem(SCANS_KEY)) as LocalScanResult[] || [];
+    let unsynced: LocalScanResult[] = [];
+    for (const scan of scans) {
+      try {
+        console.log('Syncing scan to backend (axios):', scan);
+        const response = await api.post('/scans', {
+          disease: scan.disease,
+          confidence: scan.confidence,
+          severity: scan.severity,
+          stage: scan.stage,
+          imageUri: scan.imageUri,
+          coordinates: scan.coordinates,
+          address: scan.address
+        });
+        console.log('Sync response:', response.data);
+        // Only keep in local storage if sync failed
+        const data = response.data as any;
+        if (!data || !data.scan || response.status >= 400) {
+          unsynced.push(scan);
+        }
+      } catch (error: any) {
+        console.log('Sync error:', error?.response?.data || error.message || error);
+        unsynced.push(scan); // Keep unsynced if error
+      }
+    }
+    // Update local storage with only unsynced scans
+    await secureStorage.setItem(SCANS_KEY, unsynced);
   }
 })); 

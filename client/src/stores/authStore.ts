@@ -460,7 +460,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Send update to backend
       try {
-        await authService.updateLocation(location, tokenData.token);
+        await authService.updateLocation(location);
       } catch (error) {
         console.error('Failed to update location on server:', error);
         // Still keep the local update even if server update fails
