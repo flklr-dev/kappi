@@ -167,23 +167,20 @@ const HomeScreen = () => {
     })();
   }, []);
 
-  // Right component for the header (notification icon)
-  const headerRight = (
-    <TouchableOpacity style={styles.notificationButton}>
-      <Ionicons name="notifications-outline" size={24} color={COLORS.white} />
-      <View style={styles.notificationBadge} />
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       
       <Header
         title="KAPPI"
-        subtitle="Your coffee crop health companion"
-        rightComponent={headerRight}
       />
+
+      {/* Welcome message */}
+      {user && (
+        <Text style={styles.welcomeText}>
+          Welcome, {user.fullName.split(' ')[0]}!
+        </Text>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Location Status Widget */}
@@ -215,44 +212,41 @@ const HomeScreen = () => {
           </View>
         </TouchableOpacity>
 
-        {/* Quick Actions Section */}
+        {/* Core CTAs Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
-            {/* Capture Image Button */}
+            {/* Scan Plant */}
             <TouchableOpacity style={styles.actionCard}>
-              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.primary }]}>
+              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.primary }]}> 
                 <Ionicons name="camera" size={32} color={COLORS.white} />
               </View>
-              <Text style={styles.actionTitle}>Take Photo</Text>
-              <Text style={styles.actionSubtitle}>Scan your plants</Text>
+              <Text style={styles.actionTitle}>Scan Plant</Text>
+              <Text style={styles.actionSubtitle}>Diagnose a plant</Text>
             </TouchableOpacity>
-
-            {/* Gallery Button */}
+            {/* Scan History */}
             <TouchableOpacity style={styles.actionCard}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#4CAF50' }]}>
-                <Ionicons name="images" size={32} color={COLORS.white} />
+              <View style={[styles.actionIconContainer, { backgroundColor: '#FFA000' }]}> 
+                <Ionicons name="time" size={32} color={COLORS.white} />
               </View>
-              <Text style={styles.actionTitle}>Gallery</Text>
-              <Text style={styles.actionSubtitle}>Use saved photos</Text>
+              <Text style={styles.actionTitle}>Scan History</Text>
+              <Text style={styles.actionSubtitle}>View past scans</Text>
             </TouchableOpacity>
-
-            {/* View Reports */}
+            {/* Reports Analytics */}
             <TouchableOpacity style={styles.actionCard}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#2196F3' }]}>
+              <View style={[styles.actionIconContainer, { backgroundColor: '#2196F3' }]}> 
                 <Ionicons name="stats-chart" size={32} color={COLORS.white} />
               </View>
               <Text style={styles.actionTitle}>Reports</Text>
-              <Text style={styles.actionSubtitle}>View analysis</Text>
+              <Text style={styles.actionSubtitle}>Analytics & stats</Text>
             </TouchableOpacity>
-
-            {/* Get Help */}
+            {/* Treatment Guide */}
             <TouchableOpacity style={styles.actionCard}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#FF9800' }]}>
-                <Ionicons name="help-circle" size={32} color={COLORS.white} />
+              <View style={[styles.actionIconContainer, { backgroundColor: '#4CAF50' }]}> 
+                <Ionicons name="book" size={32} color={COLORS.white} />
               </View>
-              <Text style={styles.actionTitle}>Help</Text>
-              <Text style={styles.actionSubtitle}>Get assistance</Text>
+              <Text style={styles.actionTitle}>Treatment Guide</Text>
+              <Text style={styles.actionSubtitle}>Browse remedies</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -392,7 +386,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 16,
     marginHorizontal: 20,
-    marginTop: 20,
+    marginTop: 4,
     marginBottom: 24,
     elevation: 2,
     shadowColor: '#000',
@@ -434,7 +428,7 @@ const styles = StyleSheet.create({
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 12,
+    marginHorizontal: 20,
     gap: 16,
   },
   actionCard: {
@@ -448,6 +442,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    marginBottom: 4,
   },
   actionIconContainer: {
     width: 64,
@@ -455,18 +450,20 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.black,
-    marginBottom: 4,
+    marginBottom: 2,
+    textAlign: 'center',
   },
   actionSubtitle: {
     fontSize: 13,
     color: COLORS.gray,
     textAlign: 'center',
+    marginBottom: 0,
   },
   viewAllButton: {
     flexDirection: 'row',
@@ -578,6 +575,13 @@ const styles = StyleSheet.create({
   tipText: {
     fontSize: 14,
     color: COLORS.gray,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    padding: 20,
+    marginBottom: 4,
   },
 });
 
