@@ -18,6 +18,9 @@ import { COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import * as Location from 'expo-location';
 import { useAuthStore } from '../stores/authStore';
+import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { MainTabParamList } from '../navigation/types';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +40,7 @@ const HomeScreen = () => {
   const [location, setLocation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, updateUserLocation } = useAuthStore();
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
 
   const formatAddress = (address: Location.LocationGeocodedAddress): string => {
     let barangay = '';
@@ -217,7 +221,7 @@ const HomeScreen = () => {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             {/* Scan Plant */}
-            <TouchableOpacity style={styles.actionCard}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('ScanTab')}>
               <View style={[styles.actionIconContainer, { backgroundColor: COLORS.primary }]}> 
                 <Ionicons name="camera" size={32} color={COLORS.white} />
               </View>
