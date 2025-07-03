@@ -14,20 +14,20 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCh
 # Configuration
 CONFIG = {
     'img_size': (224, 224),  # Smaller size for MobileNetV2
-    'batch_size': 32,        # Increased for CPU
-    'epochs': 50,            # Reduced epochs
-    'learning_rate': 0.001,  # Higher learning rate
-    'dropout_rate': 0.3,     # Reduced dropout
+    'batch_size': 16,        # Reduced for better gradient updates
+    'epochs': 100,           # Increased epochs for better convergence
+    'learning_rate': 0.0005, # Lower learning rate for better precision
+    'dropout_rate': 0.4,     # Increased dropout for better generalization
     'data_dir': os.path.join(os.path.dirname(__file__), 'data', 'processed'),
     'model_export_path': 'model_export',
-    'l2_lambda': 0.0001,     # Reduced regularization
-    'early_stopping_patience': 10,
-    'early_stopping_min_delta': 0.001,
-    'reduce_lr_patience': 5,
-    'reduce_lr_factor': 0.5,
-    'min_lr': 1e-6,
+    'l2_lambda': 0.0005,     # Increased regularization
+    'early_stopping_patience': 15,
+    'early_stopping_min_delta': 0.0005,
+    'reduce_lr_patience': 8,
+    'reduce_lr_factor': 0.3,
+    'min_lr': 1e-7,
     'num_classes': 4,
-    'label_smoothing': 0.1
+    'label_smoothing': 0.05  # Reduced label smoothing
 }
 
 def calculate_class_weights(generator):
@@ -112,7 +112,7 @@ def build_model(num_classes):
     )
     
     # Freeze most of the base model
-    for layer in base_model.layers[:-20]:  # Unfreeze last 20 layers
+    for layer in base_model.layers[:-30]:  # Unfreeze last 30 layers for better adaptation
         layer.trainable = False
     
     # Add custom layers
@@ -120,7 +120,11 @@ def build_model(num_classes):
     x = GlobalAveragePooling2D()(x)
     x = BatchNormalization()(x)
     
-    # Simpler architecture
+    # Enhanced architecture for better feature learning
+    x = Dense(1024, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
+    x = BatchNormalization()(x)
+    x = Dropout(CONFIG['dropout_rate'])(x)
+    
     x = Dense(512, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
     x = BatchNormalization()(x)
     x = Dropout(CONFIG['dropout_rate'])(x)
@@ -131,12 +135,13 @@ def build_model(num_classes):
     # Create model
     model = Model(inputs=inputs, outputs=predictions)
     
-    # Use Adam optimizer
+    # Use Adam optimizer with better parameters
     optimizer = Adam(
         learning_rate=CONFIG['learning_rate'],
         beta_1=0.9,
         beta_2=0.999,
-        epsilon=1e-07
+        epsilon=1e-07,
+        amsgrad=True
     )
     
     # Compile model

@@ -7,7 +7,7 @@ import shutil
 from tqdm import tqdm
 
 # Constants
-INPUT_SIZE = (300, 300)  # Match with model input size
+INPUT_SIZE = (224, 224)  # Match with model input size
 MIN_IMAGE_SIZE = 1024  # Minimum size in bytes for valid images
 TARGET_IMAGES_PER_CLASS = 1000  # Increased target for better augmentation
 

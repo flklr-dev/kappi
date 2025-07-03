@@ -19,6 +19,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { ScanResult, useScanStore } from '../viewmodels/ScanViewModel';
 import { useAuthStore } from '../stores/authStore';
+import VarietySelector, { CoffeeVariety } from '../components/VarietySelector';
+import { treatmentRecommendations } from '../constants/treatmentRecommendations';
 
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
 
@@ -28,6 +30,7 @@ const ResultsScreen = () => {
   const { imageUri, diagnosis } = route.params;
   const saveScanResult = useScanStore((s) => s.saveScanResult);
   const { user } = useAuthStore();
+  const [selectedVariety, setSelectedVariety] = React.useState<CoffeeVariety>('arabica');
 
   if (!diagnosis) {
     return (
@@ -98,6 +101,19 @@ const ResultsScreen = () => {
   const hasError = diagnosis.error !== undefined;
   const errorMessage = diagnosis.error;
 
+  // Helper to get treatment recommendations
+  const getTreatment = () => {
+    if (
+      diagnosis.disease === 'Coffee Leaf Rust' &&
+      treatmentRecommendations['Coffee Leaf Rust'] &&
+      treatmentRecommendations['Coffee Leaf Rust'][diagnosis.stage]
+    ) {
+      return treatmentRecommendations['Coffee Leaf Rust'][diagnosis.stage][selectedVariety];
+    }
+    return null;
+  };
+  const treatment = getTreatment();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
@@ -143,59 +159,105 @@ const ResultsScreen = () => {
             </View>
           </View>
         ) : (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons 
-              name={diagnosis.stage === 'Healthy' ? "checkmark-circle-outline" : "leaf-outline"} 
-              size={24} 
-              color={COLORS.primary} 
-            />
-            <Text style={styles.sectionTitle}>
-              {diagnosis.stage === 'Healthy' ? 'Plant Health Status' : 'Plant Health'}
-            </Text>
-          </View>
-
-          <View style={styles.diagnosisCard}>
-            <View style={styles.diseaseHeader}>
-              <Text style={styles.diseaseName}>{diagnosis.disease}</Text>
+        <>
+          {/* Plant Health Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons 
+                name={diagnosis.stage === 'Healthy' ? "checkmark-circle-outline" : "leaf-outline"} 
+                size={24} 
+                color={COLORS.primary} 
+              />
+              <Text style={styles.sectionTitle}>
+                {diagnosis.stage === 'Healthy' ? 'Plant Health Status' : 'Plant Health'}
+              </Text>
             </View>
 
-            <View style={styles.stageContainer}>
-              <View style={[styles.stageCard, { backgroundColor: getStageColor(diagnosis.stage) + '15' }]}>
-                <View style={styles.stageIconContainer}>
-                  <Ionicons 
-                    name={getStageIcon(diagnosis.stage)} 
-                    size={24} 
-                    color={getStageColor(diagnosis.stage)} 
+            <View style={styles.diagnosisCard}>
+              <View style={styles.diseaseHeader}>
+                <Text style={styles.diseaseName}>{diagnosis.disease}</Text>
+              </View>
+
+              <View style={styles.stageContainer}>
+                <View style={[styles.stageCard, { backgroundColor: getStageColor(diagnosis.stage) + '15' }]}> 
+                  <View style={styles.stageIconContainer}>
+                    <Ionicons 
+                      name={getStageIcon(diagnosis.stage)} 
+                      size={24} 
+                      color={getStageColor(diagnosis.stage)} 
+                    />
+                  </View>
+                  <View style={styles.stageInfo}>
+                    <Text style={[styles.stageTitle, { color: getStageColor(diagnosis.stage) }]}> 
+                      {diagnosis.stage === 'Healthy' ? 'Healthy Plant' : `${diagnosis.stage} Stage`} 
+                    </Text>
+                    <Text style={styles.stageDescription}> 
+                      {getStageDescription(diagnosis.stage)} 
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.confidenceSection}>
+                <Text style={styles.confidenceLabel}>Confidence: {diagnosis.confidence}%</Text>
+                <View style={styles.confidenceBar}>
+                  <View 
+                    style={[
+                      styles.confidenceFill, 
+                      { 
+                        width: `${diagnosis.confidence}%`,
+                          backgroundColor: getStageColor(diagnosis.stage)
+                      }
+                    ]} 
                   />
                 </View>
-                <View style={styles.stageInfo}>
-                  <Text style={[styles.stageTitle, { color: getStageColor(diagnosis.stage) }]}>
-                    {diagnosis.stage === 'Healthy' ? 'Healthy Plant' : `${diagnosis.stage} Stage`}
-                  </Text>
-                  <Text style={styles.stageDescription}>
-                    {getStageDescription(diagnosis.stage)}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.confidenceSection}>
-              <Text style={styles.confidenceLabel}>Confidence: {diagnosis.confidence}%</Text>
-              <View style={styles.confidenceBar}>
-                <View 
-                  style={[
-                    styles.confidenceFill, 
-                    { 
-                      width: `${diagnosis.confidence}%`,
-                        backgroundColor: getStageColor(diagnosis.stage)
-                    }
-                  ]} 
-                />
               </View>
             </View>
           </View>
-        </View>
+
+          {/* Treatment Recommendations Section - OUTSIDE diagnosis card */}
+          {diagnosis.disease === 'Coffee Leaf Rust' && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="medkit-outline" size={24} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Treatment Recommendations</Text>
+              </View>
+              <Text style={styles.treatmentInfo}>Choose your coffee variety:</Text>
+              <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
+              {treatment ? (
+                <View style={styles.treatmentCardSingle}>
+                  {/* Chemical Control */}
+                  <View style={styles.treatmentBlock}>
+                    <View style={styles.treatmentBlockHeader}>
+                      <Text style={styles.treatmentBlockIcon}>🧪</Text>
+                      <Text style={styles.treatmentBlockTitle}>Chemical Control</Text>
+                    </View>
+                    <Text style={styles.treatmentBlockDesc}>Use these only if needed and follow label instructions. Wear gloves and avoid spraying on windy days.</Text>
+                    {treatment.chemical.map((item, idx) => (
+                      <Text key={idx} style={styles.treatmentBlockText}>• {item}</Text>
+                    ))}
+                  </View>
+                  {/* Divider */}
+                  <View style={styles.treatmentDivider} />
+                  {/* Cultural Control */}
+                  <View style={styles.treatmentBlock}>
+                    <View style={styles.treatmentBlockHeader}>
+                      <Text style={styles.treatmentBlockIcon}>🌱</Text>
+                      <Text style={styles.treatmentBlockTitle}>Cultural Control</Text>
+                    </View>
+                    <Text style={styles.treatmentBlockDesc}>Simple farm practices to help prevent and control disease.</Text>
+                    {treatment.cultural.map((item, idx) => (
+                      <Text key={idx} style={styles.treatmentBlockText}>• {item}</Text>
+                    ))}
+                  </View>
+                  <Text style={styles.treatmentSources}>Sources: {treatment.sources.join(', ')}</Text>
+                </View>
+              ) : (
+                <Text style={styles.treatmentBlockText}>No recommendations available for this stage/variety.</Text>
+              )}
+            </View>
+          )}
+        </>
         )}
 
         {/* Action Buttons */}
@@ -410,6 +472,67 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
+  },
+  treatmentInfo: {
+    fontSize: 15,
+    color: COLORS.gray,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  treatmentCardSingle: {
+    backgroundColor: '#F7F7F7',
+    borderRadius: 15,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  treatmentBlock: {
+    marginBottom: 12,
+  },
+  treatmentBlockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  treatmentBlockIcon: {
+    fontSize: 28,
+    marginRight: 8,
+  },
+  treatmentBlockTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  treatmentBlockDesc: {
+    fontSize: 15,
+    color: COLORS.gray,
+    marginBottom: 4,
+    marginLeft: 2,
+  },
+  treatmentBlockText: {
+    fontSize: 16,
+    color: COLORS.black,
+    marginBottom: 2,
+    marginLeft: 8,
+    lineHeight: 22,
+  },
+  treatmentDivider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 10,
+    borderRadius: 1,
+  },
+  treatmentSources: {
+    fontSize: 12,
+    color: COLORS.gray,
+    marginTop: 10,
+    fontStyle: 'italic',
+    textAlign: 'right',
   },
 });
 
