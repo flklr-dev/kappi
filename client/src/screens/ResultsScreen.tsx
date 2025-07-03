@@ -215,8 +215,8 @@ const ResultsScreen = () => {
             </View>
           </View>
 
-          {/* Treatment Recommendations Section - OUTSIDE diagnosis card */}
-          {diagnosis.disease === 'Coffee Leaf Rust' && (
+          {/* Treatment Recommendations or Preventive Tips Section */}
+          {(diagnosis.disease === 'Coffee Leaf Rust' && diagnosis.stage !== 'Healthy') && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="medkit-outline" size={24} color={COLORS.primary} />
@@ -254,6 +254,34 @@ const ResultsScreen = () => {
                 </View>
               ) : (
                 <Text style={styles.treatmentBlockText}>No recommendations available for this stage/variety.</Text>
+              )}
+            </View>
+          )}
+
+          {/* Preventive Tips for Healthy Plant */}
+          {(diagnosis.disease === 'Healthy Plant' || diagnosis.stage === 'Healthy') && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="shield-checkmark-outline" size={24} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Preventive Tips</Text>
+              </View>
+              <Text style={styles.treatmentInfo}>Choose your coffee variety:</Text>
+              <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
+              {treatmentRecommendations['Coffee Leaf Rust']?.Healthy?.[selectedVariety]?.cultural?.length ? (
+                <View style={styles.treatmentCardSingle}>
+                  <View style={styles.treatmentBlock}>
+                    <View style={styles.treatmentBlockHeader}>
+                      <Text style={styles.treatmentBlockIcon}>🌱</Text>
+                      <Text style={styles.treatmentBlockTitle}>Cultural Tips</Text>
+                    </View>
+                    <Text style={styles.treatmentBlockDesc}>Keep your plants healthy with these simple practices:</Text>
+                    {treatmentRecommendations['Coffee Leaf Rust'].Healthy[selectedVariety].cultural.map((item, idx) => (
+                      <Text key={idx} style={styles.treatmentBlockText}>• {item}</Text>
+                    ))}
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.treatmentBlockText}>No preventive tips available for this variety.</Text>
               )}
             </View>
           )}

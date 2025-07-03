@@ -97,5 +97,25 @@ export const treatmentRecommendations: TreatmentRecommendations = {
         ],
       },
     },
+    Healthy: {
+      arabica: {
+        chemical: [],
+        cultural: [
+          'Prune regularly to open the canopy and improve airflow.',
+          'Monitor after rains—moisture can trigger early infections.',
+          'Mulch lightly around the base to retain soil moisture and suppress weeds.',
+        ],
+        sources: [],
+      },
+      robusta: {
+        chemical: [],
+        cultural: [
+          'Thin shade trees to reduce humidity under the canopy.',
+          'Keep rows clear of debris—fallen leaves can harbor spores.',
+          'Rotate fertilization (N–P–K) every 2 months to keep plants vigorous.',
+        ],
+        sources: [],
+      },
+    },
   },
 }; 
