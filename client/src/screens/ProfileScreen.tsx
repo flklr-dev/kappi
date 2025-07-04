@@ -292,6 +292,14 @@ const ProfileScreen = () => {
               </View>
             </View>
           </View>
+          {/* Scan History Button */}
+          <TouchableOpacity style={styles.scanHistoryCard} onPress={() => navigation.navigate('ScanHistory')}>
+            <View style={styles.scanHistoryIconContainer}>
+              <Ionicons name="time-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={styles.scanHistoryCardText}>View Scan History</Text>
+            <Ionicons name="chevron-forward" size={22} color={COLORS.primary} style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
         </View>
 
         {/* Connected Accounts */}
@@ -819,6 +827,35 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   cancelButtonText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  scanHistoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    marginTop: 10,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  scanHistoryIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  scanHistoryCardText: {
     fontSize: 16,
     color: COLORS.primary,
     fontWeight: '600',

@@ -7,6 +7,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import ResultsScreen from '../screens/ResultsScreen';
+import ScanHistoryScreen from '../screens/ScanHistoryScreen';
 import { RootStackParamList } from './types';
 import { useAuthStore } from '../stores/authStore';
 import { COLORS } from '../constants/colors';
@@ -65,6 +66,7 @@ const AppNavigator = () => {
           <>
             <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
             <Stack.Screen name="Results" component={ResultsScreen} />
+            <Stack.Screen name="ScanHistory" component={ScanHistoryScreen} />
           </>
         )}
       </Stack.Navigator>

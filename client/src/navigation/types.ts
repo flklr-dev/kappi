@@ -10,6 +10,7 @@ export type RootStackParamList = {
     imageUri: string;
     diagnosis: ScanResult;
   };
+  ScanHistory: undefined;
 };
 
 // Main tab navigator params

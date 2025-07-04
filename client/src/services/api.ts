@@ -177,4 +177,19 @@ export const authService = {
   },
 };
 
+export const getRemoteScans = async () => {
+  try {
+    const response = await api.get('/scans');
+    return (response.data as any).scans || [];
+  } catch (error: any) {
+    if (error.response) {
+      throw error;
+    } else if (error.request) {
+      throw new Error('Network error');
+    } else {
+      throw new Error('An unexpected error occurred');
+    }
+  }
+};
+
 export default api; 

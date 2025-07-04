@@ -32,6 +32,7 @@ interface LocalScanResult extends ScanResult {
     province: string;
   };
   createdAt: number;
+  deleted?: boolean; // Soft delete flag
 }
 
 interface ScanState {
@@ -42,8 +43,9 @@ interface ScanState {
   reset: () => void;
   classifyImage: (imagePath: string) => Promise<ScanResult>;
   saveScanResult: (scan: Omit<LocalScanResult, 'id' | 'createdAt'>) => Promise<void>;
-  getLocalScans: () => Promise<LocalScanResult[]>;
+  getLocalScans: (options?: { includeDeleted?: boolean }) => Promise<LocalScanResult[]>;
   syncScans: () => Promise<void>;
+  softDeleteScan: (id: string) => Promise<void>;
 }
 
 export const useScanStore = create<ScanState>((set, get) => ({
@@ -149,8 +151,10 @@ export const useScanStore = create<ScanState>((set, get) => ({
     await secureStorage.setItem(SCANS_KEY, [scanWithMeta, ...existing]);
   },
 
-  getLocalScans: async () => {
-    return (await secureStorage.getItem(SCANS_KEY)) as LocalScanResult[] || [];
+  getLocalScans: async (options = {}) => {
+    const all = (await secureStorage.getItem(SCANS_KEY)) as LocalScanResult[] || [];
+    if (options.includeDeleted) return all;
+    return all.filter(scan => !scan.deleted);
   },
 
   syncScans: async () => {
@@ -187,5 +191,11 @@ export const useScanStore = create<ScanState>((set, get) => ({
     }
     // Update local storage with only unsynced scans
     await secureStorage.setItem(SCANS_KEY, unsynced);
+  },
+
+  softDeleteScan: async (id) => {
+    const all = (await secureStorage.getItem(SCANS_KEY)) as LocalScanResult[] || [];
+    const updated = all.map(scan => scan.id === id ? { ...scan, deleted: true } : scan);
+    await secureStorage.setItem(SCANS_KEY, updated);
   }
 })); 
