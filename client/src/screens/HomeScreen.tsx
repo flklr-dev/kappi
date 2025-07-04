@@ -20,7 +20,9 @@ import * as Location from 'expo-location';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { MainTabParamList } from '../navigation/types';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MainTabParamList, RootStackParamList } from '../navigation/types';
+import { getRemoteScans } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -40,7 +42,10 @@ const HomeScreen = () => {
   const [location, setLocation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, updateUserLocation } = useAuthStore();
-  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const tabNavigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const stackNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [recentScans, setRecentScans] = useState<any[]>([]);
+  const [recentLoading, setRecentLoading] = useState(true);
 
   const formatAddress = (address: Location.LocationGeocodedAddress): string => {
     let barangay = '';
@@ -171,6 +176,29 @@ const HomeScreen = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    // Fetch recent scans from backend
+    const fetchRecent = async () => {
+      setRecentLoading(true);
+      try {
+        const scans = await getRemoteScans();
+        setRecentScans(scans.slice(0, 2));
+      } catch (e) {
+        setRecentScans([]);
+      }
+      setRecentLoading(false);
+    };
+    fetchRecent();
+  }, []);
+
+  const formatDate = (date: string | number | Date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) +
+      ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
@@ -221,7 +249,7 @@ const HomeScreen = () => {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             {/* Scan Plant */}
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('ScanTab')}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => tabNavigation.navigate('ScanTab')}>
               <View style={[styles.actionIconContainer, { backgroundColor: COLORS.primary }]}> 
                 <Ionicons name="camera" size={32} color={COLORS.white} />
               </View>
@@ -256,59 +284,55 @@ const HomeScreen = () => {
         </View>
         
         {/* Recent Scans Section */}
-        <View style={styles.section}>
+        <View style={styles.section}> 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Scans</Text>
-            <TouchableOpacity style={styles.viewAllButton}>
+            <TouchableOpacity style={styles.viewAllButton} onPress={() => stackNavigation.navigate('ScanHistory')}>
               <Text style={styles.viewAllText}>View All</Text>
               <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
-          </TouchableOpacity>
-        </View>
-        
+            </TouchableOpacity>
+          </View>
           <View style={styles.scansContainer}>
-            {/* Scan Card 1 */}
-            <TouchableOpacity style={styles.scanCard}>
-              <Image 
-                source={{ uri: 'https://www.plantvillage.psu.edu/sites/default/files/styles/picture_large/public/coffee_leaf_rust_hemileia_vastatrix_4.jpg' }}
-                style={styles.scanImage}
-              />
-              <View style={styles.scanContent}>
-                <View style={styles.scanHeader}>
-                  <View style={[styles.statusBadge, { backgroundColor: '#F44336' }]}>
-                    <Text style={styles.statusText}>Problem Found</Text>
+            {recentLoading ? (
+              <View style={{ alignItems: 'center', padding: 24 }}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
               </View>
-                  <Text style={styles.scanTime}>2h ago</Text>
-                </View>
-                <Text style={styles.scanTitle}>Coffee Leaf Rust</Text>
-                <Text style={styles.scanLocation}>North Field • Block A</Text>
-                <TouchableOpacity style={styles.viewDetailsButton}>
-                  <Text style={styles.viewDetailsText}>View Details</Text>
-                  <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
-                </TouchableOpacity>
+            ) : recentScans.length === 0 ? (
+              <View style={{ alignItems: 'center', padding: 24 }}>
+                <Ionicons name="cloud-outline" size={36} color={COLORS.gray} style={{ marginBottom: 8 }} />
+                <Text style={{ color: COLORS.gray, fontSize: 15 }}>No recent scans yet.</Text>
               </View>
-            </TouchableOpacity>
-
-            {/* Scan Card 2 */}
-            <TouchableOpacity style={styles.scanCard}>
-              <Image 
-                source={{ uri: 'https://www.plantvillage.psu.edu/sites/default/files/styles/picture_large/public/coffee_healthy_leaf_3.jpg' }}
-                style={styles.scanImage}
-              />
-              <View style={styles.scanContent}>
-                <View style={styles.scanHeader}>
-                  <View style={[styles.statusBadge, { backgroundColor: '#4CAF50' }]}>
-                    <Text style={styles.statusText}>Healthy</Text>
+            ) : (
+              recentScans.map((scan, idx) => (
+                <View key={scan._id || scan.id || idx} style={styles.scanCard}>
+                  {scan.imageUri ? (
+                    <Image source={{ uri: scan.imageUri }} style={styles.scanImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.scanImage, { justifyContent: 'center', alignItems: 'center' }]}> 
+                      <Ionicons name="leaf-outline" size={32} color={COLORS.primary} />
+                    </View>
+                  )}
+                  <View style={styles.scanContent}>
+                    <View style={styles.scanHeader}>
+                      <View style={[styles.statusBadge, { backgroundColor: scan.disease?.toLowerCase().includes('healthy') ? '#4CAF50' : '#F44336' }]}> 
+                        <Text style={styles.statusText}>{scan.disease}</Text>
+                      </View>
+                      <Text style={styles.scanTime}>{formatDate(scan.createdAt)}</Text>
+                    </View>
+                    <Text style={styles.scanTitle}>{scan.disease}</Text>
+                    <Text style={styles.scanLocation} numberOfLines={1}>
+                      {scan.address?.barangay ? scan.address.barangay + ', ' : ''}
+                      {scan.address?.cityMunicipality ? scan.address.cityMunicipality + ', ' : ''}
+                      {scan.address?.province || ''}
+                    </Text>
+                    <TouchableOpacity style={styles.viewDetailsButton} onPress={() => stackNavigation.navigate('ScanHistory')}>
+                      <Text style={styles.viewDetailsText}>View Details</Text>
+                      <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                  <Text style={styles.scanTime}>Yesterday</Text>
-                </View>
-                <Text style={styles.scanTitle}>Healthy Plant</Text>
-                <Text style={styles.scanLocation}>South Field • Block C</Text>
-                <TouchableOpacity style={styles.viewDetailsButton}>
-                  <Text style={styles.viewDetailsText}>View Details</Text>
-                  <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
+              ))
+            )}
           </View>
         </View>
 
