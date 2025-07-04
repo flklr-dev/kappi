@@ -325,10 +325,6 @@ const HomeScreen = () => {
                       {scan.address?.cityMunicipality ? scan.address.cityMunicipality + ', ' : ''}
                       {scan.address?.province || ''}
                     </Text>
-                    <TouchableOpacity style={styles.viewDetailsButton} onPress={() => stackNavigation.navigate('ScanHistory')}>
-                      <Text style={styles.viewDetailsText}>View Details</Text>
-                      <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
-                    </TouchableOpacity>
                   </View>
                 </View>
               ))
@@ -555,16 +551,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gray,
     marginBottom: 12,
-  },
-  viewDetailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  viewDetailsText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginRight: 4,
   },
   tipsContainer: {
     paddingHorizontal: 20,
