@@ -28,6 +28,28 @@ import { sanitizeInput } from '../utils/secureStorage';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+// Component for the profile header - more professional and clean
+const ProfileHeader = ({ user, handleEditProfile }: any) => (
+  <View style={styles.profileHeaderContainer}>
+    {user?.profilePictureUrl ? (
+      <Image source={{ uri: user.profilePictureUrl }} style={styles.profilePicture} />
+    ) : (
+      <View style={styles.initialsContainer}>
+        <Text style={styles.initialsText}>
+          {user?.fullName?.split(' ').map((name: string) => name[0]).join('').toUpperCase()}
+        </Text>
+      </View>
+    )}
+    <View style={styles.profileInfo}>
+      <Text style={styles.profileName}>{user?.fullName}</Text>
+      <Text style={styles.profileEmail}>{user?.email}</Text>
+    </View>
+    <TouchableOpacity onPress={handleEditProfile} style={styles.editButton}>
+      <Ionicons name="create-outline" size={24} color={COLORS.primary} />
+    </TouchableOpacity>
+  </View>
+);
+
 const ProfileScreen = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { setIsAuthenticated } = useContext(AuthContext);
@@ -285,45 +307,10 @@ const ProfileScreen = () => {
       />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* User Information Section - Redesigned */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileImageContainer}>
-            <View style={styles.profileImagePlaceholder}>
-              <Text style={styles.profileInitials}>
-                {user.fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.editImageButton}>
-              <Ionicons name="camera-outline" size={16} color={COLORS.white} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.profileDetails}>
-            <Text style={styles.userName}>{user.fullName}</Text>
-            <View style={styles.emailContainer}>
-              <Ionicons name="mail-outline" size={16} color={COLORS.gray} />
-              <Text style={styles.userEmail}>{user.email}</Text>
-            </View>
-            
-            {user.location && (
-              <View style={styles.locationContainer}>
-                <Ionicons name="location-outline" size={16} color={COLORS.gray} />
-                <Text style={styles.userLocation}>
-                  {user.location.address?.barangay && `${user.location.address.barangay}, `}
-                  {user.location.address?.cityMunicipality && `${user.location.address.cityMunicipality}, `}
-                  {user.location.address?.province || 'Location not set'}
-                </Text>
-              </View>
-            )}
-            
-            <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
-              <Ionicons name="pencil-outline" size={16} color={COLORS.white} />
-              <Text style={styles.editProfileText}>Edit Profile</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Connected Accounts */}
+        {/* New Profile Header Section */}
+        <ProfileHeader user={user} handleEditProfile={handleEditProfile} />
+        
+        {/* Connected Accounts Section */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Connected Accounts</Text>
           <View style={styles.menuContainer}>
@@ -383,7 +370,6 @@ const ProfileScreen = () => {
               )}
             </View>
           </View>
-          
           <Text style={styles.accountLinkingNote}>
             Note: Accounts are automatically linked when you log in with Google or Facebook using the same email address.
           </Text>
@@ -407,24 +393,14 @@ const ProfileScreen = () => {
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
             </TouchableOpacity>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={handleDeleteAccount}>
+              <View style={styles.menuItemContent}>
+                <Ionicons name="trash-outline" size={20} color={COLORS.error} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: COLORS.error }]}>Delete Account</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={handleLogout}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
-            ) : (
-              <>
-                <Ionicons name="log-out-outline" size={20} color="white" style={styles.logoutIcon} />
-                <Text style={styles.logoutText}>Logout</Text>
-              </>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
-            <Text style={styles.deleteAccountText}>Delete Account</Text>
-          </TouchableOpacity>
         </View>
 
         {/* App Info Section */}
@@ -445,7 +421,7 @@ const ProfileScreen = () => {
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
                 <Text style={styles.menuText}>Privacy Policy</Text>
@@ -624,6 +600,22 @@ const ProfileScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Logout Button at the very bottom */}
+      <TouchableOpacity 
+        style={styles.logoutButtonBottom} 
+        onPress={handleLogout}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={COLORS.white} />
+        ) : (
+          <>
+            <Ionicons name="log-out-outline" size={20} color={COLORS.white} style={styles.logoutIcon} />
+            <Text style={styles.logoutText}>Logout</Text>
+          </>
+        )}
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -647,135 +639,54 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
-  // New profile card styles
-  profileCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    margin: 16,
+  // --- Redesigned Styles ---
+  profileHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profileImageContainer: {
-    position: 'relative',
-    marginRight: 16,
-  },
-  profileImagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: `${COLORS.primary}30`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileInitials: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  editImageButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: COLORS.primary,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  profileDetails: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    marginBottom: 8,
-  },
-  emailContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: COLORS.gray,
-    marginLeft: 6,
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  userLocation: {
-    fontSize: 14,
-    color: COLORS.gray,
-    marginLeft: 6,
-    flexShrink: 1,
-  },
-  editProfileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    alignSelf: 'flex-start',
-  },
-  editProfileText: {
-    color: COLORS.white,
-    marginLeft: 6,
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  activityContainer: {
-    padding: 20,
-  },
-  statsContainer: {
-    marginTop: 15,
-  },
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.secondary + '20',
+    marginBottom: 24, // Add margin bottom for spacing
   },
-  statIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  profilePicture: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginRight: 15,
+  },
+  initialsContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: COLORS.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
   },
-  statTextContainer: {
-    flex: 1,
+  initialsText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.primary,
   },
-  statValue: {
-    fontSize: 18,
+  profileInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  profileName: {
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 4,
   },
-  statLabel: {
+  profileEmail: {
     fontSize: 14,
     color: COLORS.gray,
+    marginTop: 4,
+  },
+  editButton: {
+    padding: 10,
+    borderRadius: 25,
+    backgroundColor: COLORS.secondary + '10',
   },
   sectionContainer: {
     marginBottom: 25,
@@ -791,7 +702,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 15,
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -818,6 +729,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.black,
   },
+  // -- Keep existing styles for other components like modals to maintain functionality
   loginWithButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 15,
@@ -1027,6 +939,58 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'transparent',
   },
+  profileDetailsSection: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginTop: 18,
+    marginBottom: 24,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  profileLabel: {
+    fontSize: 13,
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginBottom: 2,
+    marginTop: 8,
+  },
+  profileValue: {
+    fontSize: 16,
+    color: COLORS.black,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  profileDivider: {
+    height: 1,
+    backgroundColor: COLORS.secondary + '20',
+    marginVertical: 8,
+    borderRadius: 1,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  profileIcon: {
+    marginRight: 8,
+  },
+  logoutButtonBottom: {
+    backgroundColor: COLORS.error,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    marginHorizontal: 20,
+    marginTop: 32,
+    marginBottom: 32,
+    minHeight: 50,
+  },
 });
 
-export default ProfileScreen; 
+export default ProfileScreen;
