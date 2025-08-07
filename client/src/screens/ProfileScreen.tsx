@@ -323,39 +323,6 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* Farm Activity Summary */}
-        <View style={styles.activityContainer}>
-          <Text style={styles.sectionTitle}>Farm Activity</Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statRow}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="scan-outline" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.statTextContainer}>
-                <Text style={styles.statValue}>12</Text>
-                <Text style={styles.statLabel}>Scans This Month</Text>
-              </View>
-            </View>
-            <View style={styles.statRow}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="leaf-outline" size={24} color="#F44336" />
-              </View>
-              <View style={styles.statTextContainer}>
-                <Text style={styles.statValue}>Coffee Leaf Rust</Text>
-                <Text style={styles.statLabel}>Most Common Disease</Text>
-              </View>
-            </View>
-          </View>
-          {/* Scan History Button */}
-          <TouchableOpacity style={styles.scanHistoryCard} onPress={() => navigation.navigate('ScanHistory')}>
-            <View style={styles.scanHistoryIconContainer}>
-              <Ionicons name="time-outline" size={22} color={COLORS.primary} />
-            </View>
-            <Text style={styles.scanHistoryCardText}>View Scan History</Text>
-            <Ionicons name="chevron-forward" size={22} color={COLORS.primary} style={{ marginLeft: 'auto' }} />
-          </TouchableOpacity>
-        </View>
-
         {/* Connected Accounts */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Connected Accounts</Text>
@@ -426,6 +393,13 @@ const ProfileScreen = () => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.menuContainer}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ScanHistory')}>
+              <View style={styles.menuItemContent}>
+                <Ionicons name="time-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
+                <Text style={styles.menuText}>View Scan History</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={handleOpenChangePassword}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="key-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
