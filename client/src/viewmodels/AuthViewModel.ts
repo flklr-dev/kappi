@@ -554,6 +554,44 @@ class AuthViewModel {
     }
   }
 
+  async changePassword(oldPassword: string, newPassword: string, confirmPassword: string) {
+    // Validate fields
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      this.setError('All fields are required');
+      return { success: false, message: 'All fields are required' };
+    }
+    if (newPassword !== confirmPassword) {
+      this.setError('New passwords do not match');
+      return { success: false, message: 'New passwords do not match' };
+    }
+    if (!this.validatePassword(newPassword)) {
+      this.setError('Password does not meet requirements');
+      return { success: false, message: 'Password does not meet requirements' };
+    }
+    try {
+      this.setLoading(true);
+      this.setError(null);
+      const tokenData = await secureStorage.getItem('@kappi_auth_token');
+      if (!tokenData || !tokenData.token) {
+        this.setError('Authentication token not found');
+        return { success: false, message: 'Authentication token not found' };
+      }
+      await authService.changePassword(oldPassword, newPassword, confirmPassword, tokenData.token);
+      // Optionally log out user for security
+      await this.logout();
+      return { success: true, message: 'Password changed successfully. Please log in again.' };
+    } catch (error: any) {
+      let message = 'Failed to change password';
+      if (error.response && error.response.data && error.response.data.message) {
+        message = error.response.data.message;
+      }
+      this.setError(message);
+      return { success: false, message };
+    } finally {
+      this.setLoading(false);
+    }
+  }
+
   resetValidation() {
     this.setValidationErrors({});
     this.touchedFields = {};

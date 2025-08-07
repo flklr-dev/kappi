@@ -7,6 +7,15 @@ interface AuthRequest extends Request {
   user?: IUser;
 }
 
+function sanitizeInput(input: any) {
+  if (typeof input !== 'string') return '';
+  let sanitized = input.trim();
+  sanitized = sanitized.replace(/<script.*?>.*?<\/script>/gi, '');
+  sanitized = sanitized.replace(/["'`;\\]/g, ''); // Remove quotes, semicolons, backslashes
+  sanitized = sanitized.replace(/[<>]/g, ''); // Remove angle brackets
+  return sanitized;
+}
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { fullName, email, password } = req.body;
@@ -228,5 +237,44 @@ export const updateLocation = async (req: AuthRequest, res: Response) => {
     res.json({ user });
   } catch (error) {
     res.status(500).json({ message: 'Error updating location' });
+  }
+}; 
+
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Sanitize inputs
+    const oldPassword = sanitizeInput(req.body.oldPassword);
+    const newPassword = sanitizeInput(req.body.newPassword);
+    const confirmPassword = sanitizeInput(req.body.confirmPassword);
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'New passwords do not match' });
+    }
+    // Password complexity: min 8 chars, upper, lower, number, special
+    const complexity = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+    if (!complexity.test(newPassword)) {
+      return res.status(400).json({ message: 'Password does not meet complexity requirements' });
+    }
+    const user = await User.findById(req.user._id);
+    if (!user || !user.password) {
+      return res.status(404).json({ message: 'User not found or password not set' });
+    }
+    const isMatch = await user.comparePassword(oldPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Old password is incorrect' });
+    }
+    user.password = newPassword;
+    await user.save();
+    return res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return res.status(500).json({ message: 'Error changing password' });
   }
 }; 

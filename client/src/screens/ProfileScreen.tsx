@@ -10,7 +10,8 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
-  Image
+  Image,
+  TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -22,6 +23,8 @@ import { AuthContext } from '../context/AuthContext';
 import { useAuthStore } from '../stores/authStore';
 import { authViewModel } from '../viewmodels/AuthViewModel';
 import { secureStorage } from '../utils/secureStorage';
+import PasswordComplexity from '../components/PasswordComplexity';
+import { sanitizeInput } from '../utils/secureStorage';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -35,6 +38,16 @@ const ProfileScreen = () => {
     facebook: false
   });
   const [showAccountSelector, setShowAccountSelector] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showAboutApp, setShowAboutApp] = useState(false);
   
   // Fetch user data when component mounts
   useEffect(() => {
@@ -213,6 +226,47 @@ const ProfileScreen = () => {
     }
   };
 
+  const handleOpenChangePassword = () => {
+    setShowChangePassword(true);
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError(null);
+  };
+
+  const handleCloseChangePassword = () => {
+    setShowChangePassword(false);
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError(null);
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordLoading(true);
+    // Sanitize inputs
+    const sanitizedOld = sanitizeInput(oldPassword);
+    const sanitizedNew = sanitizeInput(newPassword);
+    const sanitizedConfirm = sanitizeInput(confirmPassword);
+    if (sanitizedNew !== newPassword) {
+      setPasswordError('New password contains invalid or unsafe characters.');
+      setPasswordLoading(false);
+      return;
+    }
+    const result = await authViewModel.changePassword(sanitizedOld, sanitizedNew, sanitizedConfirm);
+    setPasswordLoading(false);
+    if (result.success) {
+      Alert.alert('Success', result.message, [
+        { text: 'OK', onPress: () => {
+          handleCloseChangePassword();
+        }}
+      ]);
+    } else {
+      setPasswordError(result.message);
+    }
+  };
+
   if (!user) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -368,43 +422,18 @@ const ProfileScreen = () => {
           </Text>
         </View>
 
-        {/* Account Management */}
+        {/* Account Section */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleOpenChangePassword}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="key-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
                 <Text style={styles.menuText}>Change Password</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
             </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuItemContent}>
-                <Ionicons name="document-text-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>Terms & Conditions</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuItemContent}>
-                <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>Privacy Policy</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
-            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity 
-            style={styles.loginWithButton} 
-            onPress={() => setShowAccountSelector(true)}
-          >
-            <Ionicons name="people-outline" size={20} color={COLORS.white} style={styles.loginWithIcon} />
-            <Text style={styles.loginWithText}>Login with Different Account</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity 
             style={styles.logoutButton} 
             onPress={handleLogout}
@@ -419,10 +448,37 @@ const ProfileScreen = () => {
               </>
             )}
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
             <Text style={styles.deleteAccountText}>Delete Account</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* App Info Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>App Info</Text>
+          <View style={styles.menuContainer}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => setShowAboutApp(true)}>
+              <View style={styles.menuItemContent}>
+                <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
+                <Text style={styles.menuText}>About the App</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem}>
+              <View style={styles.menuItemContent}>
+                <Ionicons name="document-text-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
+                <Text style={styles.menuText}>Terms & Conditions</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem}>
+              <View style={styles.menuItemContent}>
+                <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
+                <Text style={styles.menuText}>Privacy Policy</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
@@ -478,6 +534,119 @@ const ProfileScreen = () => {
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal
+        visible={showChangePassword}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseChangePassword}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Change Password</Text>
+              <TouchableOpacity onPress={handleCloseChangePassword}>
+                <Ionicons name="close" size={24} color={COLORS.black} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSubtitle}>Enter your current and new password below.</Text>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.inputLabel}>Current Password</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  value={oldPassword}
+                  onChangeText={setOldPassword}
+                  placeholder="Current Password"
+                  secureTextEntry={!showOld}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowOld(!showOld)}>
+                  <Ionicons name={showOld ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.gray} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.inputLabel}>New Password</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="New Password"
+                  secureTextEntry={!showNew}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowNew(!showNew)}>
+                  <Ionicons name={showNew ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.gray} />
+                </TouchableOpacity>
+              </View>
+              <PasswordComplexity password={newPassword} />
+            </View>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.inputLabel}>Confirm New Password</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirm New Password"
+                  secureTextEntry={!showConfirm}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
+                  <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.gray} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            {passwordError ? (
+              <Text style={{ color: COLORS.error, marginBottom: 10, textAlign: 'center' }}>{passwordError}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.loginWithButton, { marginTop: 10, opacity: passwordLoading ? 0.7 : 1 }]}
+              onPress={handleChangePassword}
+              disabled={passwordLoading}
+            >
+              {passwordLoading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.loginWithText}>Change Password</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* About the App Modal */}
+      <Modal
+        visible={showAboutApp}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAboutApp(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>About the App</Text>
+              <TouchableOpacity onPress={() => setShowAboutApp(false)}>
+                <Ionicons name="close" size={24} color={COLORS.black} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <Image source={require('../assets/icon.png')} style={{ width: 64, height: 64, marginBottom: 8 }} />
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: COLORS.primary }}>Kappi</Text>
+              <Text style={{ fontSize: 14, color: COLORS.gray, marginTop: 2 }}>Version 1.0.0</Text>
+            </View>
+            <Text style={{ fontSize: 15, color: COLORS.black, textAlign: 'center', marginBottom: 10 }}>
+              Kappi helps coffee farmers detect leaf rust and manage their crops using AI-powered image analysis and farm management tools.
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center' }}>
+              © {new Date().getFullYear()} Kappi Team. All rights reserved.
+            </Text>
           </View>
         </View>
       </Modal>
@@ -859,6 +1028,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.primary,
     fontWeight: '600',
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: 4,
+    marginLeft: 2,
+    fontWeight: '500',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.secondary + '30',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.black,
+    paddingVertical: 10,
+    backgroundColor: 'transparent',
   },
 });
 

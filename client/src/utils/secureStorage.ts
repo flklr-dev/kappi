@@ -56,4 +56,13 @@ export const secureStorage = {
       throw error;
     }
   }
+};
+
+export const sanitizeInput = (input: string): string => {
+  // Remove script tags, trim, and escape dangerous characters
+  let sanitized = input.trim();
+  sanitized = sanitized.replace(/<script.*?>.*?<\/script>/gi, '');
+  sanitized = sanitized.replace(/["'`;\\]/g, ''); // Remove quotes, semicolons, backslashes
+  sanitized = sanitized.replace(/[<>]/g, ''); // Remove angle brackets
+  return sanitized;
 }; 
