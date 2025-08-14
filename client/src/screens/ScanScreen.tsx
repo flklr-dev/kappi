@@ -18,7 +18,6 @@ import {
   Camera,
   useCameraDevice,
   useCameraPermission,
-  useMicrophonePermission,
   PhotoFile
 } from 'react-native-vision-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -50,7 +49,6 @@ const ScanScreen = () => {
   const { user } = useAuthStore();
   
   const { hasPermission: hasCameraPermission, requestPermission: requestCameraPermission } = useCameraPermission();
-  const { hasPermission: hasMicPermission, requestPermission: requestMicPermission } = useMicrophonePermission();
   const device = useCameraDevice('back');
 
   // Show tips modal when screen first loads
@@ -88,11 +86,7 @@ const ScanScreen = () => {
         );
       }
     }
-
-    if (!hasMicPermission) {
-      await requestMicPermission();
-    }
-  }, [hasCameraPermission, hasMicPermission, requestCameraPermission, requestMicPermission]);
+  }, [hasCameraPermission, requestCameraPermission]);
 
   const handleCapture = async () => {
     if (!camera.current || isProcessing) return;
