@@ -26,6 +26,29 @@ import { getRemoteScans } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
+// Reusable quick action button
+const QuickAction = ({
+  icon,
+  title,
+  subtitle,
+  color,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle: string;
+  color: string;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity style={styles.quickActionCard} onPress={onPress} activeOpacity={0.85}>
+    <View style={[styles.actionIconContainer, { backgroundColor: color }]}> 
+      <Ionicons name={icon} size={28} color={COLORS.white} />
+    </View>
+    <Text style={styles.actionTitle}>{title}</Text>
+    <Text style={styles.actionSubtitle}>{subtitle}</Text>
+  </TouchableOpacity>
+);
+
 interface LocationData {
   coordinates: {
     latitude: number;
@@ -246,40 +269,38 @@ const HomeScreen = () => {
 
         {/* Core CTAs Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+          </View>
           <View style={styles.quickActionsGrid}>
-            {/* Scan Plant */}
-            <TouchableOpacity style={styles.actionCard} onPress={() => tabNavigation.navigate('ScanTab')}>
-              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.primary }]}> 
-                <Ionicons name="camera" size={32} color={COLORS.white} />
-              </View>
-              <Text style={styles.actionTitle}>Scan Plant</Text>
-              <Text style={styles.actionSubtitle}>Diagnose a plant</Text>
-            </TouchableOpacity>
-            {/* Scan History */}
-            <TouchableOpacity style={styles.actionCard}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#FFA000' }]}> 
-                <Ionicons name="time" size={32} color={COLORS.white} />
-              </View>
-              <Text style={styles.actionTitle}>Scan History</Text>
-              <Text style={styles.actionSubtitle}>View past scans</Text>
-            </TouchableOpacity>
-            {/* Reports Analytics */}
-            <TouchableOpacity style={styles.actionCard}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#2196F3' }]}> 
-                <Ionicons name="stats-chart" size={32} color={COLORS.white} />
-              </View>
-              <Text style={styles.actionTitle}>Reports</Text>
-              <Text style={styles.actionSubtitle}>Analytics & stats</Text>
-            </TouchableOpacity>
-            {/* Treatment Guide */}
-            <TouchableOpacity style={styles.actionCard}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#4CAF50' }]}> 
-                <Ionicons name="book" size={32} color={COLORS.white} />
-              </View>
-              <Text style={styles.actionTitle}>Treatment Guide</Text>
-              <Text style={styles.actionSubtitle}>Browse remedies</Text>
-            </TouchableOpacity>
+            <QuickAction 
+              icon="camera" 
+              title="Scan Plant" 
+              subtitle="Diagnose a plant" 
+              color={COLORS.primary}
+              onPress={() => tabNavigation.navigate('ScanTab')}
+            />
+            <QuickAction 
+              icon="time" 
+              title="Scan History" 
+              subtitle="View past scans" 
+              color="#FFA000"
+              onPress={() => stackNavigation.navigate('ScanHistory')}
+            />
+            <QuickAction 
+              icon="stats-chart" 
+              title="Reports" 
+              subtitle="Analytics & stats" 
+              color="#2196F3"
+              onPress={() => {}}
+            />
+            <QuickAction 
+              icon="book" 
+              title="Treatment Guide" 
+              subtitle="Browse remedies" 
+              color="#4CAF50"
+              onPress={() => {}}
+            />
           </View>
         </View>
         
@@ -334,7 +355,9 @@ const HomeScreen = () => {
 
         {/* Tips Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Helpful Tips</Text>
+          <View style={[styles.sectionHeader, { marginBottom: 16 }]}>
+            <Text style={styles.sectionTitle}>Helpful Tips</Text>
+          </View>
           <View style={styles.tipsContainer}>
             <TouchableOpacity style={styles.tipCard}>
               <View style={styles.tipIconContainer}>
@@ -395,14 +418,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 15,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.black,
-    paddingHorizontal: 20,
-    marginBottom: 15,
   },
   locationWidget: {
     flexDirection: 'row',
@@ -449,36 +470,38 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     padding: 8,
   },
+  // Redesigned Quick Actions
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: 20,
+    paddingHorizontal: 20,
     gap: 16,
   },
-  actionCard: {
+  quickActionCard: {
     width: (width - 56) / 2,
     backgroundColor: COLORS.white,
     borderRadius: 16,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     marginBottom: 4,
   },
   actionIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   actionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.black,
     marginBottom: 2,
     textAlign: 'center',
@@ -487,7 +510,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.gray,
     textAlign: 'center',
-    marginBottom: 0,
   },
   viewAllButton: {
     flexDirection: 'row',
