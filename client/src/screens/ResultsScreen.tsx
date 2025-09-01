@@ -220,7 +220,7 @@ const ResultsScreen = () => {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="medkit-outline" size={24} color={COLORS.primary} />
-                <Text style={styles.sectionTitle}>Treatment Recommendations</Text>
+                <Text style={styles.sectionTitle}>Disease Management</Text>
               </View>
               <Text style={styles.treatmentInfo}>Choose your coffee variety:</Text>
               <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
