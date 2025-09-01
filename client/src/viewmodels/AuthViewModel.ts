@@ -9,7 +9,7 @@ interface User {
   id: string;
   fullName: string;
   email: string;
-  providers?: string[];
+  providers?: (string | { provider: string; })[];
   location?: {
     coordinates: {
       latitude: number;
@@ -555,11 +555,24 @@ class AuthViewModel {
   }
 
   async changePassword(oldPassword: string, newPassword: string, confirmPassword: string) {
-    // Validate fields
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      this.setError('All fields are required');
-      return { success: false, message: 'All fields are required' };
+    // Check if current user can set a password (social-only users)
+    const isSettingFirstPassword = this.canSetPassword();
+    
+    // Validate fields based on scenario
+    if (isSettingFirstPassword) {
+      // For social users setting their first password, only require new password fields
+      if (!newPassword || !confirmPassword) {
+        this.setError('New password and confirmation are required');
+        return { success: false, message: 'New password and confirmation are required' };
+      }
+    } else {
+      // For users with existing passwords, require all fields
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        this.setError('All fields are required');
+        return { success: false, message: 'All fields are required' };
+      }
     }
+    
     if (newPassword !== confirmPassword) {
       this.setError('New passwords do not match');
       return { success: false, message: 'New passwords do not match' };
@@ -576,10 +589,17 @@ class AuthViewModel {
         this.setError('Authentication token not found');
         return { success: false, message: 'Authentication token not found' };
       }
-      await authService.changePassword(oldPassword, newPassword, confirmPassword, tokenData.token);
-      // Optionally log out user for security
-      await this.logout();
-      return { success: true, message: 'Password changed successfully. Please log in again.' };
+      
+      const response = await authService.changePassword(oldPassword, newPassword, confirmPassword, tokenData.token) as { isFirstPassword?: boolean; message: string; };
+      
+      // Check if this was setting first password (don't force logout for convenience)
+      if (response.isFirstPassword) {
+        return { success: true, message: response.message };
+      } else {
+        // For password changes, log out for security
+        await this.logout();
+        return { success: true, message: 'Password changed successfully. Please log in again.' };
+      }
     } catch (error: any) {
       let message = 'Failed to change password';
       if (error.response && error.response.data && error.response.data.message) {
@@ -590,6 +610,35 @@ class AuthViewModel {
     } finally {
       this.setLoading(false);
     }
+  }
+
+  // Helper method to determine if user can set a password (social-only users)
+  canSetPassword(): boolean {
+    if (!this.user?.providers || this.user.providers.length === 0) {
+      return false;
+    }
+    
+    // Handle both string providers and object providers
+    const providerNames = this.user.providers.map(p => 
+      typeof p === 'string' ? p : p.provider
+    );
+    
+    // User can set password if they only have social providers (no email)
+    return !providerNames.includes('email');
+  }
+
+  // Helper method to determine if user has password capability (email/password users)
+  hasPasswordAuth(): boolean {
+    if (!this.user?.providers || this.user.providers.length === 0) {
+      return false;
+    }
+    
+    // Handle both string providers and object providers
+    const providerNames = this.user.providers.map(p => 
+      typeof p === 'string' ? p : p.provider
+    );
+    
+    return providerNames.includes('email');
   }
 
   resetValidation() {

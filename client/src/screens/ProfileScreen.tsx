@@ -267,21 +267,33 @@ const ProfileScreen = () => {
   const handleChangePassword = async () => {
     setPasswordError(null);
     setPasswordLoading(true);
+    
     // Sanitize inputs
-    const sanitizedOld = sanitizeInput(oldPassword);
+    const sanitizedOld = authViewModel.canSetPassword() ? '' : sanitizeInput(oldPassword);
     const sanitizedNew = sanitizeInput(newPassword);
     const sanitizedConfirm = sanitizeInput(confirmPassword);
+    
     if (sanitizedNew !== newPassword) {
       setPasswordError('New password contains invalid or unsafe characters.');
       setPasswordLoading(false);
       return;
     }
+    
     const result = await authViewModel.changePassword(sanitizedOld, sanitizedNew, sanitizedConfirm);
     setPasswordLoading(false);
+    
     if (result.success) {
       Alert.alert('Success', result.message, [
         { text: 'OK', onPress: () => {
           handleCloseChangePassword();
+          // If user just set their first password, update UI to reflect the change
+          if (authViewModel.canSetPassword()) {
+            // Refresh user data to show updated provider status
+            const userData = useAuthStore.getState().user;
+            if (userData) {
+              useAuthStore.getState().setUser({...userData});
+            }
+          }
         }}
       ]);
     } else {
@@ -389,7 +401,7 @@ const ProfileScreen = () => {
             <TouchableOpacity style={styles.menuItem} onPress={handleOpenChangePassword}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="key-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>Change Password</Text>
+                <Text style={styles.menuText}>{authViewModel.canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
             </TouchableOpacity>
@@ -498,28 +510,32 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Change Password</Text>
+              <Text style={styles.modalTitle}>{authViewModel.canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               <TouchableOpacity onPress={handleCloseChangePassword}>
                 <Ionicons name="close" size={24} color={COLORS.black} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalSubtitle}>Enter your current and new password below.</Text>
-            <View style={{ marginBottom: 12 }}>
-              <Text style={styles.inputLabel}>Current Password</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={styles.input}
-                  value={oldPassword}
-                  onChangeText={setOldPassword}
-                  placeholder="Current Password"
-                  secureTextEntry={!showOld}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity onPress={() => setShowOld(!showOld)}>
-                  <Ionicons name={showOld ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.gray} />
-                </TouchableOpacity>
+            <Text style={styles.modalSubtitle}>
+              {authViewModel.canSetPassword() ? 'Set a password to enable email/password login.' : 'Enter your current and new password below.'}
+            </Text>
+            {!authViewModel.canSetPassword() && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={styles.inputLabel}>Current Password</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={oldPassword}
+                    onChangeText={setOldPassword}
+                    placeholder="Current Password"
+                    secureTextEntry={!showOld}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity onPress={() => setShowOld(!showOld)}>
+                    <Ionicons name={showOld ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.gray} />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            )}
             <View style={{ marginBottom: 12 }}>
               <Text style={styles.inputLabel}>New Password</Text>
               <View style={styles.inputRow}>
@@ -564,7 +580,7 @@ const ProfileScreen = () => {
               {passwordLoading ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
-                <Text style={styles.loginWithText}>Change Password</Text>
+                <Text style={styles.loginWithText}>{authViewModel.canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               )}
             </TouchableOpacity>
           </View>
