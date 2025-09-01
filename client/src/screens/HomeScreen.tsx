@@ -271,12 +271,13 @@ const HomeScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <Text style={styles.sectionSubtitle}>What would you like to do?</Text>
           </View>
           <View style={styles.quickActionsGrid}>
             <QuickAction 
               icon="camera" 
               title="Scan Plant" 
-              subtitle="Diagnose a plant" 
+              subtitle="Diagnose diseases" 
               color={COLORS.primary}
               onPress={() => tabNavigation.navigate('ScanTab')}
             />
@@ -284,21 +285,21 @@ const HomeScreen = () => {
               icon="time" 
               title="Scan History" 
               subtitle="View past scans" 
-              color="#FFA000"
+              color="#FF6B35"
               onPress={() => stackNavigation.navigate('ScanHistory')}
             />
             <QuickAction 
-              icon="stats-chart" 
+              icon="analytics" 
               title="Reports" 
-              subtitle="Analytics & stats" 
-              color="#2196F3"
+              subtitle="Analytics & insights" 
+              color="#4A90E2"
               onPress={() => {}}
             />
             <QuickAction 
-              icon="book" 
-              title="Treatment Guide" 
+              icon="medical" 
+              title="Treatment" 
               subtitle="Browse remedies" 
-              color="#4CAF50"
+              color="#27AE60"
               onPress={() => {}}
             />
           </View>
@@ -306,7 +307,7 @@ const HomeScreen = () => {
         
         {/* Recent Scans Section */}
         <View style={styles.section}> 
-          <View style={styles.sectionHeader}>
+          <View style={[styles.sectionHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }]}>
             <Text style={styles.sectionTitle}>Recent Scans</Text>
             <TouchableOpacity style={styles.viewAllButton} onPress={() => stackNavigation.navigate('ScanHistory')}>
               <Text style={styles.viewAllText}>View All</Text>
@@ -324,61 +325,90 @@ const HomeScreen = () => {
                 <Text style={{ color: COLORS.gray, fontSize: 15 }}>No recent scans yet.</Text>
               </View>
             ) : (
-              recentScans.map((scan, idx) => (
-                <View key={scan._id || scan.id || idx} style={styles.scanCard}>
-                  {scan.imageUri ? (
-                    <Image source={{ uri: scan.imageUri }} style={styles.scanImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.scanImage, { justifyContent: 'center', alignItems: 'center' }]}> 
-                      <Ionicons name="leaf-outline" size={32} color={COLORS.primary} />
-                    </View>
-                  )}
-                  <View style={styles.scanContent}>
-                    <View style={styles.scanHeader}>
-                      <View style={[styles.statusBadge, { backgroundColor: scan.disease?.toLowerCase().includes('healthy') ? '#4CAF50' : '#F44336' }]}> 
-                        <Text style={styles.statusText}>{scan.disease}</Text>
+              recentScans.map((scan, idx) => {
+                const isHealthy = scan.disease?.toLowerCase().includes('healthy');
+                const badgeText = isHealthy ? 'Healthy' : (scan.stage || scan.severity || 'Unknown');
+                const badgeColor = isHealthy ? '#4CAF50' : 
+                                  scan.stage === 'Early' ? '#FF9800' :
+                                  scan.stage === 'Progressive' ? '#FF5722' :
+                                  scan.stage === 'Severe' ? '#F44336' : '#9E9E9E';
+                
+                return (
+                  <TouchableOpacity 
+                    key={scan._id || scan.id || idx} 
+                    style={styles.scanCard}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      // Navigate to scan details or results
+                    }}
+                  >
+                    <View style={styles.scanImageContainer}>
+                      {scan.imageUri ? (
+                        <Image source={{ uri: scan.imageUri }} style={styles.scanImage} resizeMode="cover" />
+                      ) : (
+                        <View style={[styles.scanImage, styles.placeholderImage]}> 
+                          <Ionicons name="leaf-outline" size={40} color={COLORS.primary} />
+                        </View>
+                      )}
+                      <View style={styles.confidenceBadge}>
+                        <Text style={styles.confidenceText}>{scan.confidence || 0}%</Text>
                       </View>
-                      <Text style={styles.scanTime}>{formatDate(scan.createdAt)}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: badgeColor }]}> 
+                        <Text style={styles.statusText}>{badgeText}</Text>
+                      </View>
                     </View>
-                    <Text style={styles.scanTitle}>{scan.disease}</Text>
-                    <Text style={styles.scanLocation} numberOfLines={1}>
-                      {scan.address?.barangay ? scan.address.barangay + ', ' : ''}
-                      {scan.address?.cityMunicipality ? scan.address.cityMunicipality + ', ' : ''}
-                      {scan.address?.province || ''}
-                    </Text>
-                  </View>
-                </View>
-              ))
+                    
+                    <View style={styles.scanContent}>
+                      <View style={styles.scanInfoRow}>
+                        <View style={styles.scanTitleContainer}>
+                          <Text style={styles.scanTitle} numberOfLines={1}>{scan.disease}</Text>
+                          <Text style={styles.scanTime}>{formatDate(scan.createdAt)}</Text>
+                        </View>
+                        
+                        {scan.address && (
+                          <View style={styles.locationContainer}>
+                            <Ionicons name="location" size={12} color={COLORS.primary} />
+                            <Text style={styles.scanLocation} numberOfLines={1}>
+                              {scan.address.cityMunicipality || 'Unknown Location'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
             )}
           </View>
         </View>
 
         {/* Tips Section */}
         <View style={styles.section}>
-          <View style={[styles.sectionHeader, { marginBottom: 16 }]}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Helpful Tips</Text>
+            <Text style={styles.sectionSubtitle}>Improve your scanning results</Text>
           </View>
           <View style={styles.tipsContainer}>
-            <TouchableOpacity style={styles.tipCard}>
+            <TouchableOpacity style={styles.tipCard} activeOpacity={0.7}>
               <View style={styles.tipIconContainer}>
                 <Ionicons name="sunny" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.tipContent}>
                 <Text style={styles.tipTitle}>Best Time to Scan</Text>
-                <Text style={styles.tipText}>Take photos in the morning (7-10 AM) for best results</Text>
+                <Text style={styles.tipText}>Take photos in the morning (7-10 AM) for optimal lighting</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.tipCard}>
+            <TouchableOpacity style={styles.tipCard} activeOpacity={0.7}>
               <View style={styles.tipIconContainer}>
                 <Ionicons name="camera" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.tipContent}>
-                <Text style={styles.tipTitle}>Photo Tips</Text>
-                <Text style={styles.tipText}>Hold your phone steady and ensure good lighting</Text>
+                <Text style={styles.tipTitle}>Photo Quality</Text>
+                <Text style={styles.tipText}>Hold steady, ensure good lighting, and focus on affected areas</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
             </TouchableOpacity>
           </View>
         </View>
@@ -414,37 +444,43 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
     color: COLORS.black,
+    letterSpacing: 0.3,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginTop: 2,
   },
   locationWidget: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
     marginHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 24,
-    elevation: 2,
+    marginTop: 8,
+    marginBottom: 28,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   locationIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary + '15',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COLORS.primary + '12',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -456,6 +492,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gray,
     marginBottom: 4,
+    fontWeight: '500',
   },
   locationValueContainer: {
     minHeight: 24,
@@ -465,10 +502,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.black,
+    lineHeight: 20,
   },
   refreshIconContainer: {
     marginLeft: 12,
     padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F8F9FA',
   },
   // Redesigned Quick Actions
   quickActionsGrid: {
@@ -480,36 +520,45 @@ const styles = StyleSheet.create({
   quickActionCard: {
     width: (width - 56) / 2,
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 14,
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  actionIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    marginBottom: 4,
-  },
-  actionIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
   },
   actionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.black,
-    marginBottom: 2,
+    marginBottom: 4,
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   actionSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.gray,
     textAlign: 'center',
+    fontWeight: '500',
   },
   viewAllButton: {
     flexDirection: 'row',
@@ -528,51 +577,105 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 16,
     marginBottom: 16,
-    elevation: 2,
+    overflow: 'hidden',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    overflow: 'hidden',
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F5F7FA',
+  },
+  scanImageContainer: {
+    position: 'relative',
+    height: 140,
   },
   scanImage: {
     width: '100%',
-    height: 150,
-    backgroundColor: COLORS.lightGray,
+    height: '100%',
+    backgroundColor: '#F8F9FA',
+  },
+  placeholderImage: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '08',
+  },
+  confidenceBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  confidenceText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  statusBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  statusText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   scanContent: {
     padding: 16,
   },
-  scanHeader: {
+  scanInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+  scanTitleContainer: {
+    flex: 1,
+    minWidth: 0,
   },
-  statusText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '600',
+  scanTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.black,
+    marginBottom: 4,
+    letterSpacing: 0.2,
   },
   scanTime: {
     fontSize: 12,
     color: COLORS.gray,
+    fontWeight: '500',
   },
-  scanTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    marginBottom: 4,
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    maxWidth: 120,
+    gap: 3,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
   },
   scanLocation: {
-    fontSize: 14,
-    color: COLORS.gray,
-    marginBottom: 12,
+    fontSize: 10,
+    color: '#6C757D',
+    fontWeight: '600',
+    flex: 1,
   },
   tipsContainer: {
     paddingHorizontal: 20,
@@ -581,20 +684,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 18,
+    padding: 20,
     marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: '#F5F5F5',
   },
   tipIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary + '15',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COLORS.primary + '12',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -604,20 +709,25 @@ const styles = StyleSheet.create({
   },
   tipTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.black,
     marginBottom: 4,
+    letterSpacing: 0.2,
   },
   tipText: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.gray,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
     color: COLORS.black,
-    padding: 20,
-    marginBottom: 4,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
 });
 
