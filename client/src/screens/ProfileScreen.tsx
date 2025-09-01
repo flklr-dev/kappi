@@ -36,7 +36,7 @@ const ProfileHeader = ({ user, handleEditProfile }: any) => (
     ) : (
       <View style={styles.initialsContainer}>
         <Text style={styles.initialsText}>
-          {user?.fullName?.split(' ').map((name: string) => name[0]).join('').toUpperCase()}
+          {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
         </Text>
       </View>
     )}
