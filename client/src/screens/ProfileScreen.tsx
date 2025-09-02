@@ -28,6 +28,13 @@ import { sanitizeInput } from '../utils/secureStorage';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+interface UserCapabilities {
+  canSetPassword: boolean;
+  hasPasswordAuth: boolean;
+  providers: string[];
+  user?: any;
+}
+
 // Component for the profile header - more professional and clean
 const ProfileHeader = ({ user, handleEditProfile }: any) => (
   <View style={styles.profileHeaderContainer}>
@@ -70,8 +77,9 @@ const ProfileScreen = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showAboutApp, setShowAboutApp] = useState(false);
+  const [userCapabilities, setUserCapabilities] = useState<UserCapabilities | null>(null);
   
-  // Fetch user data when component mounts
+  // Fetch user data and capabilities when component mounts
   useEffect(() => {
     const checkUserData = async () => {
       // If user data is not in store, try to get from secure storage
@@ -79,6 +87,28 @@ const ProfileScreen = () => {
         const userData = await secureStorage.getItem('@kappi_auth_user');
         if (userData) {
           useAuthStore.getState().setUser(userData);
+        }
+      }
+      
+      // Fetch current user capabilities from backend
+      try {
+        const capabilities = await authViewModel.refreshUserCapabilities();
+        if (capabilities) {
+          setUserCapabilities({
+            canSetPassword: capabilities.canSetPassword,
+            hasPasswordAuth: capabilities.hasPasswordAuth,
+            providers: capabilities.providers
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch user capabilities:', error);
+        // Fallback to local state if API fails
+        if (user) {
+          setUserCapabilities({
+            canSetPassword: !user.providers?.includes('email'),
+            hasPasswordAuth: user.providers?.includes('email') || false,
+            providers: user.providers || []
+          });
         }
       }
     };
@@ -89,6 +119,30 @@ const ProfileScreen = () => {
   // Check if user has linked providers
   const hasProvider = (provider: string) => {
     return user?.providers?.includes(provider) ?? false;
+  };
+
+  // Check if user has password authentication (email provider) - use backend data if available
+  const hasPasswordAuth = () => {
+    if (userCapabilities) {
+      return userCapabilities.hasPasswordAuth;
+    }
+    // Fallback to local check
+    if (!user?.providers || user.providers.length === 0) {
+      return false;
+    }
+    return user.providers.includes('email');
+  };
+
+  // Check if user can set a password (only social providers, no email) - use backend data if available
+  const canSetPassword = () => {
+    if (userCapabilities) {
+      return userCapabilities.canSetPassword;
+    }
+    // Fallback to local check
+    if (!user?.providers || user.providers.length === 0) {
+      return false;
+    }
+    return !user.providers.includes('email');
   };
 
   const handleEditProfile = () => {
@@ -268,36 +322,82 @@ const ProfileScreen = () => {
     setPasswordError(null);
     setPasswordLoading(true);
     
-    // Sanitize inputs
-    const sanitizedOld = authViewModel.canSetPassword() ? '' : sanitizeInput(oldPassword);
-    const sanitizedNew = sanitizeInput(newPassword);
-    const sanitizedConfirm = sanitizeInput(confirmPassword);
-    
-    if (sanitizedNew !== newPassword) {
-      setPasswordError('New password contains invalid or unsafe characters.');
+    try {
+      // Determine if user is setting first password using backend data
+      const isSettingFirstPassword = canSetPassword();
+      
+      // Validate required fields based on scenario
+      if (isSettingFirstPassword) {
+        // For social users setting their first password, only require new password fields
+        if (!newPassword.trim() || !confirmPassword.trim()) {
+          setPasswordError('New password and confirmation are required');
+          setPasswordLoading(false);
+          return;
+        }
+      } else {
+        // For users with existing passwords, require all fields
+        if (!oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+          setPasswordError('Current password, new password, and confirmation are all required');
+          setPasswordLoading(false);
+          return;
+        }
+      }
+      
+      // Validate password match
+      if (newPassword !== confirmPassword) {
+        setPasswordError('New passwords do not match');
+        setPasswordLoading(false);
+        return;
+      }
+      
+      // Sanitize inputs
+      const sanitizedOld = isSettingFirstPassword ? '' : sanitizeInput(oldPassword);
+      const sanitizedNew = sanitizeInput(newPassword);
+      const sanitizedConfirm = sanitizeInput(confirmPassword);
+      
+      if (sanitizedNew !== newPassword) {
+        setPasswordError('New password contains invalid or unsafe characters.');
+        setPasswordLoading(false);
+        return;
+      }
+      
+      const result = await authViewModel.changePassword(sanitizedOld, sanitizedNew, sanitizedConfirm);
+      
+      if (result.success) {
+        Alert.alert('Success', result.message, [
+          { text: 'OK', onPress: () => {
+            handleCloseChangePassword();
+            // Refresh user capabilities after successful password change
+            authViewModel.refreshUserCapabilities().then(capabilities => {
+              if (capabilities) {
+                setUserCapabilities({
+                  canSetPassword: capabilities.canSetPassword,
+                  hasPasswordAuth: capabilities.hasPasswordAuth,
+                  providers: capabilities.providers
+                });
+                // Update authStore with normalized user data
+                if (capabilities.user) {
+                  const normalizedUser = {
+                    ...capabilities.user,
+                    providers: Array.isArray(capabilities.user.providers) 
+                      ? capabilities.user.providers.map((p: any) => 
+                          typeof p === 'string' ? p : p.provider
+                        )
+                      : (capabilities.providers || [])
+                  };
+                  useAuthStore.getState().setUser(normalizedUser);
+                }
+              }
+            });
+          }}
+        ]);
+      } else {
+        setPasswordError(result.message);
+      }
+    } catch (error: any) {
+      setPasswordError(error.message || 'An unexpected error occurred');
+    } finally {
       setPasswordLoading(false);
-      return;
-    }
-    
-    const result = await authViewModel.changePassword(sanitizedOld, sanitizedNew, sanitizedConfirm);
-    setPasswordLoading(false);
-    
-    if (result.success) {
-      Alert.alert('Success', result.message, [
-        { text: 'OK', onPress: () => {
-          handleCloseChangePassword();
-          // If user just set their first password, update UI to reflect the change
-          if (authViewModel.canSetPassword()) {
-            // Refresh user data to show updated provider status
-            const userData = useAuthStore.getState().user;
-            if (userData) {
-              useAuthStore.getState().setUser({...userData});
-            }
-          }
-        }}
-      ]);
-    } else {
-      setPasswordError(result.message);
     }
   };
 
@@ -401,7 +501,7 @@ const ProfileScreen = () => {
             <TouchableOpacity style={styles.menuItem} onPress={handleOpenChangePassword}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="key-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>{authViewModel.canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+                <Text style={styles.menuText}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
             </TouchableOpacity>
@@ -510,15 +610,15 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{authViewModel.canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+              <Text style={styles.modalTitle}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               <TouchableOpacity onPress={handleCloseChangePassword}>
                 <Ionicons name="close" size={24} color={COLORS.black} />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalSubtitle}>
-              {authViewModel.canSetPassword() ? 'Set a password to enable email/password login.' : 'Enter your current and new password below.'}
+              {canSetPassword() ? 'Set a password to enable email/password login.' : 'Enter your current and new password below.'}
             </Text>
-            {!authViewModel.canSetPassword() && (
+            {!canSetPassword() && (
               <View style={{ marginBottom: 12 }}>
                 <Text style={styles.inputLabel}>Current Password</Text>
                 <View style={styles.inputRow}>
@@ -580,7 +680,7 @@ const ProfileScreen = () => {
               {passwordLoading ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
-                <Text style={styles.loginWithText}>{authViewModel.canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+                <Text style={styles.loginWithText}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -603,7 +703,7 @@ const ProfileScreen = () => {
               </TouchableOpacity>
             </View>
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <Image source={require('../assets/icon.png')} style={{ width: 64, height: 64, marginBottom: 8 }} />
+              <Image source={require('../../assets/icon.png')} style={{ width: 64, height: 64, marginBottom: 8 }} />
               <Text style={{ fontSize: 18, fontWeight: 'bold', color: COLORS.primary }}>Kappi</Text>
               <Text style={{ fontSize: 14, color: COLORS.gray, marginTop: 2 }}>Version 1.0.0</Text>
             </View>

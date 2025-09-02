@@ -188,6 +188,21 @@ export const authService = {
       throw error;
     }
   },
+
+  async getUserAuthCapabilities() {
+    try {
+      const response = await api.get('/auth/capabilities');
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
 };
 
 export const getRemoteScans = async () => {

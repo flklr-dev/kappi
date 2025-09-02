@@ -1,6 +1,7 @@
 import firebase from '@react-native-firebase/app';
 import auth from '@react-native-firebase/auth';
-import { GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
+// Note: For React Native Firebase, we don't need to import providers separately
+// They are accessed via auth().GoogleAuthProvider and auth().FacebookAuthProvider
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -19,8 +20,7 @@ if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// Create providers for web
-const googleProvider = new GoogleAuthProvider();
-const facebookProvider = new FacebookAuthProvider();
+// For React Native Firebase, providers are accessed differently
+// auth().GoogleAuthProvider.credential() and auth().FacebookAuthProvider.credential()
 
-export { firebase, auth, googleProvider, facebookProvider }; 
+export { firebase, auth }; 

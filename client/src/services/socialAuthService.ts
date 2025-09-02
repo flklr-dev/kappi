@@ -1,8 +1,8 @@
 import { firebase, auth } from '../config/firebase';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
+import { LoginManager, AccessToken, Profile, GraphRequest, GraphRequestManager } from 'react-native-fbsdk-next';
 import { authService } from './api';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 
 // Define interface for Google user info
 interface GoogleUserInfo {
@@ -120,70 +120,137 @@ export const socialAuthService = {
     }
   },
 
-  // Facebook Sign-In
+  // Facebook Sign-In with improved error handling and user data fetching
   async signInWithFacebook(isRegistration = false) {
     try {
       if (Platform.OS === 'web') {
-        // Web implementation
-        console.log('Web not supported');
-        throw new Error('Web platform not supported');
-      } else {
-        // Mobile implementation using Facebook SDK
-        // Attempt login with permissions
-        console.log('Starting Facebook login');
-        const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
-
-        if (result.isCancelled) {
-          throw new Error('User cancelled the login process');
-        }
-
-        // Once signed in, get the user's AccessToken
-        console.log('Getting access token');
-        const data = await AccessToken.getCurrentAccessToken();
-        
-        if (!data) {
-          throw new Error('Something went wrong obtaining access token');
-        }
-        
-        // Create a Facebook credential with the token
-        console.log('Creating Facebook credential');
-        const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-        
-        // Sign-in with credential
-        console.log('Signing in with credential');
-        const userCredential = await auth().signInWithCredential(facebookCredential);
-        const user = userCredential.user;
-        
-        console.log('User signed in:', user.email);
-        
-        // Get additional user info from Facebook Graph API
-        const response = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${data.accessToken}`);
-        const userInfo = await response.json();
-        
-        // Extract user info
-        const userData = {
-          fullName: user.displayName || userInfo.name || '',
-          email: user.email || userInfo.email || '',
-          photoURL: user.photoURL || userInfo.picture?.data?.url || '',
-          providerId: 'facebook.com',
-        };
-
-        // Check if the user exists in your backend
-        console.log('Sending to backend API');
-        const apiResponse = await authService.socialLogin({
-          email: userData.email,
-          fullName: userData.fullName,
-          provider: 'facebook',
-          providerId: user.uid,
-          isRegistration
-        });
-        
-        return apiResponse;
+        throw new Error('Facebook login on web is not supported in this implementation');
       }
-    } catch (error) {
+
+      console.log('Starting Facebook login flow...');
+      
+      // First, logout any existing session to ensure clean state
+      await LoginManager.logOut();
+      
+      // Request permissions
+      const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+      
+      if (result.isCancelled) {
+        console.log('Facebook login cancelled by user');
+        throw new Error('User cancelled the login process');
+      }
+      
+      if (result.declinedPermissions && result.declinedPermissions.includes('email')) {
+        throw new Error('Email permission is required for registration');
+      }
+
+      // Get access token
+      const data = await AccessToken.getCurrentAccessToken();
+      if (!data) {
+        throw new Error('Failed to obtain Facebook access token');
+      }
+
+      console.log('Facebook access token obtained successfully');
+
+      // Get user profile using Facebook SDK
+      const profile = await Profile.getCurrentProfile();
+      if (!profile) {
+        throw new Error('Failed to get Facebook user profile');
+      }
+
+      // Get detailed user info including email using Graph API
+      const userInfo = await this.getFacebookUserInfo(data.accessToken);
+      
+      if (!userInfo.email) {
+        throw new Error('Email is required but not provided by Facebook account');
+      }
+
+      console.log('Facebook user info retrieved:', { 
+        email: userInfo.email, 
+        name: userInfo.name,
+        id: userInfo.id 
+      });
+
+      // Create Firebase credential
+      const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+      
+      // Sign in with Firebase
+      console.log('Signing in with Firebase...');
+      const userCredential = await auth().signInWithCredential(facebookCredential);
+      const firebaseUser = userCredential.user;
+      
+      console.log('Firebase authentication successful');
+
+      // Prepare user data
+      const userData = {
+        fullName: userInfo.name || profile.name || '',
+        email: userInfo.email,
+        photoURL: userInfo.picture?.data?.url || profile.imageURL || '',
+        providerId: firebaseUser.uid,
+      };
+
+      // Send to backend
+      console.log('Sending authentication data to backend...');
+      const response = await authService.socialLogin({
+        email: userData.email,
+        fullName: userData.fullName,
+        provider: 'facebook',
+        providerId: userData.providerId,
+        isRegistration
+      });
+      
+      console.log('Backend authentication successful');
+      return response;
+      
+    } catch (error: any) {
       console.error('Facebook Sign-In Error:', error);
-      throw error;
+      
+      // Handle specific error cases
+      if (error.message?.includes('cancelled')) {
+        throw new Error('cancelled');
+      }
+      
+      if (error.message?.includes('network')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+      
+      if (error.message?.includes('Email permission')) {
+        throw new Error('Email permission is required to complete registration. Please try again and allow email access.');
+      }
+      
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data?.message || 'Registration failed. Please try again.');
+      }
+      
+      throw new Error(error.message || 'Facebook login failed. Please try again.');
     }
+  },
+
+  // Helper method to get Facebook user info via Graph API
+  async getFacebookUserInfo(accessToken: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const request = new GraphRequest(
+        '/me',
+        {
+          accessToken,
+          parameters: {
+            fields: {
+              string: 'id,name,email,picture.type(large)'
+            }
+          }
+        },
+        (error, result) => {
+          if (error) {
+            console.error('Facebook Graph API error:', error);
+            reject(new Error('Failed to fetch user information from Facebook'));
+          } else {
+            resolve(result);
+          }
+        }
+      );
+      
+      new GraphRequestManager().addRequest(request).start();
+    });
   },
 
   // Link Google account to existing user
@@ -262,51 +329,104 @@ export const socialAuthService = {
     }
   },
 
-  // Link Facebook account to existing user
+  // Link Facebook account to existing user with improved implementation
   async linkFacebookAccount(token: string) {
     try {
       if (Platform.OS === 'web') {
-        // Web implementation
-        console.log('Web not supported');
-        throw new Error('Web platform not supported');
-      } else {
-        // Mobile implementation using Facebook SDK
-        // Attempt login with permissions
-        const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
-
-        if (result.isCancelled) {
-          throw new Error('User cancelled the login process');
-        }
-
-        // Once signed in, get the user's AccessToken
-        const data = await AccessToken.getCurrentAccessToken();
-        
-        if (!data) {
-          throw new Error('Something went wrong obtaining access token');
-        }
-        
-        // Create a Facebook credential with the token
-        const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-        
-        // Link with credential
-        const linkResult = await auth().currentUser?.linkWithCredential(facebookCredential);
-        
-        if (!linkResult) {
-          throw new Error('Failed to link Facebook account');
-        }
-        
-        // Update in backend
-        const apiResponse = await authService.linkSocialAccount({
-          provider: 'facebook',
-          providerId: linkResult.user.uid,
-          token
-        });
-        
-        return apiResponse;
+        throw new Error('Facebook account linking on web is not supported in this implementation');
       }
-    } catch (error) {
+
+      console.log('Starting Facebook account linking...');
+      
+      // Logout any existing session
+      await LoginManager.logOut();
+      
+      // Request permissions
+      const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+
+      if (result.isCancelled) {
+        console.log('Facebook account linking cancelled by user');
+        throw new Error('cancelled');
+      }
+
+      // Get access token
+      const data = await AccessToken.getCurrentAccessToken();
+      if (!data) {
+        throw new Error('Failed to obtain Facebook access token');
+      }
+
+      // Get user profile
+      const profile = await Profile.getCurrentProfile();
+      if (!profile) {
+        throw new Error('Failed to get Facebook user profile');
+      }
+
+      // Get detailed user info
+      const userInfo = await this.getFacebookUserInfo(data.accessToken);
+      
+      if (!userInfo.email) {
+        throw new Error('Email is required for account linking');
+      }
+
+      // Create Firebase credential
+      const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+      
+      // Get current Firebase user
+      const currentUser = auth().currentUser;
+      if (!currentUser) {
+        throw new Error('No authenticated user found for linking');
+      }
+
+      // Check if this provider is already linked
+      const isAlreadyLinked = currentUser.providerData.some(
+        provider => provider.providerId === 'facebook.com'
+      );
+      
+      if (isAlreadyLinked) {
+        throw new Error('Facebook account is already linked to this profile');
+      }
+
+      // Link with credential
+      console.log('Linking Facebook account with Firebase...');
+      const linkResult = await currentUser.linkWithCredential(facebookCredential);
+      
+      if (!linkResult) {
+        throw new Error('Failed to link Facebook account with Firebase');
+      }
+
+      console.log('Facebook account linked with Firebase successfully');
+
+      // Update in backend
+      console.log('Updating backend with linked account...');
+      const apiResponse = await authService.linkSocialAccount({
+        provider: 'facebook',
+        providerId: linkResult.user.uid,
+        token
+      });
+      
+      console.log('Backend update successful');
+      return apiResponse;
+      
+    } catch (error: any) {
       console.error('Link Facebook Account Error:', error);
-      throw error;
+      
+      if (error.message?.includes('cancelled')) {
+        throw new Error('cancelled');
+      }
+      
+      if (error.message?.includes('already linked')) {
+        throw new Error('already linked');
+      }
+      
+      if (error.code === 'auth/provider-already-linked') {
+        throw new Error('This Facebook account is already linked to another account');
+      }
+      
+      if (error.code === 'auth/credential-already-in-use') {
+        throw new Error('This Facebook account is already associated with another user');
+      }
+      
+      throw new Error(error.message || 'Failed to link Facebook account');
     }
   }
 }; 

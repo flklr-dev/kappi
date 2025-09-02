@@ -36,6 +36,13 @@ interface ValidationErrors {
   confirmPassword?: string;
 }
 
+interface UserCapabilities {
+  canSetPassword: boolean;
+  hasPasswordAuth: boolean;
+  providers: string[];
+  user?: User;
+}
+
 // Storage keys
 const TOKEN_KEY = '@kappi_auth_token';
 const USER_KEY = '@kappi_auth_user';
@@ -407,7 +414,7 @@ class AuthViewModel {
   }
 
   async facebookLogin(isRegistration = false) {
-    console.log('Facebook login');
+    console.log('Facebook login attempt, isRegistration:', isRegistration);
     try {
       this.setLoading(true);
       this.setError(null);
@@ -438,21 +445,38 @@ class AuthViewModel {
         this.setAuthenticated(true);
         this.setUser(response.user);
         
-        // Let the UI know authentication was successful
-        // The AppNavigator will handle navigation based on isAuthenticated state
+        console.log('Facebook authentication successful');
         return response;
       }
     } catch (error: any) {
+      console.error('Facebook login error in AuthViewModel:', error);
+      
       if (error.message?.includes('cancelled')) {
-        console.log('Facebook sign-in cancelled');
-      } else if (error.response && error.response.status === 400 && error.response.data?.message?.includes('already exists')) {
-        this.setError('Email already exists. Please log in instead.');
-      } else if (error.response && error.response.status === 400 && error.response.data?.message?.includes('already registered')) {
-        this.setError('This email is already registered. Please use the login screen instead.');
-      } else {
-        this.setError('Facebook login failed. Please try again.');
-        console.error('Facebook login error:', error);
+        console.log('Facebook sign-in cancelled by user');
+        // Don't show error for cancellation
+        return null;
       }
+      
+      // Handle specific error messages
+      if (error.message?.includes('Email permission')) {
+        this.setError('Email access is required to complete Facebook login. Please try again and allow email permission.');
+      } else if (error.message?.includes('Network error')) {
+        this.setError('Network error. Please check your internet connection and try again.');
+      } else if (error.message?.includes('already registered')) {
+        this.setError('This email is already registered. Please use the login screen instead.');
+      } else if (error.response?.status === 400) {
+        // Backend validation errors
+        const backendMessage = error.response.data?.message;
+        if (backendMessage?.includes('already exists') || backendMessage?.includes('already registered')) {
+          this.setError('This email is already registered. Please use the login screen instead.');
+        } else {
+          this.setError(backendMessage || 'Registration failed. Please try again.');
+        }
+      } else {
+        // Generic error
+        this.setError(error.message || 'Facebook login failed. Please try again.');
+      }
+      
       return null;
     } finally {
       this.setLoading(false);
@@ -526,13 +550,22 @@ class AuthViewModel {
       
       Alert.alert('Success', 'Your Facebook account has been linked successfully');
     } catch (error: any) {
-      if (error.message && error.message.includes('cancelled')) {
+      console.error('Facebook account linking error:', error);
+      
+      if (error.message?.includes('cancelled')) {
         console.log('Facebook account linking cancelled by user');
-      } else if (error.message && error.message.includes('already linked')) {
+        // Don't show error for cancellation
+        return;
+      }
+      
+      if (error.message?.includes('already linked')) {
         Alert.alert('Account Already Linked', 'This Facebook account is already linked to your profile');
+      } else if (error.message?.includes('already associated')) {
+        Alert.alert('Account Conflict', 'This Facebook account is already associated with another user');
+      } else if (error.message?.includes('Email is required')) {
+        this.setError('Email access is required to link your Facebook account. Please try again and allow email permission.');
       } else {
-        this.setError('Failed to link Facebook account. Please try again.');
-        console.error('Facebook account linking error:', error);
+        this.setError(error.message || 'Failed to link Facebook account. Please try again.');
       }
     } finally {
       this.setLoading(false);
@@ -555,51 +588,78 @@ class AuthViewModel {
   }
 
   async changePassword(oldPassword: string, newPassword: string, confirmPassword: string) {
-    // Check if current user can set a password (social-only users)
-    const isSettingFirstPassword = this.canSetPassword();
-    
-    // Validate fields based on scenario
-    if (isSettingFirstPassword) {
-      // For social users setting their first password, only require new password fields
-      if (!newPassword || !confirmPassword) {
-        this.setError('New password and confirmation are required');
-        return { success: false, message: 'New password and confirmation are required' };
-      }
-    } else {
-      // For users with existing passwords, require all fields
-      if (!oldPassword || !newPassword || !confirmPassword) {
-        this.setError('All fields are required');
-        return { success: false, message: 'All fields are required' };
-      }
-    }
-    
-    if (newPassword !== confirmPassword) {
-      this.setError('New passwords do not match');
-      return { success: false, message: 'New passwords do not match' };
-    }
-    if (!this.validatePassword(newPassword)) {
-      this.setError('Password does not meet requirements');
-      return { success: false, message: 'Password does not meet requirements' };
-    }
     try {
       this.setLoading(true);
       this.setError(null);
+      
       const tokenData = await secureStorage.getItem('@kappi_auth_token');
       if (!tokenData || !tokenData.token) {
         this.setError('Authentication token not found');
         return { success: false, message: 'Authentication token not found' };
       }
+
+      // Get current user capabilities from backend
+      let isSettingFirstPassword = false;
+      try {
+        const capabilities = await authService.getUserAuthCapabilities() as UserCapabilities;
+        isSettingFirstPassword = capabilities.canSetPassword;
+      } catch (error) {
+        // Fallback to local check if API fails
+        isSettingFirstPassword = this.canSetPassword();
+      }
       
-      const response = await authService.changePassword(oldPassword, newPassword, confirmPassword, tokenData.token) as { isFirstPassword?: boolean; message: string; };
-      
-      // Check if this was setting first password (don't force logout for convenience)
-      if (response.isFirstPassword) {
-        return { success: true, message: response.message };
+      // Validate fields based on scenario (frontend validation)
+      if (isSettingFirstPassword) {
+        if (!newPassword?.trim() || !confirmPassword?.trim()) {
+          this.setError('New password and confirmation are required');
+          return { success: false, message: 'New password and confirmation are required' };
+        }
       } else {
-        // For password changes, log out for security
+        if (!oldPassword?.trim() || !newPassword?.trim() || !confirmPassword?.trim()) {
+          this.setError('Current password, new password, and confirmation are all required');
+          return { success: false, message: 'Current password, new password, and confirmation are all required' };
+        }
+      }
+      
+      if (newPassword !== confirmPassword) {
+        this.setError('New passwords do not match');
+        return { success: false, message: 'New passwords do not match' };
+      }
+      
+      if (!this.validatePassword(newPassword)) {
+        this.setError('Password does not meet requirements');
+        return { success: false, message: 'Password does not meet requirements' };
+      }
+      
+      // Call backend API
+      const response = await authService.changePassword(oldPassword, newPassword, confirmPassword, tokenData.token) as { 
+        isFirstPassword?: boolean; 
+        message: string;
+        user?: any;
+      };
+      
+      // Update user data if provided by backend
+      if (response.user) {
+        this.setUser(response.user);
+        await secureStorage.setItem(USER_KEY, response.user);
+      } else if (response.isFirstPassword && this.user) {
+        // Fallback: manually update providers if backend didn't return user
+        const updatedUser = {
+          ...this.user,
+          providers: [...(this.user.providers || []), 'email']
+        };
+        this.setUser(updatedUser);
+        await secureStorage.setItem(USER_KEY, updatedUser);
+      }
+      
+      // Handle logout for password changes (not first-time password setting)
+      if (!response.isFirstPassword) {
         await this.logout();
         return { success: true, message: 'Password changed successfully. Please log in again.' };
       }
+      
+      return { success: true, message: response.message };
+      
     } catch (error: any) {
       let message = 'Failed to change password';
       if (error.response && error.response.data && error.response.data.message) {
@@ -609,6 +669,21 @@ class AuthViewModel {
       return { success: false, message };
     } finally {
       this.setLoading(false);
+    }
+  }
+
+  // Helper method to refresh user capabilities from backend
+  async refreshUserCapabilities(): Promise<UserCapabilities | null> {
+    try {
+      const capabilities = await authService.getUserAuthCapabilities() as UserCapabilities;
+      if (capabilities.user) {
+        this.setUser(capabilities.user);
+        await secureStorage.setItem(USER_KEY, capabilities.user);
+      }
+      return capabilities;
+    } catch (error) {
+      console.error('Failed to refresh user capabilities:', error);
+      return null;
     }
   }
 
