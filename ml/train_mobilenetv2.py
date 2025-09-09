@@ -14,9 +14,38 @@ from tensorflow.keras.metrics import TopKCategoricalAccuracy
 import json
 import math
 
+# Configure GPU settings
+def configure_gpu():
+    """Configure GPU memory growth and mixed precision for optimal performance."""
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Enable memory growth for each GPU
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            
+            # Set mixed precision for faster training on RTX GPUs
+            policy = tf.keras.mixed_precision.Policy('mixed_float16')
+            tf.keras.mixed_precision.set_global_policy(policy)
+            
+            print(f"\n🚀 GPU Configuration:")
+            print(f"   📱 Found {len(gpus)} GPU(s): {[gpu.name for gpu in gpus]}")
+            print(f"   ⚡ Mixed precision enabled (FP16)")
+            print(f"   💾 Memory growth enabled")
+            return True
+        except RuntimeError as e:
+            print(f"❌ GPU configuration error: {e}")
+            return False
+    else:
+        print("⚠️  No GPU found, using CPU training (will be slower)")
+        return False
+
+# Call GPU configuration at module level
+configure_gpu()
+
 CONFIG = {
     'img_size': (224, 224),  
-    'batch_size': 32,  # Increased batch size for better gradient estimates
+    'batch_size': 64,  # Increased batch size for GPU training (RTX 3050 can handle this)
     'epochs': 150,  # More epochs for better convergence
     'learning_rate': 0.001,  # Slightly higher LR for faster initial learning
     'dropout_rate': 0.3,  # Reduced dropout for better feature learning
@@ -31,7 +60,8 @@ CONFIG = {
     'num_classes': 4,
     'label_smoothing': 0.1,  # Increased label smoothing for better generalization
     'warmup_epochs': 5,  # Add warmup for stable training
-    'cosine_restarts': True  # Use cosine annealing with restarts
+    'cosine_restarts': True,  # Use cosine annealing with restarts
+    'gpu_enabled': True  # Flag for GPU-specific optimizations
 }
 
 def cosine_annealing_schedule(epoch, lr):
@@ -63,12 +93,6 @@ def save_training_metrics(history, model_name="MobileNetV2"):
         json.dump(metrics, f, indent=2)
     
 def calculate_class_weights(generator):
-    """Calculate class weights based on the distribution of samples."""
-    total_counts = generator.classes.shape[0]
-    class_counts = np.bincount(generator.classes)
-    class_weights = {i: total_counts / (len(class_counts) * count) 
-                    for i, count in enumerate(class_counts)}
-    return class_weights
     """Calculate class weights based on the distribution of samples."""
     total_counts = generator.classes.shape[0]
     class_counts = np.bincount(generator.classes)
@@ -135,7 +159,7 @@ def create_data_generators():
     return train_data, valid_data
 
 def build_model(num_classes):
-    """Build a lighter model suitable for CPU training."""
+    """Build MobileNetV2 model optimized for GPU training."""
     # Input layer
     inputs = Input(shape=(*CONFIG['img_size'], 3))
     

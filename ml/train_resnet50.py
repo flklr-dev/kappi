@@ -11,9 +11,38 @@ from tensorflow.keras.regularizers import l2
 import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint, TensorBoard
 
+# Configure GPU settings
+def configure_gpu():
+    """Configure GPU memory growth and mixed precision for optimal performance."""
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Enable memory growth for each GPU
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            
+            # Set mixed precision for faster training on RTX GPUs
+            policy = tf.keras.mixed_precision.Policy('mixed_float16')
+            tf.keras.mixed_precision.set_global_policy(policy)
+            
+            print(f"\n🚀 GPU Configuration:")
+            print(f"   📱 Found {len(gpus)} GPU(s): {[gpu.name for gpu in gpus]}")
+            print(f"   ⚡ Mixed precision enabled (FP16)")
+            print(f"   💾 Memory growth enabled")
+            return True
+        except RuntimeError as e:
+            print(f"❌ GPU configuration error: {e}")
+            return False
+    else:
+        print("⚠️  No GPU found, using CPU training (will be slower)")
+        return False
+
+# Call GPU configuration at module level
+configure_gpu()
+
 CONFIG = {
     'img_size': (224, 224),
-    'batch_size': 24,  # Optimized batch size for ResNet50
+    'batch_size': 48,  # Optimized batch size for ResNet50 on RTX 3050
     'epochs': 150,
     'learning_rate': 0.001,
     'dropout_rate': 0.3,
@@ -26,7 +55,8 @@ CONFIG = {
     'reduce_lr_factor': 0.5,
     'min_lr': 1e-6,
     'label_smoothing': 0.1,
-    'warmup_epochs': 5
+    'warmup_epochs': 5,
+    'gpu_enabled': True  # Flag for GPU-specific optimizations
 }
 
 def calculate_class_weights(generator):
