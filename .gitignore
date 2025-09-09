@@ -1,0 +1,230 @@
+# =============================================================================
+# KAPPI PROJECT GITIGNORE
+# Multi-tier application: React Native + Node.js + Python ML
+# =============================================================================
+
+# MOCK DATA AND TRAINING DATASETS
+# ================================
+# Exclude mock folder and training data from version control
+mock/
+*/mock/
+**mock**
+
+# DEPENDENCIES AND PACKAGES
+# ==========================
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+package-lock.json.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+env/
+ENV/
+
+# ENVIRONMENT AND CONFIG
+# ======================
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# Supabase and Firebase config (keep templates, exclude actual keys)
+firebase-debug.log
+.firebase/
+supabase/.env
+
+# REACT NATIVE / EXPO SPECIFIC
+# =============================
+.expo/
+.expo-shared/
+dist/
+web-build/
+expo-env.d.ts
+
+# iOS
+ios/build/
+ios/Pods/
+ios/.xcode.env.local
+
+# Android
+android/app/build/
+android/.gradle/
+android/gradle/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+*.keystore
+!debug.keystore
+
+# MACHINE LEARNING AND DATA
+# ==========================
+# Model files (usually too large for git)
+*.h5
+*.pkl
+*.joblib
+*.model
+*.pb
+*.tflite
+*.onnx
+
+# Training data and outputs
+data/raw/
+data/processed/
+data/external/
+*/data/raw/
+*/data/processed/
+**/*raw*/
+**/*processed*/
+raw/
+*/raw/
+models/trained/
+logs/
+checkpoints/
+runs/
+outputs/
+results/
+
+# Processed datasets (ensure comprehensive coverage)
+processed/
+*/processed/
+**/*processed*/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# DEVELOPMENT AND BUILD
+# =====================
+# TypeScript
+*.tsbuildinfo
+.tscache/
+
+# Build outputs
+build/
+dist/
+out/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+
+# Testing
+coverage/
+.coverage
+.pytest_cache/
+.jest/
+junit.xml
+test-results/
+
+# IDE AND EDITOR
+# ===============
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OPERATING SYSTEM
+# ================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# LOGS AND TEMPORARY FILES
+# ========================
+*.log
+*.log.*
+logs/
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# BACKUP FILES
+# ============
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+
+# SECURITY
+# ========
+*.pem
+*.key
+*.p8
+*.p12
+*.mobileprovision
+*.jks
+secrets/
+private/
+
+# UPLOADS AND USER CONTENT
+# =========================
+uploads/
+user-uploads/
+static/uploads/
