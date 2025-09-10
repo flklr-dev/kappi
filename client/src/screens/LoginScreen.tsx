@@ -67,12 +67,14 @@ const LoginScreen = () => {
     try {
       await login(email, password);
       
-      // Check error state after login attempt
-      const currentError = useAuthStore.getState().error;
+      // Check authentication state after login attempt
+      const currentState = useAuthStore.getState();
+      const currentError = currentState.error;
+      const isAuthenticated = currentState.isAuthenticated;
       
       if (currentError) {
         Alert.alert('Error', currentError);
-      } else {
+      } else if (isAuthenticated) {
         // Reset form before showing success
         setEmail('');
         setPassword('');
