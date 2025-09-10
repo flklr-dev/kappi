@@ -5,6 +5,8 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  VerifyOTP: { email: string };
+  ResetPassword: { email: string; otp: string };
   MainTabs: undefined;
   Results: {
     imageUri: string;

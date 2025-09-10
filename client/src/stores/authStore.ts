@@ -73,6 +73,9 @@ interface AuthState {
   loginAttempts: number;
   lockoutUntil: number | null;
   updateUserLocation: (location: LocationData) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  verifyOTPAndResetPassword: (email: string, otp: string, newPassword: string, confirmPassword: string) => Promise<void>;
+  resendOTP: (email: string) => Promise<void>;
 }
 
 // Storage keys
@@ -467,6 +470,170 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error) {
       console.error('Error updating location:', error);
+    }
+  },
+
+  resetPassword: async (email: string) => {
+    const { validateEmail, setLoading, setError } = get();
+    
+    // Validate email
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    if (!validateEmail(email)) {
+      setError('Invalid email format');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await authService.forgotPassword(email);
+      
+      // Success - no error means it worked
+      // The success message is handled by the component
+    } catch (error: any) {
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (error.response) {
+        switch (error.response.status) {
+          case 400:
+            errorMessage = error.response.data?.message || 'Invalid email format';
+            break;
+          case 429:
+            errorMessage = error.response.data?.message || 'Too many attempts. Please try again later.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again later';
+            break;
+          default:
+            errorMessage = error.response.data?.message || 'Failed to send verification code';
+        }
+      } else if (error.request) {
+        errorMessage = 'Network error. Please check your connection';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  },
+
+  verifyOTPAndResetPassword: async (email: string, otp: string, newPassword: string, confirmPassword: string) => {
+    const { validatePassword, setLoading, setError } = get();
+    
+    // Validate inputs
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    if (!otp.trim()) {
+      setError('Verification code is required');
+      return;
+    }
+    
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setError('Verification code must be 6 digits');
+      return;
+    }
+    
+    if (!newPassword.trim() || !confirmPassword.trim()) {
+      setError('Both password fields are required');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    if (!validatePassword(newPassword)) {
+      setError('Password does not meet requirements');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await authService.verifyOTPAndResetPassword(email, otp, newPassword, confirmPassword);
+      
+      // Success - password has been reset
+      // The success message is handled by the component
+    } catch (error: any) {
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (error.response) {
+        switch (error.response.status) {
+          case 400:
+            errorMessage = error.response.data?.message || 'Invalid verification code';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again later';
+            break;
+          default:
+            errorMessage = error.response.data?.message || 'Failed to reset password';
+        }
+      } else if (error.request) {
+        errorMessage = 'Network error. Please check your connection';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  },
+
+  resendOTP: async (email: string) => {
+    const { validateEmail, setLoading, setError } = get();
+    
+    // Validate email
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    if (!validateEmail(email)) {
+      setError('Invalid email format');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await authService.resendOTP(email);
+      
+      // Success - no error means it worked
+      // The success message is handled by the component
+    } catch (error: any) {
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (error.response) {
+        switch (error.response.status) {
+          case 400:
+            errorMessage = error.response.data?.message || 'Invalid request';
+            break;
+          case 429:
+            errorMessage = error.response.data?.message || 'Too many attempts. Please wait before trying again.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again later';
+            break;
+          default:
+            errorMessage = error.response.data?.message || 'Failed to resend verification code';
+        }
+      } else if (error.request) {
+        errorMessage = 'Network error. Please check your connection';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   },
 })); 

@@ -23,6 +23,8 @@ export interface IUser extends Document {
       province: string;
     };
   };
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -32,7 +34,7 @@ const providerSchema = new Schema({
   provider: {
     type: String,
     required: true,
-    enum: ['google', 'facebook']
+    enum: ['google', 'facebook', 'email']
   },
   providerId: {
     type: String,
@@ -72,6 +74,14 @@ const userSchema = new Schema<IUser>(
         cityMunicipality: String,
         province: String
       }
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false // Don't include in queries by default
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false // Don't include in queries by default
     }
   },
   {
@@ -81,21 +91,48 @@ const userSchema = new Schema<IUser>(
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password') || !this.password) return next();
+  console.log('Pre-save hook triggered');
+  console.log('Password modified?', this.isModified('password'));
+  console.log('Has password?', !!this.password);
+  
+  if (!this.isModified('password') || !this.password) {
+    console.log('Skipping password hashing');
+    return next();
+  }
 
   try {
+    console.log('Hashing password for user:', this.email);
+    console.log('Original password length:', this.password.length);
+    
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    const hashedPassword = await bcrypt.hash(this.password, salt);
+    
+    console.log('Password hashed successfully, hash length:', hashedPassword.length);
+    console.log('Hash starts with:', hashedPassword.substring(0, 10));
+    
+    this.password = hashedPassword;
     next();
   } catch (error: any) {
+    console.error('Password hashing error:', error);
     next(error);
   }
 });
 
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
-  if (!this.password) return false;
-  return bcrypt.compare(candidatePassword, this.password);
+  console.log('Comparing passwords...');
+  console.log('Candidate password length:', candidatePassword.length);
+  console.log('Stored password hash length:', this.password?.length || 0);
+  console.log('Stored hash starts with:', this.password?.substring(0, 10) || 'N/A');
+  
+  if (!this.password) {
+    console.log('No stored password found');
+    return false;
+  }
+  
+  const result = await bcrypt.compare(candidatePassword, this.password);
+  console.log('Password comparison result:', result);
+  return result;
 };
 
 export const User = mongoose.model<IUser>('User', userSchema); 

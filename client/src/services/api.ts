@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { secureStorage } from '../utils/secureStorage';
 
-const API_URL = 'http://192.168.1.118:5000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5000/api';
 const TOKEN_KEY = '@kappi_auth_token';
 
 // Create axios instance with security headers
@@ -192,6 +192,122 @@ export const authService = {
   async getUserAuthCapabilities() {
     try {
       const response = await api.get('/auth/capabilities');
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
+
+  async forgotPassword(email: string) {
+    try {
+      const response = await api.post('/auth/forgot-password', { 
+        email,
+        deviceInfo: {
+          platform: 'mobile',
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
+
+  async resetPassword(token: string, newPassword: string, confirmPassword: string) {
+    try {
+      const response = await api.post('/auth/reset-password', { 
+        token,
+        newPassword,
+        confirmPassword,
+        deviceInfo: {
+          platform: 'mobile',
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
+
+  async verifyOTP(email: string, otp: string) {
+    try {
+      const response = await api.post('/auth/verify-otp', { 
+        email,
+        otp,
+        deviceInfo: {
+          platform: 'mobile',
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
+
+  async verifyOTPAndResetPassword(email: string, otp: string, newPassword: string, confirmPassword: string) {
+    try {
+      const response = await api.post('/auth/verify-otp-reset', { 
+        email,
+        otp,
+        newPassword,
+        confirmPassword,
+        deviceInfo: {
+          platform: 'mobile',
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
+
+  async resendOTP(email: string) {
+    try {
+      const response = await api.post('/auth/resend-otp', { 
+        email,
+        deviceInfo: {
+          platform: 'mobile',
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        }
+      });
       return response.data;
     } catch (error: any) {
       if (error.response) {
