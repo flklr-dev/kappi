@@ -350,18 +350,11 @@ const ProfileScreen = () => {
         return;
       }
       
-      // Sanitize inputs
-      const sanitizedOld = isSettingFirstPassword ? '' : sanitizeInput(oldPassword);
-      const sanitizedNew = sanitizeInput(newPassword);
-      const sanitizedConfirm = sanitizeInput(confirmPassword);
+      // Don't sanitize passwords - they need special characters!
+      // Only sanitize old password if it exists
+      const sanitizedOld = isSettingFirstPassword ? '' : (oldPassword || '');
       
-      if (sanitizedNew !== newPassword) {
-        setPasswordError('New password contains invalid or unsafe characters.');
-        setPasswordLoading(false);
-        return;
-      }
-      
-      const result = await authViewModel.changePassword(sanitizedOld, sanitizedNew, sanitizedConfirm);
+      const result = await authViewModel.changePassword(sanitizedOld, newPassword, confirmPassword);
       
       if (result.success) {
         Alert.alert('Success', result.message, [
