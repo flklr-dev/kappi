@@ -76,11 +76,7 @@ const RegisterScreen = () => {
   );
 
   const validateRegisterField = (field: string, value: string) => {
-    if (!value.trim()) {
-      resetValidation();
-      return;
-    }
-
+    // Always validate regardless of content - this will show "This field is required" for empty fields
     switch (field) {
       case 'fullName':
         validateField('fullName', value);
@@ -291,7 +287,12 @@ const RegisterScreen = () => {
                   style={styles.input}
                   placeholder="Full Name"
                   value={fullName}
-                  onChangeText={setFullName}
+                  onChangeText={(text) => {
+                    setFullName(text);
+                    if (touchedFields.fullName) {
+                      validateRegisterField('fullName', text);
+                    }
+                  }}
                   onBlur={() => validateRegisterField('fullName', fullName)}
                 />
               </View>
@@ -313,7 +314,12 @@ const RegisterScreen = () => {
                   style={styles.input}
                   placeholder="Email"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (touchedFields.email) {
+                      validateRegisterField('email', text);
+                    }
+                  }}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   onBlur={() => validateRegisterField('email', email)}
@@ -337,7 +343,12 @@ const RegisterScreen = () => {
                   style={styles.input}
                   placeholder="Password"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (touchedFields.password) {
+                      validateRegisterField('password', text);
+                    }
+                  }}
                   secureTextEntry={!showPassword}
                   onFocus={() => setShowPasswordComplexity(true)}
                   onBlur={() => {
@@ -356,7 +367,10 @@ const RegisterScreen = () => {
                   />
                 </TouchableOpacity>
               </View>
-              {showPasswordComplexity && <PasswordComplexity password={password} />}
+              {/* Show password complexity when typing or when password doesn't meet requirements */}
+              {(showPasswordComplexity || (password.length > 0 && validationErrors.password)) && (
+                <PasswordComplexity password={password} />
+              )}
               {touchedFields.password && validationErrors.password && (
                 <Text style={styles.errorText}>{validationErrors.password}</Text>
               )}
@@ -377,7 +391,7 @@ const RegisterScreen = () => {
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);
-                    if (text) {
+                    if (touchedFields.confirmPassword) {
                       validateRegisterField('confirmPassword', text);
                     }
                   }}
@@ -397,6 +411,11 @@ const RegisterScreen = () => {
               </View>
               {touchedFields.confirmPassword && validationErrors.confirmPassword && (
                 <Text style={styles.errorText}>{validationErrors.confirmPassword}</Text>
+              )}
+              
+              {/* Show success message when passwords match */}
+              {confirmPassword.length > 0 && password === confirmPassword && password.length >= 8 && !validationErrors.password && (
+                <Text style={styles.successText}>✓ Passwords match</Text>
               )}
 
               <View style={styles.termsContainer}>
@@ -630,6 +649,14 @@ const styles = StyleSheet.create({
     marginTop: -12,
     marginBottom: 8,
     marginLeft: 8,
+  },
+  successText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    marginTop: -12,
+    marginBottom: 8,
+    marginLeft: 8,
+    fontWeight: '600',
   },
   loadingContainer: {
     flexDirection: 'row',

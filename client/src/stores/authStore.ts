@@ -128,46 +128,54 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   validateField: (field: string, value: string, confirmPassword?: string) => {
     const state = get();
-    const { setTouchedField, setValidationErrors, validateEmail, validatePassword } = state;
+    const { setTouchedField, validationErrors, validateEmail, validatePassword } = state;
     
-    // Start with a fresh validation state for this field
-    const currentErrors: ValidationErrors = {};
+    // Preserve existing errors and update only the current field
+    const currentErrors: ValidationErrors = { ...validationErrors };
     setTouchedField(field, true);
 
     switch (field) {
       case 'fullName':
         if (!value.trim()) {
-          currentErrors.fullName = 'Full name is required';
+          currentErrors.fullName = 'This field is required';
+        } else {
+          delete currentErrors.fullName;
         }
         break;
 
       case 'email':
         if (!value.trim()) {
-          currentErrors.email = 'Email is required';
+          currentErrors.email = 'This field is required';
         } else if (!validateEmail(value)) {
-          currentErrors.email = 'Invalid email format';
+          currentErrors.email = 'Please enter a valid email address';
+        } else {
+          delete currentErrors.email;
         }
         break;
 
       case 'password':
         if (!value) {
-          currentErrors.password = 'Password is required';
-        } else if (value !== 'valid' && !validatePassword(value)) {
+          currentErrors.password = 'This field is required';
+        } else if (!validatePassword(value)) {
           currentErrors.password = 'Password does not meet requirements';
+        } else {
+          delete currentErrors.password;
         }
         break;
 
       case 'confirmPassword':
         if (!value) {
-          currentErrors.confirmPassword = 'Please confirm your password';
+          currentErrors.confirmPassword = 'This field is required';
         } else if (value !== confirmPassword) {
           currentErrors.confirmPassword = 'Passwords do not match';
+        } else {
+          delete currentErrors.confirmPassword;
         }
         break;
     }
 
-    // Only set errors for the current field being validated
-    setValidationErrors(currentErrors);
+    // Update the validation errors with the modified errors object
+    set({ validationErrors: currentErrors });
   },
 
   validateRegistration: (fullName: string, email: string, password: string, confirmPassword: string): boolean => {

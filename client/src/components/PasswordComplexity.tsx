@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 
 interface PasswordComplexityProps {
@@ -42,7 +43,16 @@ const PasswordComplexity: React.FC<PasswordComplexityProps> = ({ password }) => 
       {requirements.map((requirement, index) => (
         <View key={index} style={styles.requirementRow}>
           <View style={styles.requirementLeft}>
-            <View style={[styles.checkbox, requirement.met && styles.checkboxMet]} />
+            <View style={[styles.checkbox, requirement.met && styles.checkboxMet]}>
+              {requirement.met && (
+                <Ionicons 
+                  name="checkmark" 
+                  size={14} 
+                  color={COLORS.white} 
+                  style={styles.checkmarkIcon}
+                />
+              )}
+            </View>
             <Text style={[styles.requirementText, requirement.met && styles.requirementMet]}>
               {requirement.label}
             </Text>
@@ -80,16 +90,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   checkbox: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: COLORS.gray,
     marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   checkboxMet: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  checkmarkIcon: {
+    marginTop: -1,
   },
   requirementText: {
     fontSize: 14,
@@ -98,6 +121,7 @@ const styles = StyleSheet.create({
   },
   requirementMet: {
     color: COLORS.primary,
+    fontWeight: '600',
   },
   strengthText: {
     fontSize: 14,
