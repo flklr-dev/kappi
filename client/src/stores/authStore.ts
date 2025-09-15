@@ -63,7 +63,7 @@ interface AuthState {
   resetValidation: () => void;
   validateEmail: (email: string) => boolean;
   validatePassword: (password: string) => boolean;
-  validateField: (field: string, value: string, confirmPassword?: string) => void;
+  validateField: (field: string, value: string, confirmPassword?: string, isRegistration?: boolean) => void;
   validateRegistration: (fullName: string, email: string, password: string, confirmPassword: string) => boolean;
   validateLogin: (email: string, password: string) => boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -126,7 +126,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar && hasMinLength;
   },
 
-  validateField: (field: string, value: string, confirmPassword?: string) => {
+  validateField: (field: string, value: string, confirmPassword?: string, isRegistration: boolean = false) => {
     const state = get();
     const { setTouchedField, validationErrors, validateEmail, validatePassword } = state;
     
@@ -156,7 +156,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       case 'password':
         if (!value) {
           currentErrors.password = 'This field is required';
-        } else if (!validatePassword(value)) {
+        } else if (isRegistration && !validatePassword(value)) {
+          // Only validate password complexity during registration
           currentErrors.password = 'Password does not meet requirements';
         } else {
           delete currentErrors.password;
