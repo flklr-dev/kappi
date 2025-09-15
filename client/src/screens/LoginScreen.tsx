@@ -13,6 +13,7 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -23,6 +24,8 @@ import { useAuthStore } from '../stores/authStore';
 import { authViewModel } from '../viewmodels/AuthViewModel';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
+
+const { width, height } = Dimensions.get('window');
 
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
@@ -195,7 +198,19 @@ const LoginScreen = () => {
       }
     } else if (field === 'password') {
       if (value.trim()) {
-        validateField('password', value);
+        // For login, we only check if password is provided
+        // We don't validate password complexity like in registration
+        if (!value) {
+          // Set a simple "required" error without complexity validation
+          useAuthStore.getState().setValidationErrors({ ...validationErrors, password: 'This field is required' });
+          useAuthStore.getState().setTouchedField('password', true);
+        } else {
+          // Clear password error for login
+          const newErrors = { ...validationErrors };
+          delete newErrors.password;
+          useAuthStore.getState().setValidationErrors(newErrors);
+          useAuthStore.getState().setTouchedField('password', true);
+        }
       } else {
         // Clear validation for empty field
         resetValidation();
@@ -220,22 +235,22 @@ const LoginScreen = () => {
         >
           <View style={styles.content}>
             <View style={styles.formContainer}>
+              <Image 
+                source={require('../assets/colored-logo.png')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
               <Text style={styles.title}>Welcome Back</Text>
-              <Text style={styles.subtitle}>Sign in to continue</Text>
+              <Text style={styles.subtitle}>Detect diseases early and save your harvest</Text>
 
+              <Text style={styles.label}>Email</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.email && validationErrors.email && styles.inputError
               ]}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={20} 
-                  color={touchedFields.email && validationErrors.email ? 'red' : COLORS.gray} 
-                  style={styles.inputIcon} 
-                />
                 <TextInput
                   style={styles.input}
-                  placeholder="Email"
+                  placeholder="Enter your email"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -247,19 +262,14 @@ const LoginScreen = () => {
                 <Text style={styles.errorText}>{validationErrors.email}</Text>
               )}
 
+              <Text style={styles.label}>Password</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.password && validationErrors.password && styles.inputError
               ]}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color={touchedFields.password && validationErrors.password ? 'red' : COLORS.gray} 
-                  style={styles.inputIcon} 
-                />
                 <TextInput
                   style={styles.input}
-                  placeholder="Password"
+                  placeholder="Enter your password"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -366,23 +376,38 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: width * 0.06, // 24px on 400px width screen
     justifyContent: 'space-between',
   },
   formContainer: {
     flex: 1,
     justifyContent: 'center',
   },
+  logo: {
+    width: width * 0.45, // 180px on 400px width screen
+    height: height * 0.125, // 100px on 800px height screen
+    alignSelf: 'center',
+    marginTop: -height * 0.025, // -20px on 800px height screen
+  },
   title: {
-    fontSize: 28,
+    fontSize: Math.min(28, width * 0.07), // Responsive font size
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 8,
+    marginBottom: height * 0.01, // 8px on 800px height screen
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     color: COLORS.gray,
-    marginBottom: 32,
+    marginBottom: height * 0.04, // 32px on 800px height screen
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
+    color: COLORS.black,
+    marginBottom: height * 0.01, // 8px on 800px height screen
+    fontWeight: '600',
+    textAlign: 'left',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -390,43 +415,41 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.lightGray,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: height * 0.02, // 16px on 800px height screen
     backgroundColor: COLORS.white,
-  },
-  inputIcon: {
-    paddingHorizontal: 16,
   },
   input: {
     flex: 1,
-    height: 50,
-    fontSize: 16,
+    height: height * 0.0625, // 50px on 800px height screen
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     color: COLORS.black,
+    paddingHorizontal: width * 0.04, // 16px on 400px width screen
   },
   forgotPasswordButton: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
+    marginBottom: height * 0.03, // 24px on 800px height screen
   },
   forgotPasswordText: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
   },
   loginButton: {
     backgroundColor: COLORS.primary,
-    height: 50,
+    height: height * 0.0625, // 50px on 800px height screen
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: height * 0.03, // 24px on 800px height screen
   },
   loginButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     fontWeight: 'bold',
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: height * 0.03, // 24px on 800px height screen
   },
   divider: {
     flex: 1,
@@ -434,58 +457,58 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
   },
   dividerText: {
-    marginHorizontal: 16,
+    marginHorizontal: width * 0.04, // 16px on 400px width screen
     color: COLORS.gray,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
   },
   socialButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: height * 0.03, // 24px on 800px height screen
   },
   socialButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 50,
+    height: height * 0.0625, // 50px on 800px height screen
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.lightGray,
-    marginHorizontal: 8,
+    marginHorizontal: width * 0.02, // 8px on 400px width screen
     backgroundColor: COLORS.white,
   },
   socialIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
+    width: width * 0.06, // 24px on 400px width screen
+    height: height * 0.03, // 24px on 800px height screen
+    marginRight: width * 0.02, // 8px on 400px width screen
   },
   socialButtonText: {
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     color: COLORS.black,
   },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: height * 0.01, // 8px on 800px height screen
   },
   registerText: {
     color: COLORS.gray,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
   },
   registerButtonText: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
     fontWeight: 'bold',
-    marginLeft: 5,
+    marginLeft: width * 0.0125, // 5px on 400px width screen
   },
   errorText: {
     color: 'red',
-    fontSize: 12,
-    marginTop: -12,
-    marginBottom: 8,
-    marginLeft: 8,
+    fontSize: Math.min(12, width * 0.03), // Responsive font size
+    marginTop: -height * 0.015, // -12px on 800px height screen
+    marginBottom: height * 0.01, // 8px on 800px height screen
+    marginLeft: width * 0.02, // 8px on 400px width screen
   },
   loginButtonDisabled: {
     backgroundColor: `${COLORS.primary}80`,
@@ -494,7 +517,7 @@ const styles = StyleSheet.create({
     borderColor: 'red',
   },
   passwordVisibilityButton: {
-    padding: 8,
+    padding: width * 0.04, // 16px on 400px width screen
   },
   scrollView: {
     flex: 1,
@@ -509,4 +532,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen; 
+export default LoginScreen;

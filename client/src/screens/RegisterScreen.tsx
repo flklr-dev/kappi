@@ -8,23 +8,24 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
-  Switch,
   KeyboardAvoidingView,
   Platform,
   Image,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { Ionicons } from '@expo/vector-icons';
 import PasswordComplexity from '../components/PasswordComplexity';
 import { useAuthStore } from '../stores/authStore';
 import { authViewModel } from '../viewmodels/AuthViewModel';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
+
+const { width, height } = Dimensions.get('window');
 
 const RegisterScreen = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
@@ -43,7 +44,6 @@ const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [termsAgreed, setTermsAgreed] = useState(false);
   
   // UI state
   const [showPassword, setShowPassword] = useState(false);
@@ -64,7 +64,6 @@ const RegisterScreen = () => {
         setConfirmPassword('');
         setShowPassword(false);
         setShowConfirmPassword(false);
-        setTermsAgreed(false);
         setShowPasswordComplexity(false);
         setSocialLoading({ google: false, facebook: false });
         resetValidation();
@@ -79,26 +78,21 @@ const RegisterScreen = () => {
     // Always validate regardless of content - this will show "This field is required" for empty fields
     switch (field) {
       case 'fullName':
-        validateField('fullName', value);
+        validateField('fullName', value, undefined, true);
         break;
       case 'email':
-        validateField('email', value);
+        validateField('email', value, undefined, true);
         break;
       case 'password':
-        validateField('password', value);
+        validateField('password', value, undefined, true);
         break;
       case 'confirmPassword':
-        validateField('confirmPassword', value, password);
+        validateField('confirmPassword', value, password, true);
         break;
     }
   };
 
   const handleRegister = async () => {
-    if (!termsAgreed) {
-      Alert.alert('Error', 'Please agree to the Terms & Conditions');
-      return;
-    }
-
     await register(fullName, email, password);
     
     if (error) {
@@ -115,7 +109,6 @@ const RegisterScreen = () => {
       setConfirmPassword('');
       setShowPassword(false);
       setShowConfirmPassword(false);
-      setTermsAgreed(false);
       resetValidation();
 
       Alert.alert(
@@ -252,7 +245,7 @@ const RegisterScreen = () => {
     }
   };
 
-  const isFormValid = fullName && email && password && confirmPassword && termsAgreed && 
+  const isFormValid = fullName && email && password && confirmPassword && 
     password === confirmPassword && !validationErrors.password;
 
   return (
@@ -270,22 +263,22 @@ const RegisterScreen = () => {
         >
           <View style={styles.content}>
             <View style={styles.formContainer}>
+              <Image 
+                source={require('../assets/colored-logo.png')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
               <Text style={styles.title}>Create Account</Text>
-              <Text style={styles.subtitle}>Sign up to get started</Text>
+              <Text style={styles.subtitle}>Get AI-powered disease detection tools"</Text>
 
+              <Text style={styles.label}>Full Name</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.fullName && validationErrors.fullName && styles.inputError
               ]}>
-                <Ionicons 
-                  name="person-outline" 
-                  size={20} 
-                  color={touchedFields.fullName && validationErrors.fullName ? 'red' : COLORS.gray} 
-                  style={styles.inputIcon} 
-                />
                 <TextInput
                   style={styles.input}
-                  placeholder="Full Name"
+                  placeholder="Enter your full name"
                   value={fullName}
                   onChangeText={(text) => {
                     setFullName(text);
@@ -300,19 +293,14 @@ const RegisterScreen = () => {
                 <Text style={styles.errorText}>{validationErrors.fullName}</Text>
               )}
 
+              <Text style={styles.label}>Email</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.email && validationErrors.email && styles.inputError
               ]}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={20} 
-                  color={touchedFields.email && validationErrors.email ? 'red' : COLORS.gray} 
-                  style={styles.inputIcon} 
-                />
                 <TextInput
                   style={styles.input}
-                  placeholder="Email"
+                  placeholder="Enter your email"
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -329,19 +317,14 @@ const RegisterScreen = () => {
                 <Text style={styles.errorText}>{validationErrors.email}</Text>
               )}
 
+              <Text style={styles.label}>Password</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.password && validationErrors.password && styles.inputError
               ]}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color={touchedFields.password && validationErrors.password ? 'red' : COLORS.gray} 
-                  style={styles.inputIcon} 
-                />
                 <TextInput
                   style={styles.input}
-                  placeholder="Password"
+                  placeholder="Enter your password"
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -360,11 +343,7 @@ const RegisterScreen = () => {
                   style={styles.passwordVisibilityButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Ionicons 
-                    name={showPassword ? "eye-off" : "eye"} 
-                    size={20} 
-                    color={COLORS.gray} 
-                  />
+                  {/* Removed Ionicons import since we're not using it anymore */}
                 </TouchableOpacity>
               </View>
               {/* Show password complexity when typing or when password doesn't meet requirements */}
@@ -375,19 +354,14 @@ const RegisterScreen = () => {
                 <Text style={styles.errorText}>{validationErrors.password}</Text>
               )}
 
+              <Text style={styles.label}>Confirm Password</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.confirmPassword && validationErrors.confirmPassword && styles.inputError
               ]}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color={touchedFields.confirmPassword && validationErrors.confirmPassword ? 'red' : COLORS.gray} 
-                  style={styles.inputIcon} 
-                />
                 <TextInput
                   style={styles.input}
-                  placeholder="Confirm Password"
+                  placeholder="Confirm your password"
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);
@@ -402,11 +376,7 @@ const RegisterScreen = () => {
                   style={styles.passwordVisibilityButton}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
-                  <Ionicons 
-                    name={showConfirmPassword ? "eye-off" : "eye"} 
-                    size={20} 
-                    color={COLORS.gray} 
-                  />
+                  {/* Removed Ionicons import since we're not using it anymore */}
                 </TouchableOpacity>
               </View>
               {touchedFields.confirmPassword && validationErrors.confirmPassword && (
@@ -417,18 +387,6 @@ const RegisterScreen = () => {
               {confirmPassword.length > 0 && password === confirmPassword && password.length >= 8 && !validationErrors.password && (
                 <Text style={styles.successText}>✓ Passwords match</Text>
               )}
-
-              <View style={styles.termsContainer}>
-                <Switch
-                  value={termsAgreed}
-                  onValueChange={setTermsAgreed}
-                  trackColor={{ false: '#767577', true: `${COLORS.primary}80` }}
-                  thumbColor={termsAgreed ? COLORS.primary : '#f4f3f4'}
-                />
-                <Text style={styles.termsText}>
-                  I agree to the Terms & Conditions and Privacy Policy
-                </Text>
-              </View>
 
               <TouchableOpacity 
                 style={[styles.registerButton, !isFormValid && styles.registerButtonDisabled]}
@@ -515,23 +473,38 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: width * 0.06, // 24px on 400px width screen
     justifyContent: 'space-between',
   },
   formContainer: {
     flex: 1,
     justifyContent: 'center',
   },
+  logo: {
+    width: width * 0.45,
+    height: height * 0.125,
+    alignSelf: 'center',
+    marginTop: -height * 0.030,
+  },
   title: {
-    fontSize: 28,
+    fontSize: Math.min(28, width * 0.07), // Responsive font size
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 8,
+    marginBottom: height * 0.01, // 8px on 800px height screen
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04),
     color: COLORS.gray,
-    marginBottom: 32,
+    marginBottom: height * 0.02, 
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
+    color: COLORS.black,
+    marginBottom: height * 0.01, // 8px on 800px height screen
+    fontWeight: '600',
+    textAlign: 'left',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -539,54 +512,41 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.lightGray,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: height * 0.015, // Reduced from 0.02 to make more compact
     backgroundColor: COLORS.white,
-  },
-  inputIcon: {
-    paddingHorizontal: 16,
   },
   input: {
     flex: 1,
-    height: 50,
-    fontSize: 16,
+    height: height * 0.0625, // 50px on 800px height screen
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     color: COLORS.black,
+    paddingHorizontal: width * 0.04, // 16px on 400px width screen
   },
   passwordVisibilityButton: {
-    paddingHorizontal: 16,
-    height: 50,
+    padding: width * 0.04, // 16px on 400px width screen
+    height: height * 0.0625, // 50px on 800px height screen
     justifyContent: 'center',
-  },
-  termsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  termsText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.gray,
-    marginLeft: 12,
   },
   registerButton: {
     backgroundColor: COLORS.primary,
-    height: 50,
+    height: height * 0.0625, // 50px on 800px height screen
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: height * 0.02, // Reduced from 0.03 to make more compact
   },
   registerButtonDisabled: {
     backgroundColor: `${COLORS.primary}80`,
   },
   registerButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     fontWeight: 'bold',
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: height * 0.02, // Reduced from 0.03 to make more compact
   },
   divider: {
     flex: 1,
@@ -594,68 +554,68 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
   },
   dividerText: {
-    marginHorizontal: 16,
+    marginHorizontal: width * 0.04, // 16px on 400px width screen
     color: COLORS.gray,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
   },
   socialButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: height * 0.02, // Reduced from 0.03 to make more compact
   },
   socialButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 50,
+    height: height * 0.0625, // 50px on 800px height screen
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.lightGray,
-    marginHorizontal: 8,
+    marginHorizontal: width * 0.02, // 8px on 400px width screen
     backgroundColor: COLORS.white,
   },
   socialIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
+    width: width * 0.06, // 24px on 400px width screen
+    height: height * 0.03, // 24px on 800px height screen
+    marginRight: width * 0.02, // 8px on 400px width screen
   },
   socialButtonText: {
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     color: COLORS.black,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: height * 0.01, // 8px on 800px height screen
   },
   loginText: {
     color: COLORS.gray,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
   },
   loginButtonText: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
     fontWeight: 'bold',
-    marginLeft: 5,
+    marginLeft: width * 0.0125, // 5px on 400px width screen
   },
   inputError: {
     borderColor: 'red',
   },
   errorText: {
     color: 'red',
-    fontSize: 12,
-    marginTop: -12,
-    marginBottom: 8,
-    marginLeft: 8,
+    fontSize: Math.min(12, width * 0.03), // Responsive font size
+    marginTop: -height * 0.015, // -12px on 800px height screen
+    marginBottom: height * 0.01, // 8px on 800px height screen
+    marginLeft: width * 0.02, // 8px on 400px width screen
   },
   successText: {
     color: COLORS.primary,
-    fontSize: 12,
-    marginTop: -12,
-    marginBottom: 8,
-    marginLeft: 8,
+    fontSize: Math.min(12, width * 0.03), // Responsive font size
+    marginTop: -height * 0.015, // -12px on 800px height screen
+    marginBottom: height * 0.01, // 8px on 800px height screen
+    marginLeft: width * 0.02, // 8px on 400px width screen
     fontWeight: '600',
   },
   loadingContainer: {
@@ -665,4 +625,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterScreen; 
+export default RegisterScreen;
