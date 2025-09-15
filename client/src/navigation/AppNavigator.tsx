@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
+import SplashScreen from '../screens/SplashScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
@@ -22,12 +24,8 @@ const AppNavigator = () => {
   const navigationRef = useRef(null);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      await useAuthStore.getState().checkAuth();
-      setIsLoading(false);
-    };
-
-    initializeAuth();
+    // Let splash screen handle the initialization
+    setIsLoading(false);
   }, []);
 
   // Log authentication state changes
@@ -52,27 +50,21 @@ const AppNavigator = () => {
       }}
     >
       <Stack.Navigator 
-        key={isAuthenticated ? 'authenticated' : 'unauthenticated'}
-        initialRouteName={isAuthenticated ? "MainTabs" : "Login"}
+        initialRouteName="Splash"
         screenOptions={{
           headerShown: false
         }}
       >
-        {!isAuthenticated ? (
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-            <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
-            <Stack.Screen name="Results" component={ResultsScreen} />
-            <Stack.Screen name="ScanHistory" component={ScanHistoryScreen} />
-          </>
-        )}
+        <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+        <Stack.Screen name="Results" component={ResultsScreen} />
+        <Stack.Screen name="ScanHistory" component={ScanHistoryScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
