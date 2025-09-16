@@ -84,6 +84,7 @@ const LoginScreen = () => {
         setShowPassword(false);
         resetValidation();
         
+        // Show success message and automatically navigate after 1 second
         Alert.alert(
           'Success',
           'Welcome back!',
@@ -91,13 +92,9 @@ const LoginScreen = () => {
             {
               text: 'OK',
               onPress: () => {
-                // Force authentication state update
-                useAuthStore.getState().setAuthenticated(true);
-                // Force app reload to trigger navigation
                 setTimeout(() => {
-                  console.log('Forcing navigation to home screen');
-                  useAuthStore.getState().setAuthenticated(true);
-                }, 100);
+                  navigation.navigate('MainTabs');
+                }, 1000);
               }
             }
           ]
@@ -119,7 +116,7 @@ const LoginScreen = () => {
       if (currentError) {
         Alert.alert('Error', currentError);
       } else if (response) {
-        // Show success message
+        // Show success message and automatically navigate after 1 second
         Alert.alert(
           'Success',
           'Welcome to KAPPI!',
@@ -127,13 +124,9 @@ const LoginScreen = () => {
             {
               text: 'OK',
               onPress: () => {
-                // Force authentication state update
-                useAuthStore.getState().setAuthenticated(true);
-                // Force app reload to trigger navigation
                 setTimeout(() => {
-                  console.log('Forcing navigation to home screen');
-                  useAuthStore.getState().setAuthenticated(true);
-                }, 100);
+                  navigation.navigate('MainTabs');
+                }, 1000);
               }
             }
           ]
@@ -159,7 +152,7 @@ const LoginScreen = () => {
       if (currentError) {
         Alert.alert('Error', currentError);
       } else if (response) {
-        // Show success message
+        // Show success message and automatically navigate after 1 second
         Alert.alert(
           'Success',
           'Welcome to KAPPI!',
@@ -167,13 +160,9 @@ const LoginScreen = () => {
             {
               text: 'OK',
               onPress: () => {
-                // Force authentication state update
-                useAuthStore.getState().setAuthenticated(true);
-                // Force app reload to trigger navigation
                 setTimeout(() => {
-                  console.log('Forcing navigation to home screen');
-                  useAuthStore.getState().setAuthenticated(true);
-                }, 100);
+                  navigation.navigate('MainTabs');
+                }, 1000);
               }
             }
           ]
