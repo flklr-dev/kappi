@@ -64,6 +64,7 @@ interface LocationData {
 const HomeScreen = () => {
   const [location, setLocation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tipsSlideIndex, setTipsSlideIndex] = useState(0);
   const { user, updateUserLocation } = useAuthStore();
   const tabNavigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const stackNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -230,42 +231,74 @@ const HomeScreen = () => {
         title="KAPPI"
       />
 
-      {/* Welcome message */}
-      {user && (
-        <Text style={styles.welcomeText}>
-          Welcome, {user.fullName.split(' ')[0]}!
-        </Text>
-      )}
+      {/* Redesigned Welcome Section */}
+      <View style={styles.welcomeSection}>
+        <View style={styles.welcomeContent}>
+          <Text style={styles.greetingText}>Good day,</Text>
+          {user && (
+            <Text style={styles.userNameText} numberOfLines={1}>
+              {user.fullName}
+            </Text>
+          )}
+        </View>
+        <View style={styles.avatarContainer}>
+          <View style={styles.avatar}>
+            <Ionicons name="person" size={24} color={COLORS.white} />
+          </View>
+        </View>
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
-        {/* Location Status Widget */}
-        <TouchableOpacity 
-          style={styles.locationWidget}
-          onPress={getCurrentLocation}
-        >
-          <View style={styles.locationIconContainer}>
-            <Ionicons name="location" size={24} color={COLORS.primary} />
-          </View>
-          <View style={styles.locationTextContainer}>
-            <Text style={styles.locationText}>Your Location</Text>
-            <View style={styles.locationValueContainer}>
+        {/* Redesigned Location Status Widget */}
+        <View style={styles.locationSection}>
+          <View style={styles.locationHeader}>
+            <Text style={styles.locationTitle}>Your Location</Text>
+            <TouchableOpacity 
+              style={styles.refreshButton}
+              onPress={getCurrentLocation}
+            >
               {loading ? (
                 <ActivityIndicator size="small" color={COLORS.primary} />
               ) : (
-                <Text style={styles.locationValue}>
-                  {location || 'Location not available'}
-                </Text>
+                <>
+                  <Ionicons name="refresh" size={16} color={COLORS.primary} />
+                  <Text style={styles.refreshText}>Refresh</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.locationCard}
+            onPress={getCurrentLocation}
+          >
+            <View style={styles.locationIconWrapper}>
+              <View style={styles.locationIconContainer}>
+                <Ionicons name="location" size={20} color={COLORS.white} />
+              </View>
+            </View>
+            
+            <View style={styles.locationInfo}>
+              {loading ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : location ? (
+                <>
+                  <Text style={styles.locationLabel}>Current Location</Text>
+                  <Text style={styles.locationValue}>{location}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.locationLabel}>Location</Text>
+                  <Text style={styles.locationValue}>Location not available</Text>
+                </>
               )}
             </View>
-          </View>
-          <View style={styles.refreshIconContainer}>
-            <Ionicons 
-              name="refresh" 
-              size={20} 
-              color={COLORS.gray} 
-            />
-          </View>
-        </TouchableOpacity>
+            
+            <View style={styles.locationAction}>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+            </View>
+          </TouchableOpacity>
+        </View>
 
         {/* Core CTAs Section */}
         <View style={styles.section}>
@@ -428,6 +461,133 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  // Redesigned Welcome Section
+  welcomeSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  welcomeContent: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  greetingText: {
+    fontSize: 16,
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  userNameText: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.black,
+    letterSpacing: 0.3,
+  },
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Redesigned Location Section
+  locationSection: {
+    marginHorizontal: 20,
+    marginBottom: 28,
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  locationTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.black,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  refreshText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  locationCard: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  locationIconWrapper: {
+    marginRight: 16,
+  },
+  locationIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  locationInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  locationLabel: {
+    fontSize: 12,
+    color: COLORS.gray,
+    marginBottom: 2,
+    fontWeight: '500',
+  },
+  locationValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.black,
+    lineHeight: 20,
+  },
+  locationAction: {
+    marginLeft: 8,
+  },
   notificationButton: {
     padding: 8,
   },
@@ -458,57 +618,6 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontWeight: '500',
     marginTop: 2,
-  },
-  locationWidget: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 28,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-  },
-  locationIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.primary + '12',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  locationTextContainer: {
-    flex: 1,
-  },
-  locationText: {
-    fontSize: 14,
-    color: COLORS.gray,
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  locationValueContainer: {
-    minHeight: 24,
-    justifyContent: 'center',
-  },
-  locationValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.black,
-    lineHeight: 20,
-  },
-  refreshIconContainer: {
-    marginLeft: 12,
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#F8F9FA',
   },
   // Redesigned Quick Actions
   quickActionsGrid: {
@@ -719,15 +828,6 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     lineHeight: 18,
     fontWeight: '500',
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: COLORS.black,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    marginBottom: 8,
-    letterSpacing: 0.5,
   },
 });
 
