@@ -37,8 +37,16 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
         // Wait a minimum time for splash screen
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Always go to onboarding during development
-        navigation.replace('Onboarding');
+        // Check if user has seen onboarding
+        const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+        
+        if (isAuthenticated) {
+          navigation.replace('MainTabs');
+        } else if (hasSeenOnboarding) {
+          navigation.replace('Login');
+        } else {
+          navigation.replace('Onboarding');
+        }
       } catch (error) {
         console.error('Error during app initialization:', error);
         navigation.replace('Onboarding');
@@ -46,7 +54,7 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     initializeApp();
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <View style={styles.container}>
