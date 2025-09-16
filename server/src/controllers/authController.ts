@@ -326,6 +326,13 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     
     await user.save();
 
+    // Generate new token after password change
+    const token = jwt.sign(
+      { _id: user._id },
+      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+      { expiresIn: '7d' }
+    );
+
     const responseMessage = isSettingFirstPassword 
       ? 'Password set successfully! You can now log in with email and password.'
       : 'Password changed successfully';
@@ -333,6 +340,7 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     return res.json({ 
       message: responseMessage,
       isFirstPassword: isSettingFirstPassword,
+      token: token, // Include new token
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -934,7 +942,18 @@ const sendOTPEmail = async (email: string, fullName: string, otpCode: string) =>
     to: email,
     subject: '🔐 Your KAPPI Password Reset Code',
     html: htmlContent,
-    text: `Hello ${fullName},\n\nWe received a request to reset your password for your KAPPI account.\n\nYour verification code is: ${otpCode}\n\nThis code expires in 10 minutes and can only be used once.\n\nIf you didn't request this reset, please ignore this email.\n\nBest regards,\nKAPPI Team`
+    text: `Hello ${fullName},
+
+We received a request to reset your password for your KAPPI account.
+
+Your verification code is: ${otpCode}
+
+This code expires in 10 minutes and can only be used once.
+
+If you didn't request this reset, please ignore this email.
+
+Best regards,
+KAPPI Team`
   };
   
   await transporter.sendMail(mailOptions);
@@ -997,7 +1016,14 @@ const sendSocialOnlyResetEmail = async (email: string, fullName: string) => {
     to: email,
     subject: '📱 KAPPI Account Information - Social Login',
     html: htmlContent,
-    text: `Hello ${fullName},\n\nWe received a password reset request for your KAPPI account. However, your account uses social login (Google/Facebook) and doesn't have a traditional password.\n\nYou can continue logging in with your social accounts, or set up a password in the app under Profile → Set Password.\n\nBest regards,\nKAPPI Team`
+    text: `Hello ${fullName},
+
+We received a password reset request for your KAPPI account. However, your account uses social login (Google/Facebook) and doesn't have a traditional password.
+
+You can continue logging in with your social accounts, or set up a password in the app under Profile → Set Password.
+
+Best regards,
+KAPPI Team`
   };
   
   await transporter.sendMail(mailOptions);
@@ -1055,7 +1081,14 @@ const sendPasswordChangeConfirmationEmail = async (email: string, fullName: stri
     to: email,
     subject: '✅ KAPPI Password Changed Successfully',
     html: htmlContent,
-    text: `Hello ${fullName},\n\nYour KAPPI account password has been successfully changed.\n\nIf you did not make this change, please contact our support team immediately.\n\nBest regards,\nKAPPI Team`
+    text: `Hello ${fullName},
+
+Your KAPPI account password has been successfully changed.
+
+If you did not make this change, please contact our support team immediately.
+
+Best regards,
+KAPPI Team`
   };
   
   await transporter.sendMail(mailOptions);
