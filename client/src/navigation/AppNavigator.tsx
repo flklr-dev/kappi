@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, AppState } from 'react-native';
 import SplashScreen from '../screens/SplashScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -20,13 +20,31 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [appState, setAppState] = useState(AppState.currentState);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const navigationRef = useRef(null);
 
   useEffect(() => {
     // Let splash screen handle the initialization
     setIsLoading(false);
-  }, []);
+    
+    // Check auth state on app start
+    useAuthStore.getState().checkAuth();
+    
+    // Handle app state changes to check auth when app comes to foreground
+    const handleAppStateChange = (nextAppState: any) => {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        // App has come to the foreground, check auth state
+        useAuthStore.getState().checkAuth();
+      }
+      setAppState(nextAppState);
+    };
+    
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription?.remove();
+    };
+  }, [appState]);
 
   // Log authentication state changes
   useEffect(() => {

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { secureStorage } from '../utils/secureStorage';
+import { useAuthStore } from '../stores/authStore';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5000/api';
 const TOKEN_KEY = '@kappi_auth_token';
@@ -14,10 +15,18 @@ const api = axios.create({
   withCredentials: true, // Enable secure cookie handling
 });
 
+// Track if we're already logging out to prevent multiple logout attempts
+let isLoggingOut = false;
+
 // Add security headers and token to requests
 api.interceptors.request.use(
   async (config: any) => {
     try {
+      // If we're logging out, reject the request immediately
+      if (isLoggingOut) {
+        return Promise.reject(new Error('Logging out'));
+      }
+      
       const tokenData = await secureStorage.getItem(TOKEN_KEY);
       if (tokenData) {
         const { token, expiresAt } = tokenData;
@@ -51,21 +60,22 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If the error is 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
+    // If the error is 401 and we're not already logging out
+    if (error.response?.status === 401 && !isLoggingOut) {
+      isLoggingOut = true;
+      
       try {
-        // TODO: Implement token refresh logic here
-        // const refreshToken = await secureStorage.getItem('refreshToken');
-        // const response = await axios.post('/auth/refresh', { refreshToken });
-        // await secureStorage.setItem(TOKEN_KEY, response.data);
-        // originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
-        // return api(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, redirect to login
+        // Remove token and user data
         await secureStorage.removeItem(TOKEN_KEY);
-        return Promise.reject(refreshError);
+        await secureStorage.removeItem('@kappi_auth_user');
+        
+        // Update auth store state
+        useAuthStore.getState().setAuthenticated(false);
+        useAuthStore.getState().setUser(null);
+      } catch (logoutError) {
+        console.error('Error during logout:', logoutError);
+      } finally {
+        isLoggingOut = false;
       }
     }
 

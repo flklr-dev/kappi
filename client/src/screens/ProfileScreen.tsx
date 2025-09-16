@@ -78,22 +78,31 @@ const ProfileScreen = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showAboutApp, setShowAboutApp] = useState(false);
   const [userCapabilities, setUserCapabilities] = useState<UserCapabilities | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Track logout state
   
   // Fetch user data and capabilities when component mounts
   useEffect(() => {
+    let isMounted = true;
+    
     const checkUserData = async () => {
       // If user data is not in store, try to get from secure storage
       if (!user) {
         const userData = await secureStorage.getItem('@kappi_auth_user');
-        if (userData) {
+        if (userData && isMounted) {
           useAuthStore.getState().setUser(userData);
         }
+      }
+      
+      // Check if user is authenticated before fetching capabilities
+      const currentState = useAuthStore.getState();
+      if (!currentState.isAuthenticated || !isMounted) {
+        return;
       }
       
       // Fetch current user capabilities from backend
       try {
         const capabilities = await authViewModel.refreshUserCapabilities();
-        if (capabilities) {
+        if (capabilities && isMounted) {
           setUserCapabilities({
             canSetPassword: capabilities.canSetPassword,
             hasPasswordAuth: capabilities.hasPasswordAuth,
@@ -103,7 +112,7 @@ const ProfileScreen = () => {
       } catch (error) {
         console.error('Failed to fetch user capabilities:', error);
         // Fallback to local state if API fails
-        if (user) {
+        if (user && isMounted) {
           setUserCapabilities({
             canSetPassword: !user.providers?.includes('email'),
             hasPasswordAuth: user.providers?.includes('email') || false,
@@ -114,6 +123,10 @@ const ProfileScreen = () => {
     };
     
     checkUserData();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   // Check if user has linked providers
@@ -174,14 +187,22 @@ const ProfileScreen = () => {
           text: "Logout",
           style: "destructive",
           onPress: async () => {
+            if (isLoggingOut) return; // Prevent multiple logout attempts
+            
             try {
+              setIsLoggingOut(true);
               setLoading(true);
               await logout();
-              // Navigation will be handled automatically by AppNavigator
+              // Navigate to login screen after successful logout
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
             } catch (error) {
               Alert.alert("Error", "Failed to logout. Please try again.");
             } finally {
               setLoading(false);
+              setIsLoggingOut(false);
             }
           }
         }
@@ -360,28 +381,38 @@ const ProfileScreen = () => {
         Alert.alert('Success', result.message, [
           { text: 'OK', onPress: () => {
             handleCloseChangePassword();
-            // Refresh user capabilities after successful password change
-            authViewModel.refreshUserCapabilities().then(capabilities => {
-              if (capabilities) {
-                setUserCapabilities({
-                  canSetPassword: capabilities.canSetPassword,
-                  hasPasswordAuth: capabilities.hasPasswordAuth,
-                  providers: capabilities.providers
+            // Only refresh user capabilities if this was a first-time password setting (not a logout scenario)
+            if (result.message !== 'Password changed successfully. Please log in again.') {
+              // Check if user is still authenticated before refreshing capabilities
+              const currentState = useAuthStore.getState();
+              if (currentState.isAuthenticated) {
+                // Refresh user capabilities after successful password change
+                authViewModel.refreshUserCapabilities().then(capabilities => {
+                  if (capabilities) {
+                    setUserCapabilities({
+                      canSetPassword: capabilities.canSetPassword,
+                      hasPasswordAuth: capabilities.hasPasswordAuth,
+                      providers: capabilities.providers
+                    });
+                    // Update authStore with normalized user data
+                    if (capabilities.user) {
+                      const normalizedUser = {
+                        ...capabilities.user,
+                        providers: Array.isArray(capabilities.user.providers) 
+                          ? capabilities.user.providers.map((p: any) => 
+                              typeof p === 'string' ? p : p.provider
+                            )
+                          : (capabilities.providers || [])
+                      };
+                      useAuthStore.getState().setUser(normalizedUser);
+                    }
+                  }
+                }).catch(error => {
+                  console.error('Failed to refresh user capabilities after password change:', error);
+                  // Don't show error to user as this is not critical
                 });
-                // Update authStore with normalized user data
-                if (capabilities.user) {
-                  const normalizedUser = {
-                    ...capabilities.user,
-                    providers: Array.isArray(capabilities.user.providers) 
-                      ? capabilities.user.providers.map((p: any) => 
-                          typeof p === 'string' ? p : p.provider
-                        )
-                      : (capabilities.providers || [])
-                  };
-                  useAuthStore.getState().setUser(normalizedUser);
-                }
               }
-            });
+            }
           }}
         ]);
       } else {

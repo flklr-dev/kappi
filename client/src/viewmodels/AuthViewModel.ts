@@ -635,6 +635,7 @@ class AuthViewModel {
       const response = await authService.changePassword(oldPassword, newPassword, confirmPassword, tokenData.token) as { 
         isFirstPassword?: boolean; 
         message: string;
+        token?: string;
         user?: any;
       };
       
@@ -652,8 +653,25 @@ class AuthViewModel {
         await secureStorage.setItem(USER_KEY, updatedUser);
       }
       
-      // Handle logout for password changes (not first-time password setting)
-      if (!response.isFirstPassword) {
+      // Handle token update for password changes
+      if (response.token) {
+        // Update token in secure storage
+        const expiresAt = Date.now() + TOKEN_EXPIRY;
+        await secureStorage.setItem(TOKEN_KEY, {
+          token: response.token,
+          expiresAt
+        });
+        
+        // For first-time password setting, don't logout
+        if (response.isFirstPassword) {
+          return { success: true, message: response.message };
+        } else {
+          // For regular password changes, logout and require re-login
+          await this.logout();
+          return { success: true, message: 'Password changed successfully. Please log in again.' };
+        }
+      } else if (!response.isFirstPassword) {
+        // Handle logout for password changes (not first-time password setting) when no new token
         await this.logout();
         return { success: true, message: 'Password changed successfully. Please log in again.' };
       }
