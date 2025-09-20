@@ -68,11 +68,15 @@ const ProfileScreen = () => {
   });
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [editedName, setEditedName] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -159,8 +163,9 @@ const ProfileScreen = () => {
   };
 
   const handleEditProfile = () => {
-    // Implement edit profile logic
-    console.log('Edit profile');
+    setEditedName(user?.fullName || '');
+    setProfileError(null);
+    setShowEditProfile(true);
   };
 
   const handleDeleteAccount = () => {
@@ -337,6 +342,39 @@ const ProfileScreen = () => {
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError(null);
+  };
+
+  const handleCloseEditProfile = () => {
+    setShowEditProfile(false);
+    setEditedName('');
+    setProfileError(null);
+  };
+
+  const handleSaveProfile = async () => {
+    setProfileError(null);
+    setProfileLoading(true);
+    
+    try {
+      const result = await authViewModel.updateProfile(editedName);
+      
+      if (result.success) {
+        Alert.alert('Success', result.message, [
+          { text: 'OK', onPress: () => {
+            handleCloseEditProfile();
+            // Update the user data in the auth store
+            if (result.user) {
+              useAuthStore.getState().setUser(result.user);
+            }
+          }}
+        ]);
+      } else {
+        setProfileError(result.message);
+      }
+    } catch (error: any) {
+      setProfileError(error.message || 'An unexpected error occurred');
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -705,6 +743,54 @@ const ProfileScreen = () => {
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
                 <Text style={styles.loginWithText}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={showEditProfile}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseEditProfile}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity onPress={handleCloseEditProfile}>
+                <Ionicons name="close" size={24} color={COLORS.black} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSubtitle}>
+              You can only change your name once every 5 days.
+            </Text>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.inputLabel}>Full Name</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  value={editedName}
+                  onChangeText={setEditedName}
+                  placeholder="Full Name"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+            {profileError ? (
+              <Text style={{ color: COLORS.error, marginBottom: 10, textAlign: 'center' }}>{profileError}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.loginWithButton, { marginTop: 10, opacity: profileLoading ? 0.7 : 1 }]}
+              onPress={handleSaveProfile}
+              disabled={profileLoading}
+            >
+              {profileLoading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.loginWithText}>Save Changes</Text>
               )}
             </TouchableOpacity>
           </View>

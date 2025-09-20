@@ -186,6 +186,19 @@ export const authService = {
     }
   },
 
+  updateProfile: async (fullName: string, token: string) => {
+    try {
+      const response = await api.put(
+        '/auth/profile',
+        { fullName },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
   async changePassword(oldPassword: string, newPassword: string, confirmPassword: string, token: string) {
     try {
       const response = await api.put(

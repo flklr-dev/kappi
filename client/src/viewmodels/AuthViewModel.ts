@@ -690,6 +690,57 @@ class AuthViewModel {
     }
   }
 
+  async updateProfile(fullName: string) {
+    try {
+      this.setLoading(true);
+      this.setError(null);
+      
+      const tokenData = await secureStorage.getItem('@kappi_auth_token');
+      if (!tokenData || !tokenData.token) {
+        this.setError('Authentication token not found');
+        return { success: false, message: 'Authentication token not found' };
+      }
+
+      // Validate input
+      if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
+        this.setError('Full name is required');
+        return { success: false, message: 'Full name is required' };
+      }
+
+      const trimmedName = fullName.trim();
+      
+      // Check if name has actually changed
+      if (this.user && this.user.fullName === trimmedName) {
+        this.setError('Name is already set to this value');
+        return { success: false, message: 'Name is already set to this value' };
+      }
+
+      // Call backend API
+      const response = await authService.updateProfile(trimmedName, tokenData.token) as { 
+        message: string;
+        user?: any;
+      };
+      
+      // Update user data if provided by backend
+      if (response.user) {
+        this.setUser(response.user);
+        await secureStorage.setItem(USER_KEY, response.user);
+      }
+      
+      return { success: true, message: response.message, user: response.user };
+      
+    } catch (error: any) {
+      let message = 'Failed to update profile';
+      if (error.response && error.response.data && error.response.data.message) {
+        message = error.response.data.message;
+      }
+      this.setError(message);
+      return { success: false, message };
+    } finally {
+      this.setLoading(false);
+    }
+  }
+
   // Helper method to refresh user capabilities from backend
   async refreshUserCapabilities(): Promise<UserCapabilities | null> {
     try {

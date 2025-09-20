@@ -34,6 +34,7 @@ export const register = async (req: Request, res: Response) => {
       fullName,
       email,
       password,
+      nameLastUpdated: null, // Initialize as null since name hasn't been updated yet
     });
 
     await user.save();
@@ -149,7 +150,8 @@ export const socialLogin = async (req: Request, res: Response) => {
       user = new User({
         fullName,
         email,
-        providers: [{ provider, providerId }]
+        providers: [{ provider, providerId }],
+        nameLastUpdated: null, // Initialize as null since name hasn't been updated yet
       });
 
       await user.save();
@@ -256,6 +258,69 @@ export const updateLocation = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: 'Error updating location' });
   }
 }; 
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const userId = req.user._id;
+    const { fullName } = req.body;
+
+    // Validate input
+    if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
+      return res.status(400).json({ message: 'Full name is required' });
+    }
+
+    const trimmedName = fullName.trim();
+    
+    // Check if name has actually changed
+    if (req.user.fullName === trimmedName) {
+      return res.status(400).json({ message: 'Name is already set to this value' });
+    }
+
+    // Check if user has a nameLastUpdated field
+    const nameLastUpdated = req.user.nameLastUpdated;
+    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    
+    // If nameLastUpdated exists and is within the last 5 days, reject the request
+    if (nameLastUpdated && nameLastUpdated > fiveDaysAgo) {
+      const daysRemaining = Math.ceil((nameLastUpdated.getTime() - fiveDaysAgo.getTime()) / (1000 * 60 * 60 * 24));
+      return res.status(400).json({ 
+        message: `You can only change your name once every 5 days. Please wait ${daysRemaining} more day(s).` 
+      });
+    }
+
+    // Update user's full name and nameLastUpdated field
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { 
+        fullName: trimmedName,
+        nameLastUpdated: new Date()
+      },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ 
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        providers: user.providers?.map(p => p.provider) || [],
+        location: user.location
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Error updating profile' });
+  }
+};
 
 export const changePassword = async (req: AuthRequest, res: Response) => {
   try {
