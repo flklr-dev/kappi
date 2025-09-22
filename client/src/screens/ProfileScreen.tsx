@@ -25,6 +25,7 @@ import { authViewModel } from '../viewmodels/AuthViewModel';
 import { secureStorage } from '../utils/secureStorage';
 import PasswordComplexity from '../components/PasswordComplexity';
 import { sanitizeInput } from '../utils/secureStorage';
+import { ThemeContext } from '../context/ThemeContext';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,28 +37,44 @@ interface UserCapabilities {
 }
 
 // Component for the profile header - more professional and clean
-const ProfileHeader = ({ user, handleEditProfile }: any) => (
-  <View style={styles.profileHeaderContainer}>
+const ProfileHeader = ({ user, handleEditProfile, isDarkMode, themedColors }: any) => (
+  <View style={[styles.profileHeaderContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white, borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]}>
     {user?.profilePictureUrl ? (
       <Image source={{ uri: user.profilePictureUrl }} style={styles.profilePicture} />
     ) : (
-      <View style={styles.initialsContainer}>
-        <Text style={styles.initialsText}>
+      <View style={[styles.initialsContainer, { backgroundColor: isDarkMode ? themedColors.primary + '20' : COLORS.primary + '10' }]}>
+        <Text style={[styles.initialsText, { color: isDarkMode ? themedColors.primary : COLORS.primary }]}>
           {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
         </Text>
       </View>
     )}
     <View style={styles.profileInfo}>
-      <Text style={styles.profileName}>{user?.fullName}</Text>
-      <Text style={styles.profileEmail}>{user?.email}</Text>
+      <Text style={[styles.profileName, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{user?.fullName}</Text>
+      <Text style={[styles.profileEmail, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{user?.email}</Text>
     </View>
-    <TouchableOpacity onPress={handleEditProfile} style={styles.editButton}>
-      <Ionicons name="create-outline" size={24} color={COLORS.primary} />
+    <TouchableOpacity onPress={handleEditProfile} style={[styles.editButton, { backgroundColor: isDarkMode ? themedColors.background : COLORS.secondary + '10' }]}>
+      <Ionicons name="create-outline" size={24} color={isDarkMode ? themedColors.primary : COLORS.primary} />
     </TouchableOpacity>
   </View>
 );
 
 const ProfileScreen = () => {
+  const { isDarkMode } = useContext(ThemeContext);
+  // Use a ternary to avoid TypeScript issues
+  const themedColors = isDarkMode ? {
+    primary: '#6F8F3F',
+    background: '#121212',
+    secondary: '#2A2A2A',
+    accent: '#804E49',
+    white: '#FFFFFF',
+    black: '#000000',
+    gray: '#AAAAAA',
+    lightGray: '#555555',
+    transparent: 'transparent',
+    error: '#D32F2F',
+    success: '#4CAF50'
+  } : COLORS;
+  
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { setIsAuthenticated } = useContext(AuthContext);
   const { logout, user } = useAuthStore();
@@ -118,7 +135,7 @@ const ProfileScreen = () => {
         // Fallback to local state if API fails
         if (user && isMounted) {
           setUserCapabilities({
-            canSetPassword: !user.providers?.includes('email'),
+            canSetPassword: user.providers?.includes('email') ?? false,
             hasPasswordAuth: user.providers?.includes('email') || false,
             providers: user.providers || []
           });
@@ -465,16 +482,19 @@ const ProfileScreen = () => {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
+        <ActivityIndicator size="large" color={themedColors.primary} />
+        <Text style={[styles.loadingText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Loading profile...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
+      <StatusBar 
+        barStyle={isDarkMode ? "light-content" : "dark-content"} 
+        backgroundColor={themedColors.primary} 
+      />
       
       <Header
         title="Profile"
@@ -482,24 +502,24 @@ const ProfileScreen = () => {
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* New Profile Header Section */}
-        <ProfileHeader user={user} handleEditProfile={handleEditProfile} />
+        <ProfileHeader user={user} handleEditProfile={handleEditProfile} isDarkMode={isDarkMode} themedColors={themedColors} />
         
         {/* Connected Accounts Section */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Connected Accounts</Text>
-          <View style={styles.menuContainer}>
-            <View style={styles.linkedAccountItem}>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Connected Accounts</Text>
+          <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
+            <View style={[styles.linkedAccountItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]}>
               <View style={styles.linkedAccountInfo}>
                 <View style={[styles.accountIconContainer, { backgroundColor: '#4285F4' }]}>
-                  <Ionicons name="logo-google" size={18} color={COLORS.white} />
+                  <Ionicons name="logo-google" size={18} color={themedColors.white} />
                 </View>
-                <Text style={styles.linkedAccountText}>Google Account</Text>
+                <Text style={[styles.linkedAccountText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Google Account</Text>
               </View>
               
               {hasProvider('google') ? (
                 <View style={styles.linkedBadge}>
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
-                  <Text style={styles.linkedText}>Linked</Text>
+                  <Ionicons name="checkmark-circle" size={20} color={themedColors.success} />
+                  <Text style={[styles.linkedText, { color: themedColors.success }]}>Linked</Text>
                 </View>
               ) : (
                 <TouchableOpacity 
@@ -508,26 +528,26 @@ const ProfileScreen = () => {
                   disabled={linkingLoading.google}
                 >
                   {linkingLoading.google ? (
-                    <ActivityIndicator size="small" color={COLORS.white} />
+                    <ActivityIndicator size="small" color={themedColors.white} />
                   ) : (
-                    <Text style={styles.linkButtonText}>Link</Text>
+                    <Text style={[styles.linkButtonText, { color: COLORS.white }]}>Link</Text>
                   )}
                 </TouchableOpacity>
               )}
             </View>
             
-            <View style={styles.linkedAccountItem}>
+            <View style={[styles.linkedAccountItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]}>
               <View style={styles.linkedAccountInfo}>
                 <View style={[styles.accountIconContainer, { backgroundColor: '#3b5998' }]}>
-                  <Ionicons name="logo-facebook" size={18} color={COLORS.white} />
+                  <Ionicons name="logo-facebook" size={18} color={themedColors.white} />
                 </View>
-                <Text style={styles.linkedAccountText}>Facebook Account</Text>
+                <Text style={[styles.linkedAccountText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Facebook Account</Text>
               </View>
               
               {hasProvider('facebook') ? (
                 <View style={styles.linkedBadge}>
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
-                  <Text style={styles.linkedText}>Linked</Text>
+                  <Ionicons name="checkmark-circle" size={20} color={themedColors.success} />
+                  <Text style={[styles.linkedText, { color: themedColors.success }]}>Linked</Text>
                 </View>
               ) : (
                 <TouchableOpacity 
@@ -536,71 +556,71 @@ const ProfileScreen = () => {
                   disabled={linkingLoading.facebook}
                 >
                   {linkingLoading.facebook ? (
-                    <ActivityIndicator size="small" color={COLORS.white} />
+                    <ActivityIndicator size="small" color={themedColors.white} />
                   ) : (
-                    <Text style={styles.linkButtonText}>Link</Text>
+                    <Text style={[styles.linkButtonText, { color: COLORS.white }]}>Link</Text>
                   )}
                 </TouchableOpacity>
               )}
             </View>
           </View>
-          <Text style={styles.accountLinkingNote}>
+          <Text style={[styles.accountLinkingNote, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
             Note: Accounts are automatically linked when you log in with Google or Facebook using the same email address.
           </Text>
         </View>
 
         {/* Account Section */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ScanHistory')}>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Account</Text>
+          <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => navigation.navigate('ScanHistory')}>
               <View style={styles.menuItemContent}>
-                <Ionicons name="time-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>View Scan History</Text>
+                <Ionicons name="time-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>View Scan History</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={handleOpenChangePassword}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={handleOpenChangePassword}>
               <View style={styles.menuItemContent}>
-                <Ionicons name="key-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+                <Ionicons name="key-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={handleDeleteAccount}>
               <View style={styles.menuItemContent}>
-                <Ionicons name="trash-outline" size={20} color={COLORS.error} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: COLORS.error }]}>Delete Account</Text>
+                <Ionicons name="trash-outline" size={20} color={themedColors.error} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: themedColors.error }]}>Delete Account</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* App Info Section */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>App Info</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => setShowAboutApp(true)}>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>App Info</Text>
+          <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => setShowAboutApp(true)}>
               <View style={styles.menuItemContent}>
-                <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>About the App</Text>
+                <Ionicons name="information-circle-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>About the App</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => console.log('Terms & Conditions')}>
               <View style={styles.menuItemContent}>
-                <Ionicons name="document-text-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>Terms & Conditions</Text>
+                <Ionicons name="document-text-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Terms & Conditions</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={() => console.log('Privacy Policy')}>
               <View style={styles.menuItemContent}>
-                <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} style={styles.menuIcon} />
-                <Text style={styles.menuText}>Privacy Policy</Text>
+                <Ionicons name="shield-checkmark-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Privacy Policy</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
           </View>
         </View>
@@ -614,41 +634,41 @@ const ProfileScreen = () => {
         onRequestClose={() => setShowAccountSelector(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Choose Account</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Choose Account</Text>
               <TouchableOpacity onPress={() => setShowAccountSelector(false)}>
-                <Ionicons name="close" size={24} color={COLORS.black} />
+                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
             
-            <Text style={styles.modalSubtitle}>Select an account to sign in with</Text>
+            <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Select an account to sign in with</Text>
             
             <TouchableOpacity 
-              style={styles.accountOption}
+              style={[styles.accountOption, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background }]}
               onPress={handleGoogleLogin}
               disabled={linkingLoading.google}
             >
               <View style={[styles.accountIconContainer, { backgroundColor: '#4285F4' }]}>
-                <Ionicons name="logo-google" size={18} color={COLORS.white} />
+                <Ionicons name="logo-google" size={18} color={themedColors.white} />
               </View>
-              <Text style={styles.accountOptionText}>Google</Text>
+              <Text style={[styles.accountOptionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Google</Text>
               {linkingLoading.google && (
-                <ActivityIndicator size="small" color={COLORS.primary} style={styles.accountLoader} />
+                <ActivityIndicator size="small" color={themedColors.primary} style={styles.accountLoader} />
               )}
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={styles.accountOption}
+              style={[styles.accountOption, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background }]}
               onPress={handleFacebookLogin}
               disabled={linkingLoading.facebook}
             >
               <View style={[styles.accountIconContainer, { backgroundColor: '#3b5998' }]}>
-                <Ionicons name="logo-facebook" size={18} color={COLORS.white} />
+                <Ionicons name="logo-facebook" size={18} color={themedColors.white} />
               </View>
-              <Text style={styles.accountOptionText}>Facebook</Text>
+              <Text style={[styles.accountOptionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Facebook</Text>
               {linkingLoading.facebook && (
-                <ActivityIndicator size="small" color={COLORS.primary} style={styles.accountLoader} />
+                <ActivityIndicator size="small" color={themedColors.primary} style={styles.accountLoader} />
               )}
             </TouchableOpacity>
             
@@ -656,7 +676,7 @@ const ProfileScreen = () => {
               style={styles.cancelButton}
               onPress={() => setShowAccountSelector(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={[styles.cancelButtonText, { color: themedColors.primary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -670,77 +690,80 @@ const ProfileScreen = () => {
         onRequestClose={handleCloseChangePassword}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               <TouchableOpacity onPress={handleCloseChangePassword}>
-                <Ionicons name="close" size={24} color={COLORS.black} />
+                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalSubtitle}>
+            <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
               {canSetPassword() ? 'Set a password to enable email/password login.' : 'Enter your current and new password below.'}
             </Text>
             {!canSetPassword() && (
               <View style={{ marginBottom: 12 }}>
-                <Text style={styles.inputLabel}>Current Password</Text>
-                <View style={styles.inputRow}>
+                <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Current Password</Text>
+                <View style={[styles.inputRow, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background, borderColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '30' }]}>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: isDarkMode ? themedColors.white : COLORS.black }]}
                     value={oldPassword}
                     onChangeText={setOldPassword}
                     placeholder="Current Password"
+                    placeholderTextColor={isDarkMode ? themedColors.gray : COLORS.gray}
                     secureTextEntry={!showOld}
                     autoCapitalize="none"
                   />
                   <TouchableOpacity onPress={() => setShowOld(!showOld)}>
-                    <Ionicons name={showOld ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.gray} />
+                    <Ionicons name={showOld ? 'eye-off-outline' : 'eye-outline'} size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
                   </TouchableOpacity>
                 </View>
               </View>
             )}
             <View style={{ marginBottom: 12 }}>
-              <Text style={styles.inputLabel}>New Password</Text>
-              <View style={styles.inputRow}>
+              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>New Password</Text>
+              <View style={[styles.inputRow, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background, borderColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '30' }]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: isDarkMode ? themedColors.white : COLORS.black }]}
                   value={newPassword}
                   onChangeText={setNewPassword}
                   placeholder="New Password"
+                  placeholderTextColor={isDarkMode ? themedColors.gray : COLORS.gray}
                   secureTextEntry={!showNew}
                   autoCapitalize="none"
                 />
                 <TouchableOpacity onPress={() => setShowNew(!showNew)}>
-                  <Ionicons name={showNew ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.gray} />
+                  <Ionicons name={showNew ? 'eye-off-outline' : 'eye-outline'} size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
                 </TouchableOpacity>
               </View>
               <PasswordComplexity password={newPassword} />
             </View>
             <View style={{ marginBottom: 12 }}>
-              <Text style={styles.inputLabel}>Confirm New Password</Text>
-              <View style={styles.inputRow}>
+              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Confirm New Password</Text>
+              <View style={[styles.inputRow, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background, borderColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '30' }]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: isDarkMode ? themedColors.white : COLORS.black }]}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Confirm New Password"
+                  placeholderTextColor={isDarkMode ? themedColors.gray : COLORS.gray}
                   secureTextEntry={!showConfirm}
                   autoCapitalize="none"
                 />
                 <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
-                  <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.gray} />
+                  <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
                 </TouchableOpacity>
               </View>
             </View>
             {passwordError ? (
-              <Text style={{ color: COLORS.error, marginBottom: 10, textAlign: 'center' }}>{passwordError}</Text>
+              <Text style={{ color: themedColors.error, marginBottom: 10, textAlign: 'center' }}>{passwordError}</Text>
             ) : null}
             <TouchableOpacity
-              style={[styles.loginWithButton, { marginTop: 10, opacity: passwordLoading ? 0.7 : 1 }]}
+              style={[styles.loginWithButton, { backgroundColor: themedColors.primary, opacity: passwordLoading ? 0.7 : 1 }]}
               onPress={handleChangePassword}
               disabled={passwordLoading}
             >
               {passwordLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={themedColors.white} />
               ) : (
                 <Text style={styles.loginWithText}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
               )}
@@ -757,38 +780,39 @@ const ProfileScreen = () => {
         onRequestClose={handleCloseEditProfile}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Edit Profile</Text>
               <TouchableOpacity onPress={handleCloseEditProfile}>
-                <Ionicons name="close" size={24} color={COLORS.black} />
+                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalSubtitle}>
+            <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
               You can only change your name once every 5 days.
             </Text>
             <View style={{ marginBottom: 12 }}>
-              <Text style={styles.inputLabel}>Full Name</Text>
-              <View style={styles.inputRow}>
+              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Full Name</Text>
+              <View style={[styles.inputRow, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background, borderColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '30' }]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: isDarkMode ? themedColors.white : COLORS.black }]}
                   value={editedName}
                   onChangeText={setEditedName}
                   placeholder="Full Name"
+                  placeholderTextColor={isDarkMode ? themedColors.gray : COLORS.gray}
                   autoCapitalize="words"
                 />
               </View>
             </View>
             {profileError ? (
-              <Text style={{ color: COLORS.error, marginBottom: 10, textAlign: 'center' }}>{profileError}</Text>
+              <Text style={{ color: themedColors.error, marginBottom: 10, textAlign: 'center' }}>{profileError}</Text>
             ) : null}
             <TouchableOpacity
-              style={[styles.loginWithButton, { marginTop: 10, opacity: profileLoading ? 0.7 : 1 }]}
+              style={[styles.loginWithButton, { backgroundColor: themedColors.primary, opacity: profileLoading ? 0.7 : 1 }]}
               onPress={handleSaveProfile}
               disabled={profileLoading}
             >
               {profileLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={themedColors.white} />
               ) : (
                 <Text style={styles.loginWithText}>Save Changes</Text>
               )}
@@ -805,22 +829,22 @@ const ProfileScreen = () => {
         onRequestClose={() => setShowAboutApp(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>About the App</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>About the App</Text>
               <TouchableOpacity onPress={() => setShowAboutApp(false)}>
-                <Ionicons name="close" size={24} color={COLORS.black} />
+                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
               <Image source={require('../../assets/icon.png')} style={{ width: 64, height: 64, marginBottom: 8 }} />
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: COLORS.primary }}>Kappi</Text>
-              <Text style={{ fontSize: 14, color: COLORS.gray, marginTop: 2 }}>Version 1.0.0</Text>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: isDarkMode ? themedColors.primary : COLORS.primary }}>Kappi</Text>
+              <Text style={{ fontSize: 14, color: isDarkMode ? themedColors.gray : COLORS.gray, marginTop: 2 }}>Version 1.0.0</Text>
             </View>
-            <Text style={{ fontSize: 15, color: COLORS.black, textAlign: 'center', marginBottom: 10 }}>
+            <Text style={{ fontSize: 15, color: isDarkMode ? themedColors.white : COLORS.black, textAlign: 'center', marginBottom: 10 }}>
               Kappi helps coffee farmers detect leaf rust and manage their crops using AI-powered image analysis and farm management tools.
             </Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center' }}>
+            <Text style={{ fontSize: 13, color: isDarkMode ? themedColors.gray : COLORS.gray, textAlign: 'center' }}>
               © {new Date().getFullYear()} Kappi Team. All rights reserved.
             </Text>
           </View>
@@ -829,16 +853,16 @@ const ProfileScreen = () => {
 
       {/* Logout Button at the very bottom */}
       <TouchableOpacity 
-        style={styles.logoutButtonBottom} 
+        style={[styles.logoutButtonBottom, { backgroundColor: themedColors.error }]} 
         onPress={handleLogout}
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={COLORS.white} />
+          <ActivityIndicator size="small" color={themedColors.white} />
         ) : (
           <>
             <Ionicons name="log-out-outline" size={20} color={COLORS.white} style={styles.logoutIcon} />
-            <Text style={styles.logoutText}>Logout</Text>
+            <Text style={[styles.logoutText, { color: COLORS.white }]}>Logout</Text>
           </>
         )}
       </TouchableOpacity>
@@ -849,18 +873,15 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: COLORS.gray,
   },
   scrollContent: {
     paddingBottom: 40,
@@ -870,9 +891,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.secondary + '20',
     marginBottom: 24, // Add margin bottom for spacing
   },
   profilePicture: {
@@ -885,7 +904,6 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: COLORS.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
@@ -893,7 +911,6 @@ const styles = StyleSheet.create({
   initialsText: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.primary,
   },
   profileInfo: {
     flex: 1,
@@ -902,17 +919,14 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: COLORS.black,
   },
   profileEmail: {
     fontSize: 14,
-    color: COLORS.gray,
     marginTop: 4,
   },
   editButton: {
     padding: 10,
     borderRadius: 25,
-    backgroundColor: COLORS.secondary + '10',
   },
   sectionContainer: {
     marginBottom: 25,
@@ -921,11 +935,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.black,
     marginBottom: 15,
   },
   menuContainer: {
-    backgroundColor: COLORS.white,
     borderRadius: 15,
     overflow: 'hidden',
     marginBottom: 5,
@@ -942,7 +954,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.secondary + '20',
   },
   menuItemContent: {
     flexDirection: 'row',
@@ -953,11 +964,9 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
-    color: COLORS.black,
   },
   // -- Keep existing styles for other components like modals to maintain functionality
   loginWithButton: {
-    backgroundColor: COLORS.primary,
     borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
@@ -970,11 +979,9 @@ const styles = StyleSheet.create({
   },
   loginWithText: {
     fontSize: 16,
-    color: COLORS.white,
     fontWeight: '600',
   },
   logoutButton: {
-    backgroundColor: '#F43F5E',
     borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
@@ -988,7 +995,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 16,
-    color: COLORS.white,
     fontWeight: '600',
   },
   deleteAccountButton: {
@@ -997,7 +1003,6 @@ const styles = StyleSheet.create({
   },
   deleteAccountText: {
     fontSize: 14,
-    color: '#F43F5E',
   },
   linkedAccountItem: {
     flexDirection: 'row',
@@ -1006,7 +1011,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.secondary + '20',
   },
   linkedAccountInfo: {
     flexDirection: 'row',
@@ -1022,7 +1026,6 @@ const styles = StyleSheet.create({
   },
   linkedAccountText: {
     fontSize: 16,
-    color: COLORS.black,
   },
   linkedBadge: {
     flexDirection: 'row',
@@ -1030,11 +1033,9 @@ const styles = StyleSheet.create({
   },
   linkedText: {
     marginLeft: 5,
-    color: COLORS.success,
     fontWeight: '500',
   },
   linkButton: {
-    backgroundColor: COLORS.primary,
     paddingVertical: 6,
     paddingHorizontal: 15,
     borderRadius: 15,
@@ -1042,12 +1043,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkButtonText: {
-    color: COLORS.white,
     fontWeight: '500',
   },
   accountLinkingNote: {
     fontSize: 14,
-    color: COLORS.gray,
     marginTop: 10,
     marginBottom: 20,
   },
@@ -1060,7 +1059,6 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 20,
     shadowColor: '#000',
@@ -1078,24 +1076,20 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.black,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: COLORS.gray,
     marginBottom: 20,
   },
   accountOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
   },
   accountOptionText: {
     fontSize: 16,
-    color: COLORS.black,
     flex: 1,
     marginLeft: 10,
   },
@@ -1109,13 +1103,11 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    color: COLORS.primary,
     fontWeight: '600',
   },
   scanHistoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
     borderRadius: 15,
     paddingVertical: 14,
     paddingHorizontal: 18,
@@ -1131,19 +1123,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   scanHistoryCardText: {
     fontSize: 16,
-    color: COLORS.primary,
     fontWeight: '600',
   },
   inputLabel: {
     fontSize: 14,
-    color: COLORS.gray,
     marginBottom: 4,
     marginLeft: 2,
     fontWeight: '500',
@@ -1151,22 +1140,18 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.secondary + '30',
     paddingHorizontal: 10,
     paddingVertical: 2,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: COLORS.black,
     paddingVertical: 10,
     backgroundColor: 'transparent',
   },
   profileDetailsSection: {
-    backgroundColor: COLORS.white,
     borderRadius: 16,
     marginHorizontal: 16,
     marginTop: 18,
@@ -1180,20 +1165,17 @@ const styles = StyleSheet.create({
   },
   profileLabel: {
     fontSize: 13,
-    color: COLORS.gray,
     fontWeight: '500',
     marginBottom: 2,
     marginTop: 8,
   },
   profileValue: {
     fontSize: 16,
-    color: COLORS.black,
     fontWeight: '600',
     marginBottom: 4,
   },
   profileDivider: {
     height: 1,
-    backgroundColor: COLORS.secondary + '20',
     marginVertical: 8,
     borderRadius: 1,
   },
@@ -1206,7 +1188,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   logoutButtonBottom: {
-    backgroundColor: COLORS.error,
     borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',

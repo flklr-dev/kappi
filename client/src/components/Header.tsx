@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, DARK_COLORS } from '../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ThemeContext } from '../context/ThemeContext';
 
 interface HeaderProps {
   title: string;
@@ -20,26 +21,47 @@ const Header: React.FC<HeaderProps> = ({
   rightComponent,
 }) => {
   const insets = useSafeAreaInsets();
+  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
+  const themedColors = isDarkMode ? DARK_COLORS : COLORS;
+
+  // Default right component is the theme toggle button
+  const defaultRightComponent = (
+    <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
+      <Ionicons 
+        name={isDarkMode ? 'sunny' : 'moon'} 
+        size={24} 
+        color={themedColors.white} 
+      />
+    </TouchableOpacity>
+  );
+
+  const finalRightComponent = rightComponent || defaultRightComponent;
 
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, 20) }]}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+    <View style={[styles.container, { 
+      backgroundColor: themedColors.primary,
+      paddingTop: Math.max(insets.top, 20) 
+    }]}>
+      <StatusBar 
+        barStyle={isDarkMode ? "light-content" : "dark-content"} 
+        backgroundColor={themedColors.primary} 
+      />
       
       <View style={styles.headerContent}>
         <View style={styles.leftContainer}>
           {showBackButton && (
             <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
-              <Ionicons name="chevron-back" size={28} color={COLORS.white} />
+              <Ionicons name="chevron-back" size={28} color={themedColors.white} />
             </TouchableOpacity>
           )}
           
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>{title}</Text>
-            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+            <Text style={[styles.title, { color: themedColors.white }]}>{title}</Text>
+            {subtitle && <Text style={[styles.subtitle, { color: themedColors.white + 'E6' }]}>{subtitle}</Text>}
           </View>
         </View>
         
-        {rightComponent && <View style={styles.rightContainer}>{rightComponent}</View>}
+        <View style={styles.rightContainer}>{finalRightComponent}</View>
       </View>
     </View>
   );
@@ -87,6 +109,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  themeButton: {
+    padding: 8,
+  },
 });
 
-export default Header; 
+export default Header;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -14,7 +14,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, DARK_COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import * as Location from 'expo-location';
 import { useAuthStore } from '../stores/authStore';
@@ -23,6 +23,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MainTabParamList, RootStackParamList } from '../navigation/types';
 import { getRemoteScans } from '../services/api';
+import { ThemeContext } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -33,19 +34,21 @@ const QuickAction = ({
   subtitle,
   color,
   onPress,
+  isDarkMode,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle: string;
   color: string;
   onPress: () => void;
+  isDarkMode: boolean;
 }) => (
-  <TouchableOpacity style={styles.quickActionCard} onPress={onPress} activeOpacity={0.85}>
+  <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: isDarkMode ? DARK_COLORS.secondary : COLORS.white }]} onPress={onPress} activeOpacity={0.85}>
     <View style={[styles.actionIconContainer, { backgroundColor: color }]}> 
       <Ionicons name={icon} size={28} color={COLORS.white} />
     </View>
-    <Text style={styles.actionTitle}>{title}</Text>
-    <Text style={styles.actionSubtitle}>{subtitle}</Text>
+    <Text style={[styles.actionTitle, { color: isDarkMode ? DARK_COLORS.white : COLORS.black }]}>{title}</Text>
+    <Text style={[styles.actionSubtitle, { color: isDarkMode ? DARK_COLORS.gray : COLORS.gray }]}>{subtitle}</Text>
   </TouchableOpacity>
 );
 
@@ -70,6 +73,7 @@ const HomeScreen = () => {
   const stackNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
+  const { isDarkMode } = useContext(ThemeContext);
 
   const formatAddress = (address: Location.LocationGeocodedAddress): string => {
     let barangay = '';
@@ -223,9 +227,15 @@ const HomeScreen = () => {
       ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Get colors based on theme
+  const themedColors = isDarkMode ? DARK_COLORS : COLORS;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
+      <StatusBar 
+        barStyle={isDarkMode ? "light-content" : "light-content"} 
+        backgroundColor={COLORS.primary} 
+      />
       
       <Header
         title="KAPPI"
@@ -234,9 +244,9 @@ const HomeScreen = () => {
       {/* Redesigned Welcome Section */}
       <View style={styles.welcomeSection}>
         <View style={styles.welcomeContent}>
-          <Text style={styles.greetingText}>Good day,</Text>
+          <Text style={[styles.greetingText, { color: themedColors.gray }]}>{isDarkMode ? 'Good evening,' : 'Good day,'}</Text>
           {user && (
-            <Text style={styles.userNameText} numberOfLines={1}>
+            <Text style={[styles.userNameText, { color: isDarkMode ? themedColors.white : themedColors.black }]} numberOfLines={1}>
               {user.fullName}
             </Text>
           )}
@@ -252,9 +262,9 @@ const HomeScreen = () => {
         {/* Redesigned Location Status Widget */}
         <View style={styles.locationSection}>
           <View style={styles.locationHeader}>
-            <Text style={styles.locationTitle}>Your Location</Text>
+            <Text style={[styles.locationTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Your Location</Text>
             <TouchableOpacity 
-              style={styles.refreshButton}
+              style={[styles.refreshButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
               onPress={getCurrentLocation}
             >
               {loading ? (
@@ -262,14 +272,14 @@ const HomeScreen = () => {
               ) : (
                 <>
                   <Ionicons name="refresh" size={16} color={COLORS.primary} />
-                  <Text style={styles.refreshText}>Refresh</Text>
+                  <Text style={[styles.refreshText, { color: COLORS.primary }]}>Refresh</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
           
           <TouchableOpacity 
-            style={styles.locationCard}
+            style={[styles.locationCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
             onPress={getCurrentLocation}
           >
             <View style={styles.locationIconWrapper}>
@@ -283,19 +293,19 @@ const HomeScreen = () => {
                 <ActivityIndicator size="small" color={COLORS.primary} />
               ) : location ? (
                 <>
-                  <Text style={styles.locationLabel}>Current Location</Text>
-                  <Text style={styles.locationValue}>{location}</Text>
+                  <Text style={[styles.locationLabel, { color: themedColors.gray }]}>Current Location</Text>
+                  <Text style={[styles.locationValue, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{location}</Text>
                 </>
               ) : (
                 <>
-                  <Text style={styles.locationLabel}>Location</Text>
-                  <Text style={styles.locationValue}>Location not available</Text>
+                  <Text style={[styles.locationLabel, { color: themedColors.gray }]}>Location</Text>
+                  <Text style={[styles.locationValue, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Location not available</Text>
                 </>
               )}
             </View>
             
             <View style={styles.locationAction}>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={20} color={themedColors.gray} />
             </View>
           </TouchableOpacity>
         </View>
@@ -303,8 +313,8 @@ const HomeScreen = () => {
         {/* Core CTAs Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <Text style={styles.sectionSubtitle}>What would you like to do?</Text>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Quick Actions</Text>
+            <Text style={[styles.sectionSubtitle, { color: themedColors.gray }]}>What would you like to do?</Text>
           </View>
           <View style={styles.quickActionsGrid}>
             <QuickAction 
@@ -313,6 +323,7 @@ const HomeScreen = () => {
               subtitle="Diagnose diseases" 
               color={COLORS.primary}
               onPress={() => tabNavigation.navigate('ScanTab')}
+              isDarkMode={isDarkMode}
             />
             <QuickAction 
               icon="time" 
@@ -320,6 +331,7 @@ const HomeScreen = () => {
               subtitle="View past scans" 
               color="#FF6B35"
               onPress={() => stackNavigation.navigate('ScanHistory')}
+              isDarkMode={isDarkMode}
             />
             <QuickAction 
               icon="analytics" 
@@ -327,6 +339,7 @@ const HomeScreen = () => {
               subtitle="Analytics & insights" 
               color="#4A90E2"
               onPress={() => {}}
+              isDarkMode={isDarkMode}
             />
             <QuickAction 
               icon="medical" 
@@ -334,6 +347,7 @@ const HomeScreen = () => {
               subtitle="Browse remedies" 
               color="#27AE60"
               onPress={() => {}}
+              isDarkMode={isDarkMode}
             />
           </View>
         </View>
@@ -341,9 +355,9 @@ const HomeScreen = () => {
         {/* Recent Scans Section */}
         <View style={styles.section}> 
           <View style={[styles.sectionHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }]}>
-            <Text style={styles.sectionTitle}>Recent Scans</Text>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Recent Scans</Text>
             <TouchableOpacity style={styles.viewAllButton} onPress={() => stackNavigation.navigate('ScanHistory')}>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={[styles.viewAllText, { color: COLORS.primary }]}>View All</Text>
               <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
@@ -354,8 +368,8 @@ const HomeScreen = () => {
               </View>
             ) : recentScans.length === 0 ? (
               <View style={{ alignItems: 'center', padding: 24 }}>
-                <Ionicons name="cloud-outline" size={36} color={COLORS.gray} style={{ marginBottom: 8 }} />
-                <Text style={{ color: COLORS.gray, fontSize: 15 }}>No recent scans yet.</Text>
+                <Ionicons name="cloud-outline" size={36} color={themedColors.gray} style={{ marginBottom: 8 }} />
+                <Text style={{ color: themedColors.gray, fontSize: 15 }}>No recent scans yet.</Text>
               </View>
             ) : (
               recentScans.map((scan, idx) => {
@@ -369,7 +383,7 @@ const HomeScreen = () => {
                 return (
                   <TouchableOpacity 
                     key={scan._id || scan.id || idx} 
-                    style={styles.scanCard}
+                    style={[styles.scanCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
                     activeOpacity={0.7}
                     onPress={() => {
                       // Navigate to scan details or results
@@ -379,7 +393,7 @@ const HomeScreen = () => {
                       {scan.imageUri ? (
                         <Image source={{ uri: scan.imageUri }} style={styles.scanImage} resizeMode="cover" />
                       ) : (
-                        <View style={[styles.scanImage, styles.placeholderImage]}> 
+                        <View style={[styles.scanImage, styles.placeholderImage, { backgroundColor: isDarkMode ? themedColors.background : COLORS.primary + '08' }]}> 
                           <Ionicons name="leaf-outline" size={40} color={COLORS.primary} />
                         </View>
                       )}
@@ -394,8 +408,8 @@ const HomeScreen = () => {
                     <View style={styles.scanContent}>
                       <View style={styles.scanInfoRow}>
                         <View style={styles.scanTitleContainer}>
-                          <Text style={styles.scanTitle} numberOfLines={1}>{scan.disease}</Text>
-                          <Text style={styles.scanTime}>{formatDate(scan.createdAt)}</Text>
+                          <Text style={[styles.scanTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]} numberOfLines={1}>{scan.disease}</Text>
+                          <Text style={[styles.scanTime, { color: themedColors.gray }]}>{formatDate(scan.createdAt)}</Text>
                         </View>
                         
                         {scan.address && (
@@ -418,30 +432,30 @@ const HomeScreen = () => {
         {/* Tips Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Helpful Tips</Text>
-            <Text style={styles.sectionSubtitle}>Improve your scanning results</Text>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Helpful Tips</Text>
+            <Text style={[styles.sectionSubtitle, { color: themedColors.gray }]}>Improve your scanning results</Text>
           </View>
           <View style={styles.tipsContainer}>
-            <TouchableOpacity style={styles.tipCard} activeOpacity={0.7}>
-              <View style={styles.tipIconContainer}>
+            <TouchableOpacity style={[styles.tipCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]} activeOpacity={0.7}>
+              <View style={[styles.tipIconContainer, { backgroundColor: isDarkMode ? themedColors.background : COLORS.primary + '12' }]}>
                 <Ionicons name="sunny" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.tipContent}>
-                <Text style={styles.tipTitle}>Best Time to Scan</Text>
-                <Text style={styles.tipText}>Take photos in the morning (7-10 AM) for optimal lighting</Text>
+                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Best Time to Scan</Text>
+                <Text style={[styles.tipText, { color: themedColors.gray }]}>Take photos in the morning (7-10 AM) for optimal lighting</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={18} color={themedColors.gray} />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.tipCard} activeOpacity={0.7}>
-              <View style={styles.tipIconContainer}>
+            <TouchableOpacity style={[styles.tipCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]} activeOpacity={0.7}>
+              <View style={[styles.tipIconContainer, { backgroundColor: isDarkMode ? themedColors.background : COLORS.primary + '12' }]}>
                 <Ionicons name="camera" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.tipContent}>
-                <Text style={styles.tipTitle}>Photo Quality</Text>
-                <Text style={styles.tipText}>Hold steady, ensure good lighting, and focus on affected areas</Text>
+                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Photo Quality</Text>
+                <Text style={[styles.tipText, { color: themedColors.gray }]}>Hold steady, ensure good lighting, and focus on affected areas</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
+              <Ionicons name="chevron-forward" size={18} color={themedColors.gray} />
             </TouchableOpacity>
           </View>
         </View>
@@ -831,4 +845,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen; 
+export default HomeScreen;

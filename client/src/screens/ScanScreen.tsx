@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -22,19 +22,23 @@ import {
 } from 'react-native-vision-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, DARK_COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useScanStore } from '../viewmodels/ScanViewModel';
 import { useAuthStore } from '../stores/authStore';
+import { ThemeContext } from '../context/ThemeContext';
 
 type ScanScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width, height } = Dimensions.get('window');
 
 const ScanScreen = () => {
+  const { isDarkMode } = useContext(ThemeContext);
+  const themedColors = isDarkMode ? DARK_COLORS : COLORS;
+  
   const navigation = useNavigation<ScanScreenNavigationProp>();
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
@@ -182,16 +186,19 @@ const ScanScreen = () => {
 
   if (!device) {
     return (
-      <View style={styles.centeredContainer}>
+      <View style={[styles.centeredContainer, { backgroundColor: themedColors.background }]}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading camera...</Text>
+        <Text style={[styles.loadingText, { color: isDarkMode ? themedColors.white : themedColors.gray }]}>Loading camera...</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
+      <StatusBar 
+        barStyle={isDarkMode ? "light-content" : "light-content"} 
+        backgroundColor={COLORS.primary} 
+      />
       
       <Header
         title="Scan Plant"
@@ -226,24 +233,24 @@ const ScanScreen = () => {
           </View>
 
           {isProcessing && (
-            <View style={styles.processingContainer}>
+            <View style={[styles.processingContainer, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)' }]}>
               <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.processingText}>Analyzing image...</Text>
+              <Text style={[styles.processingText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Analyzing image...</Text>
             </View>
           )}
         </View>
 
         {/* Action Buttons */}
-        <View style={styles.actionButtonsContainer}>
+        <View style={[styles.actionButtonsContainer, { backgroundColor: themedColors.background }]}>
           <TouchableOpacity 
-            style={styles.galleryButton}
+            style={[styles.galleryButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
             onPress={handleGalleryPick}
           >
             <Ionicons name="images-outline" size={28} color={COLORS.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.captureButton, isProcessing && styles.captureButtonDisabled]}
+            style={[styles.captureButton, isProcessing && styles.captureButtonDisabled, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
             onPress={handleCapture}
             disabled={isProcessing}
           >
@@ -251,7 +258,7 @@ const ScanScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.infoButton}
+            style={[styles.infoButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
             onPress={() => setShowTipsModal(true)}
           >
             <Ionicons 
@@ -271,92 +278,92 @@ const ScanScreen = () => {
         onRequestClose={() => setShowTipsModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Scanning Tips</Text>
+          <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: isDarkMode ? themedColors.gray : `${COLORS.gray}30` }]}>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Scanning Tips</Text>
               <TouchableOpacity onPress={() => setShowTipsModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.black} />
+                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : themedColors.black} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalContent}>
               <View style={styles.modalSection}>
-                <Text style={styles.sectionTitle}>Important Reminder</Text>
-                <Text style={styles.sectionText}>
+                <Text style={[styles.sectionTitle, { color: COLORS.primary }]}>Important Reminder</Text>
+                <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
                   Only scan coffee plant parts with these specific diseases:
                 </Text>
               </View>
 
               <View style={styles.diseaseSection}>
-                <View style={styles.diseaseCategory}>
+                <View style={[styles.diseaseCategory, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
                   <View style={styles.diseaseCategoryHeader}>
                     <Ionicons name="leaf-outline" size={20} color={COLORS.primary} />
-                    <Text style={styles.diseaseCategoryTitle}>Leaves</Text>
+                    <Text style={[styles.diseaseCategoryTitle, { color: COLORS.primary }]}>Leaves</Text>
                   </View>
                   <View style={styles.diseaseList}>
-                    <Text style={styles.diseaseItem}>• Coffee Leaf Rust</Text>
-                    <Text style={styles.diseaseItem}>• Thread Blight</Text>
-                    <Text style={styles.diseaseItem}>• Anthracnose</Text>
+                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Coffee Leaf Rust</Text>
+                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Thread Blight</Text>
+                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Anthracnose</Text>
                   </View>
                 </View>
 
-                <View style={styles.diseaseCategory}>
+                <View style={[styles.diseaseCategory, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
                   <View style={styles.diseaseCategoryHeader}>
                     <Ionicons name="git-branch-outline" size={20} color={COLORS.primary} />
-                    <Text style={styles.diseaseCategoryTitle}>Stems</Text>
+                    <Text style={[styles.diseaseCategoryTitle, { color: COLORS.primary }]}>Stems</Text>
                   </View>
                   <View style={styles.diseaseList}>
-                    <Text style={styles.diseaseItem}>• Coffee Wilt Disease</Text>
+                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Coffee Wilt Disease</Text>
                   </View>
                 </View>
 
-                <View style={styles.diseaseCategory}>
+                <View style={[styles.diseaseCategory, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
                   <View style={styles.diseaseCategoryHeader}>
                     <Ionicons name="ellipse-outline" size={20} color={COLORS.primary} />
-                    <Text style={styles.diseaseCategoryTitle}>Berries</Text>
+                    <Text style={[styles.diseaseCategoryTitle, { color: COLORS.primary }]}>Berries</Text>
                   </View>
                   <View style={styles.diseaseList}>
-                    <Text style={styles.diseaseItem}>• Coffee Berry Disease</Text>
+                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Coffee Berry Disease</Text>
                   </View>
                 </View>
               </View>
 
               <View style={styles.modalSection}>
-                <Text style={styles.sectionTitle}>For Best Results</Text>
+                <Text style={[styles.sectionTitle, { color: COLORS.primary }]}>For Best Results</Text>
                 <View style={styles.bestResultsList}>
-                  <View style={styles.modalTipItem}>
-                    <View style={styles.tipIcon}>
+                  <View style={[styles.modalTipItem, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
+                    <View style={[styles.tipIcon, { backgroundColor: isDarkMode ? `${COLORS.primary}30` : `${COLORS.primary}20` }]}>
                       <Ionicons name="sunny-outline" size={18} color={COLORS.primary} />
                     </View>
-                    <Text style={styles.modalTipText}>Use good lighting</Text>
+                    <Text style={[styles.modalTipText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Use good lighting</Text>
                   </View>
                   
-                  <View style={styles.modalTipItem}>
-                    <View style={styles.tipIcon}>
+                  <View style={[styles.modalTipItem, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
+                    <View style={[styles.tipIcon, { backgroundColor: isDarkMode ? `${COLORS.primary}30` : `${COLORS.primary}20` }]}>
                       <Ionicons name="scan-outline" size={18} color={COLORS.primary} />
                     </View>
-                    <Text style={styles.modalTipText}>Keep subject centered</Text>
+                    <Text style={[styles.modalTipText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Keep subject centered</Text>
                   </View>
                   
-                  <View style={styles.modalTipItem}>
-                    <View style={styles.tipIcon}>
+                  <View style={[styles.modalTipItem, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
+                    <View style={[styles.tipIcon, { backgroundColor: isDarkMode ? `${COLORS.primary}30` : `${COLORS.primary}20` }]}>
                       <Ionicons name="hand-left-outline" size={18} color={COLORS.primary} />
                     </View>
-                    <Text style={styles.modalTipText}>Hold camera steady</Text>
+                    <Text style={[styles.modalTipText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Hold camera steady</Text>
                   </View>
                   
-                  <View style={styles.modalTipItem}>
-                    <View style={styles.tipIcon}>
+                  <View style={[styles.modalTipItem, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
+                    <View style={[styles.tipIcon, { backgroundColor: isDarkMode ? `${COLORS.primary}30` : `${COLORS.primary}20` }]}>
                       <Ionicons name="crop-outline" size={18} color={COLORS.primary} />
                     </View>
-                    <Text style={styles.modalTipText}>Capture close-up of affected area</Text>
+                    <Text style={[styles.modalTipText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Capture close-up of affected area</Text>
                   </View>
                 </View>
               </View>
             </ScrollView>
 
             <TouchableOpacity 
-              style={styles.modalButton} 
+              style={[styles.modalButton, { backgroundColor: COLORS.primary }]}
               onPress={() => setShowTipsModal(false)}
             >
               <Text style={styles.modalButtonText}>Got it</Text>
@@ -373,13 +380,13 @@ const ScanScreen = () => {
         onRequestClose={() => setShowUnknownModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Scan Unsuccessful</Text>
-            <Text style={styles.sectionText}>
+          <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+            <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Scan Unsuccessful</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
               We couldn't recognize a valid coffee plant part or disease. Please try again with a clearer image.
             </Text>
             <TouchableOpacity
-              style={styles.modalButton}
+              style={[styles.modalButton, { backgroundColor: COLORS.primary }]}
               onPress={() => setShowUnknownModal(false)}
             >
               <Text style={styles.modalButtonText}>Try Again</Text>
@@ -665,4 +672,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ScanScreen; 
+export default ScanScreen;

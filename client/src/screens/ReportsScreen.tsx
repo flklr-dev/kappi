@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useContext } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -14,9 +14,10 @@ import {
   RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, DARK_COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import { LineChart, PieChart } from 'react-native-chart-kit';
+import { ThemeContext } from '../context/ThemeContext';
 
 // Define types for our data
 type ScanRecord = {
@@ -165,6 +166,9 @@ const mockDiseasePatterns = {
 
 // Component starts here
 const ReportsScreen = () => {
+  const { isDarkMode } = useContext(ThemeContext);
+  const themedColors = isDarkMode ? DARK_COLORS : COLORS;
+  
   const [activeTimeFrame, setActiveTimeFrame] = useState<TimeFrame>('week');
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -225,17 +229,19 @@ const ReportsScreen = () => {
   };
 
   const renderTimeFrameSelector = () => (
-    <View style={styles.timeFrameSelector}>
+    <View style={[styles.timeFrameSelector, { backgroundColor: isDarkMode ? themedColors.background : 'rgba(0,0,0,0.05)' }]}>
       {(['week', 'month', 'year'] as TimeFrame[]).map((timeFrame) => (
         <TouchableOpacity
           key={timeFrame}
-          style={[styles.timeFrameButton, activeTimeFrame === timeFrame && styles.activeTimeFrameButton]}
+          style={[styles.timeFrameButton, activeTimeFrame === timeFrame && styles.activeTimeFrameButton, activeTimeFrame === timeFrame && { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}
           onPress={() => setActiveTimeFrame(timeFrame)}
         >
           <Text 
             style={[
               styles.timeFrameText, 
-              activeTimeFrame === timeFrame && styles.activeTimeFrameText
+              activeTimeFrame === timeFrame && styles.activeTimeFrameText,
+              activeTimeFrame === timeFrame && { color: isDarkMode ? themedColors.white : COLORS.black },
+              !activeTimeFrame && { color: isDarkMode ? themedColors.gray : COLORS.gray }
             ]}
           >
             {timeFrame.charAt(0).toUpperCase() + timeFrame.slice(1)}
@@ -250,7 +256,7 @@ const ReportsScreen = () => {
     
     return (
       <TouchableOpacity 
-        style={styles.scanCard}
+        style={[styles.scanCard, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}
         onPress={() => setExpandedScanId(isExpanded ? null : item.id)}
         activeOpacity={0.7}
       >
@@ -263,15 +269,15 @@ const ReportsScreen = () => {
             />
             <View style={styles.scanInfo}>
               <View style={styles.scanDateRow}>
-                <Ionicons name="calendar-outline" size={12} color={COLORS.gray} />
-                <Text style={styles.scanDate}>{item.date} • {item.time}</Text>
+                <Ionicons name="calendar-outline" size={12} color={isDarkMode ? themedColors.gray : COLORS.gray} />
+                <Text style={[styles.scanDate, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{item.date} • {item.time}</Text>
               </View>
-              <Text style={styles.scanDisease} numberOfLines={1}>
+              <Text style={[styles.scanDisease, { color: isDarkMode ? themedColors.white : COLORS.black }]} numberOfLines={1}>
                 {item.disease || 'No disease detected'}
               </Text>
               <View style={styles.locationRow}>
-                <Ionicons name="location-outline" size={12} color={COLORS.gray} />
-                <Text style={styles.locationText} numberOfLines={1}>{item.location}</Text>
+                <Ionicons name="location-outline" size={12} color={isDarkMode ? themedColors.gray : COLORS.gray} />
+                <Text style={[styles.locationText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]} numberOfLines={1}>{item.location}</Text>
               </View>
             </View>
           </View>
@@ -288,7 +294,7 @@ const ReportsScreen = () => {
             <Ionicons 
               name={isExpanded ? "chevron-up" : "chevron-down"} 
               size={18} 
-              color={COLORS.gray} 
+              color={isDarkMode ? themedColors.gray : COLORS.gray} 
               style={styles.expandIcon}
             />
           </View>
@@ -296,12 +302,12 @@ const ReportsScreen = () => {
         
         {isExpanded && (
           <View style={styles.expandedContent}>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: isDarkMode ? themedColors.lightGray : 'rgba(0,0,0,0.05)' }]} />
             
             <View style={styles.confidenceSection}>
-              <Text style={styles.expandedSectionTitle}>Confidence</Text>
+              <Text style={[styles.expandedSectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Confidence</Text>
               <View style={styles.confidenceRow}>
-                <View style={styles.confidenceBarContainer}>
+                <View style={[styles.confidenceBarContainer, { backgroundColor: isDarkMode ? themedColors.background : 'rgba(0,0,0,0.05)' }]}>
                   <View 
                     style={[
                       styles.confidenceBar, 
@@ -309,27 +315,27 @@ const ReportsScreen = () => {
                     ]}
                   />
                 </View>
-                <Text style={styles.confidenceValue}>{item.confidence}%</Text>
+                <Text style={[styles.confidenceValue, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{item.confidence}%</Text>
               </View>
             </View>
             
             <View style={styles.environmentalSection}>
-              <Text style={styles.expandedSectionTitle}>Environmental Conditions</Text>
+              <Text style={[styles.expandedSectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Environmental Conditions</Text>
               <View style={styles.environmentalGrid}>
                 <View style={styles.environmentalItem}>
-                  <Ionicons name="thermometer-outline" size={16} color={COLORS.gray} />
-                  <Text style={styles.environmentalValue}>{item.environmental.temperature}°C</Text>
-                  <Text style={styles.environmentalLabel}>Temp</Text>
+                  <Ionicons name="thermometer-outline" size={16} color={isDarkMode ? themedColors.gray : COLORS.gray} />
+                  <Text style={[styles.environmentalValue, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{item.environmental.temperature}°C</Text>
+                  <Text style={[styles.environmentalLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Temp</Text>
                 </View>
                 <View style={styles.environmentalItem}>
-                  <Ionicons name="water-outline" size={16} color={COLORS.gray} />
-                  <Text style={styles.environmentalValue}>{item.environmental.humidity}%</Text>
-                  <Text style={styles.environmentalLabel}>Humidity</Text>
+                  <Ionicons name="water-outline" size={16} color={isDarkMode ? themedColors.gray : COLORS.gray} />
+                  <Text style={[styles.environmentalValue, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{item.environmental.humidity}%</Text>
+                  <Text style={[styles.environmentalLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Humidity</Text>
                 </View>
                 <View style={styles.environmentalItem}>
-                  <Ionicons name="rainy-outline" size={16} color={COLORS.gray} />
-                  <Text style={styles.environmentalValue}>{item.environmental.rainfall} mm</Text>
-                  <Text style={styles.environmentalLabel}>Rainfall</Text>
+                  <Ionicons name="rainy-outline" size={16} color={isDarkMode ? themedColors.gray : COLORS.gray} />
+                  <Text style={[styles.environmentalValue, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{item.environmental.rainfall} mm</Text>
+                  <Text style={[styles.environmentalLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Rainfall</Text>
                 </View>
                 <View style={styles.environmentalItem}>
                   <View style={[
@@ -340,7 +346,7 @@ const ReportsScreen = () => {
                       {item.environmental.riskLevel.toUpperCase()}
                     </Text>
                   </View>
-                  <Text style={styles.environmentalLabel}>Risk Level</Text>
+                  <Text style={[styles.environmentalLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Risk Level</Text>
                 </View>
               </View>
             </View>
@@ -362,8 +368,11 @@ const ReportsScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
+      <StatusBar 
+        barStyle={isDarkMode ? "light-content" : "light-content"} 
+        backgroundColor={COLORS.primary} 
+      />
       
       <Header
         title="Crop Health"
@@ -386,18 +395,18 @@ const ReportsScreen = () => {
         {/* Advice Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Farming Advice</Text>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Farming Advice</Text>
           </View>
           <View style={styles.insightsContainer}>
             {mockInsights
               .filter(item => item.type === 'recommendation')
               .map(item => (
-                <View key={item.id} style={styles.adviceCard}>
-                  <View style={styles.adviceIconContainer}>
+                <View key={item.id} style={[styles.adviceCard, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
+                  <View style={[styles.adviceIconContainer, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : '#EDFBEF' }]}>
                     <Ionicons name={item.icon as any} size={24} color="#4CAF50" />
                   </View>
                   <View style={styles.adviceContent}>
-                    <Text style={styles.adviceMessage}>{item.message}</Text>
+                    <Text style={[styles.adviceMessage, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{item.message}</Text>
                   </View>
                 </View>
               ))}
@@ -407,33 +416,33 @@ const ReportsScreen = () => {
         {/* Health Analytics Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Health Analytics</Text>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Health Analytics</Text>
             {renderTimeFrameSelector()}
           </View>
           
           <View style={styles.chartCards}>
             {/* Disease Distribution Chart - Simplified for farmers */}
-            <View style={styles.chartCard}>
+            <View style={[styles.chartCard, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
               <View style={styles.chartTitleContainer}>
                 <Ionicons name="pie-chart" size={20} color={COLORS.primary} />
-                <Text style={styles.chartTitle}>Your Plants This Month</Text>
+                <Text style={[styles.chartTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Your Plants This Month</Text>
               </View>
-              <Text style={styles.chartSubtitle}>Shows healthy vs. infected plants</Text>
+              <Text style={[styles.chartSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Shows healthy vs. infected plants</Text>
               <PieChart
                 data={mockChartData.disease.labels.map((label, index) => ({
                   name: label === 'Healthy' ? 'Healthy Plants' : label + ' Disease',
                   population: mockChartData.disease.data[index],
                   color: mockChartData.disease.colors[index],
-                  legendFontColor: '#000000',
+                  legendFontColor: isDarkMode ? themedColors.white : '#000000',
                   legendFontSize: 12
                 }))}
                 width={screenWidth - 42}
                 height={180}
                 chartConfig={{
-                  backgroundColor: '#FFFFFF',
-                  backgroundGradientFrom: '#FFFFFF',
-                  backgroundGradientTo: '#FFFFFF',
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  backgroundColor: isDarkMode ? themedColors.secondary : '#FFFFFF',
+                  backgroundGradientFrom: isDarkMode ? themedColors.secondary : '#FFFFFF',
+                  backgroundGradientTo: isDarkMode ? themedColors.secondary : '#FFFFFF',
+                  color: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
                   style: {
                     borderRadius: 16
                   }
@@ -452,7 +461,7 @@ const ReportsScreen = () => {
         {/* Scan History Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Scans</Text>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Recent Scans</Text>
           </View>
           
           <View style={styles.scansContainer}>
@@ -465,8 +474,8 @@ const ReportsScreen = () => {
             />
           </View>
           
-          <TouchableOpacity style={styles.viewAllButton}>
-            <Text style={styles.viewAllText}>View All Records</Text>
+          <TouchableOpacity style={[styles.viewAllButton, { backgroundColor: isDarkMode ? themedColors.background : 'rgba(0,0,0,0.03)' }]}>
+            <Text style={[styles.viewAllText, { color: COLORS.primary }]}>View All Records</Text>
             <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
@@ -985,4 +994,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ReportsScreen; 
+export default ReportsScreen;

@@ -1,10 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator, Dimensions } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
 import { getRemoteScans } from '../services/api';
+import { ThemeContext } from '../context/ThemeContext';
+
+const { width, height } = Dimensions.get('window');
+const isTablet = width > 768;
+const scale = Math.min(width / 375, height / 667);
 
 function formatDate(date: string | number | Date) {
   if (!date) return '';
@@ -14,19 +19,34 @@ function formatDate(date: string | number | Date) {
     ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-const getDiseaseColor = (disease: string) => {
-  if (!disease) return COLORS.gray;
+const getDiseaseColor = (disease: string, isDarkMode: boolean) => {
+  if (!disease) return isDarkMode ? '#AAAAAA' : COLORS.gray;
   const name = disease.toLowerCase();
   if (name.includes('rust')) return '#F44336';
   if (name.includes('healthy')) return '#4CAF50';
   if (name.includes('blight')) return '#FF9800';
-  return COLORS.primary;
+  return isDarkMode ? '#6F8F3F' : COLORS.primary;
 };
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 const ScanHistoryScreen = () => {
   const navigation = useNavigation();
+  const { isDarkMode } = useContext(ThemeContext);
+  // Use inline object for dark colors to avoid TypeScript issues
+  const themedColors = isDarkMode ? {
+    primary: '#6F8F3F',
+    background: '#121212',
+    secondary: '#2A2A2A',
+    accent: '#804E49',
+    white: '#1E1E1E', // Dark card background
+    black: '#FFFFFF', // White text on dark background
+    gray: '#AAAAAA',
+    lightGray: '#555555',
+    transparent: 'transparent',
+    error: '#D32F2F',
+    success: '#4CAF50'
+  } : COLORS;
   const [scans, setScans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -49,56 +69,75 @@ const ScanHistoryScreen = () => {
   const totalPages = Math.max(1, Math.ceil(scans.length / PAGE_SIZE));
   const pagedScans = scans.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <View style={styles.imageContainer}>
-        {item.imageUri ? (
-          <Image source={{ uri: item.imageUri }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Ionicons name="leaf-outline" size={32} color={COLORS.primary} />
+  const renderItem = ({ item }: { item: any }) => {
+    const isHealthy = item.disease?.toLowerCase().includes('healthy');
+    const badgeText = isHealthy ? 'Healthy' : (item.stage || item.severity || 'Unknown');
+    const badgeColor = isHealthy ? '#4CAF50' : 
+                      item.stage === 'Early' ? '#FF9800' :
+                      item.stage === 'Progressive' ? '#FF5722' :
+                      item.stage === 'Severe' ? '#F44336' : '#9E9E9E';
+
+    return (
+      <TouchableOpacity 
+        style={[styles.historyScanCard, { 
+          backgroundColor: themedColors.white,
+          borderColor: isDarkMode ? themedColors.lightGray : '#F0F0F0'
+        }]}
+        activeOpacity={0.7}
+      >
+        <View style={styles.historyScanImageContainer}>
+          {item.imageUri ? (
+            <Image source={{ uri: item.imageUri }} style={styles.historyScanImage} resizeMode="cover" />
+          ) : (
+            <View style={[styles.historyScanImage, styles.historyPlaceholderImage, { 
+              backgroundColor: isDarkMode ? themedColors.secondary : COLORS.primary + '08' 
+            }]}> 
+              <Ionicons name="leaf-outline" size={width * 0.06} color={isDarkMode ? themedColors.primary : COLORS.primary} />
+            </View>
+          )}
+          <View style={styles.historyConfidenceBadge}>
+            <Text style={styles.historyConfidenceText}>{item.confidence || 0}%</Text>
           </View>
-        )}
-      </View>
-      <View style={styles.infoContainer}>
-        <View style={styles.diseaseRow}>
-          <View style={[styles.diseaseBadge, { backgroundColor: getDiseaseColor(item.disease) }] }>
-            <Ionicons name="bug-outline" size={14} color={COLORS.white} style={{ marginRight: 4 }} />
-            <Text style={styles.diseaseBadgeText}>{item.disease}</Text>
+          <View style={[styles.historyStatusBadge, { backgroundColor: badgeColor }]}> 
+            <Text style={styles.historyStatusText}>{badgeText}</Text>
           </View>
         </View>
-        <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-        <View style={styles.row}>
-          <Ionicons name="location-outline" size={15} color={COLORS.gray} style={{ marginRight: 2 }} />
-          <Text style={styles.location} numberOfLines={1}>
-            {item.address?.barangay ? item.address.barangay + ', ' : ''}
-            {item.address?.cityMunicipality ? item.address.cityMunicipality + ', ' : ''}
-            {item.address?.province || ''}
-          </Text>
+        
+        <View style={styles.historyScanContent}>
+          <View style={styles.historyScanInfoRow}>
+            <View style={styles.historyScanTitleContainer}>
+              <Text style={[styles.historyScanTitle, { color: isDarkMode ? themedColors.black : COLORS.black }]} numberOfLines={1}>{item.disease}</Text>
+              <Text style={[styles.historyScanTime, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{formatDate(item.createdAt)}</Text>
+            </View>
+            
+            {item.address && (
+              <View style={[styles.historyLocationContainer, { 
+                backgroundColor: isDarkMode ? themedColors.secondary : '#F8F9FA',
+                borderColor: isDarkMode ? themedColors.lightGray : '#E9ECEF'
+              }]}>
+                <Ionicons name="location" size={width * 0.025} color={isDarkMode ? themedColors.primary : COLORS.primary} />
+                <Text style={[styles.historyScanLocation, { color: isDarkMode ? themedColors.gray : '#6C757D' }]} numberOfLines={1}>
+                  {item.address.cityMunicipality || 'Unknown Location'}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-        <View style={styles.row}>
-          <Ionicons name="shield-checkmark-outline" size={15} color={COLORS.primary} style={{ marginRight: 2 }} />
-          <Text style={styles.confidence}>Confidence: {item.confidence}%</Text>
-        </View>
-        <View style={styles.row}>
-          <Ionicons name="pulse-outline" size={15} color={COLORS.primary} style={{ marginRight: 2 }} />
-          <Text style={styles.stage}>Stage: {item.stage}</Text>
-        </View>
-      </View>
-    </View>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themedColors.background }]}>
       <Header title="Scan History" showBackButton onBackPress={() => navigation.goBack()} />
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={themedColors.primary} />
         </View>
       ) : scans.length === 0 ? (
         <View style={styles.centered}>
-          <Ionicons name="cloud-outline" size={48} color={COLORS.gray} style={{ marginBottom: 12 }} />
-          <Text style={styles.emptyText}>No scan history yet.</Text>
+          <Ionicons name="cloud-outline" size={48} color={themedColors.gray} style={{ marginBottom: 12 }} />
+          <Text style={[styles.emptyText, { color: themedColors.gray }]}>No scan history yet.</Text>
         </View>
       ) : (
         <>
@@ -110,21 +149,27 @@ const ScanHistoryScreen = () => {
           />
           <View style={styles.paginationRow}>
             <TouchableOpacity
-              style={[styles.pageButton, page === 1 && styles.pageButtonDisabled]}
+              style={[styles.pageButton, { 
+                backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
+                borderColor: isDarkMode ? themedColors.lightGray : '#E9ECEF'
+              }, page === 1 && styles.pageButtonDisabled]}
               onPress={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
             >
-              <Ionicons name="chevron-back" size={20} color={page === 1 ? COLORS.gray : COLORS.primary} />
-              <Text style={[styles.pageButtonText, page === 1 && styles.pageButtonTextDisabled]}>Prev</Text>
+              <Ionicons name="chevron-back" size={20} color={page === 1 ? themedColors.gray : themedColors.primary} />
+              <Text style={[styles.pageButtonText, { color: page === 1 ? themedColors.gray : themedColors.primary }, page === 1 && styles.pageButtonTextDisabled]}>Prev</Text>
             </TouchableOpacity>
-            <Text style={styles.pageInfo}>{page} / {totalPages}</Text>
+            <Text style={[styles.pageInfo, { color: themedColors.gray }]}>{page} / {totalPages}</Text>
             <TouchableOpacity
-              style={[styles.pageButton, page === totalPages && styles.pageButtonDisabled]}
+              style={[styles.pageButton, { 
+                backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
+                borderColor: isDarkMode ? themedColors.lightGray : '#E9ECEF'
+              }, page === totalPages && styles.pageButtonDisabled]}
               onPress={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
             >
-              <Text style={[styles.pageButtonText, page === totalPages && styles.pageButtonTextDisabled]}>Next</Text>
-              <Ionicons name="chevron-forward" size={20} color={page === totalPages ? COLORS.gray : COLORS.primary} />
+              <Text style={[styles.pageButtonText, { color: page === totalPages ? themedColors.gray : themedColors.primary }, page === totalPages && styles.pageButtonTextDisabled]}>Next</Text>
+              <Ionicons name="chevron-forward" size={20} color={page === totalPages ? themedColors.gray : themedColors.primary} />
             </TouchableOpacity>
           </View>
         </>
@@ -148,90 +193,96 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     textAlign: 'center',
   },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 16,
-    marginBottom: 16,
+  historyScanCard: {
+    borderRadius: isTablet ? 16 : 12,
+    marginBottom: isTablet ? 16 : 12,
+    overflow: 'hidden',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
     shadowRadius: 4,
+    borderWidth: 1,
   },
-  imageContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: COLORS.lightGray,
-    marginRight: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+  historyScanImageContainer: {
+    position: 'relative',
+    height: width * 0.25,
   },
-  image: {
+  historyScanImage: {
     width: '100%',
     height: '100%',
   },
-  imagePlaceholder: {
-    width: '100%',
-    height: '100%',
+  historyPlaceholderImage: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.lightGray,
   },
-  infoContainer: {
+  historyConfidenceBadge: {
+    position: 'absolute',
+    top: width * 0.02,
+    right: width * 0.02,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: width * 0.015,
+    paddingVertical: width * 0.005,
+    borderRadius: width * 0.025,
+  },
+  historyConfidenceText: {
+    color: '#FFFFFF',
+    fontSize: width * 0.025,
+    fontWeight: '700',
+  },
+  historyStatusBadge: {
+    position: 'absolute',
+    bottom: width * 0.02,
+    left: width * 0.02,
+    paddingHorizontal: width * 0.02,
+    paddingVertical: width * 0.008,
+    borderRadius: width * 0.04,
+    elevation: 1,
+  },
+  historyStatusText: {
+    color: '#FFFFFF',
+    fontSize: width * 0.022,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  historyScanContent: {
+    padding: width * 0.03,
+  },
+  historyScanInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: width * 0.02,
+  },
+  historyScanTitleContainer: {
     flex: 1,
     minWidth: 0,
   },
-  diseaseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
+  historyScanTitle: {
+    fontSize: width * 0.04,
+    fontWeight: '700',
+    marginBottom: width * 0.005,
+    letterSpacing: 0.1,
   },
-  diseaseBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginRight: 8,
-  },
-  diseaseBadgeText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 14,
-    marginLeft: 2,
-  },
-  date: {
-    fontSize: 13,
-    color: COLORS.gray,
-    marginTop: 2,
-    marginBottom: 6,
+  historyScanTime: {
+    fontSize: width * 0.03,
     fontWeight: '500',
   },
-  row: {
+  historyLocationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
-    marginBottom: 2,
+    paddingHorizontal: width * 0.015,
+    paddingVertical: width * 0.005,
+    borderRadius: width * 0.015,
+    maxWidth: width * 0.25,
+    gap: width * 0.005,
+    borderWidth: 1,
   },
-  location: {
-    fontSize: 13,
-    color: COLORS.gray,
-    flexShrink: 1,
-  },
-  confidence: {
-    fontSize: 13,
-    color: COLORS.black,
-    marginBottom: 2,
-  },
-  stage: {
-    fontSize: 13,
-    color: COLORS.black,
+  historyScanLocation: {
+    fontSize: width * 0.023,
+    fontWeight: '600',
+    flex: 1,
   },
   paginationRow: {
     flexDirection: 'row',
@@ -244,30 +295,28 @@ const styles = StyleSheet.create({
   pageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 18,
     elevation: 1,
+    borderWidth: 1,
   },
   pageButtonDisabled: {
-    backgroundColor: COLORS.background,
+    opacity: 0.5,
   },
   pageButtonText: {
     fontSize: 15,
-    color: COLORS.primary,
     fontWeight: '600',
     marginHorizontal: 2,
   },
   pageButtonTextDisabled: {
-    color: COLORS.gray,
+    opacity: 0.6,
   },
   pageInfo: {
     fontSize: 15,
-    color: COLORS.gray,
     fontWeight: '500',
     marginHorizontal: 8,
   },
 });
 
-export default ScanHistoryScreen; 
+export default ScanHistoryScreen;

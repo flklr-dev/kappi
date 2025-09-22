@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, DARK_COLORS } from '../constants/colors';
+import { ThemeContext } from '../context/ThemeContext';
 
 import HomeScreen from '../screens/HomeScreen';
 import ScanScreen from '../screens/ScanScreen';
@@ -13,20 +14,23 @@ import { MainTabParamList } from './types';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const BottomTabNavigator = () => {
+  const { isDarkMode } = useContext(ThemeContext);
+  const themedColors = isDarkMode ? DARK_COLORS : COLORS;
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.white,
+          backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
           borderTopWidth: 1,
-          borderTopColor: 'rgba(0,0,0,0.1)',
+          borderTopColor: isDarkMode ? themedColors.gray : 'rgba(0,0,0,0.1)',
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.gray,
+        tabBarActiveTintColor: themedColors.primary,
+        tabBarInactiveTintColor: isDarkMode ? themedColors.lightGray : themedColors.gray,
       }}
     >
       <Tab.Screen
@@ -73,4 +77,4 @@ const BottomTabNavigator = () => {
   );
 };
 
-export default BottomTabNavigator; 
+export default BottomTabNavigator;

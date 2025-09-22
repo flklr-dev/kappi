@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -12,7 +12,7 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, DARK_COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import { NavigationProp, RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -21,10 +21,14 @@ import { ScanResult, useScanStore } from '../viewmodels/ScanViewModel';
 import { useAuthStore } from '../stores/authStore';
 import VarietySelector, { CoffeeVariety } from '../components/VarietySelector';
 import { treatmentRecommendations } from '../constants/treatmentRecommendations';
+import { ThemeContext } from '../context/ThemeContext';
 
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
 
 const ResultsScreen = () => {
+  const { isDarkMode } = useContext(ThemeContext);
+  const themedColors = isDarkMode ? DARK_COLORS : COLORS;
+  
   const route = useRoute<ResultsScreenRouteProp>();
   const navigation = useNavigation();
   const { imageUri, diagnosis } = route.params;
@@ -34,10 +38,10 @@ const ResultsScreen = () => {
 
   if (!diagnosis) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
         <Header title="Scan Results" showBackButton onBackPress={() => navigation.goBack()} />
         <View style={styles.centeredContainer}>
-          <Text style={styles.errorText}>No diagnosis data available</Text>
+          <Text style={[styles.errorText, { color: themedColors.error }]}>No diagnosis data available</Text>
         </View>
       </SafeAreaView>
     );
@@ -115,8 +119,11 @@ const ResultsScreen = () => {
   const treatment = getTreatment();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
+      <StatusBar 
+        barStyle={isDarkMode ? "light-content" : "light-content"} 
+        backgroundColor={COLORS.primary} 
+      />
       
       <Header
         title="Scan Results"
@@ -127,7 +134,7 @@ const ResultsScreen = () => {
       <ScrollView style={styles.scrollView}>
         {/* Image Preview */}
         <View style={styles.imageSection}>
-          <View style={styles.imageContainer}>
+          <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.lightGray }]}>
             <Image 
               source={{ uri: imageUri }} 
               style={styles.scanImage}
@@ -146,9 +153,9 @@ const ResultsScreen = () => {
         {/* Error Message or Diagnosis Card */}
         {hasError ? (
           <View style={styles.section}>
-            <View style={styles.errorCard}>
+            <View style={[styles.errorCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
               <Ionicons name="alert-circle-outline" size={32} color={COLORS.error} />
-              <Text style={styles.errorMessage}>{errorMessage}</Text>
+              <Text style={[styles.errorMessage, { color: isDarkMode ? themedColors.white : themedColors.error }]}>{errorMessage}</Text>
               <TouchableOpacity 
                 style={styles.retakeButtonLarge}
                 onPress={() => navigation.goBack()}
@@ -168,14 +175,14 @@ const ResultsScreen = () => {
                 size={24} 
                 color={COLORS.primary} 
               />
-              <Text style={styles.sectionTitle}>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
                 {diagnosis.stage === 'Healthy' ? 'Plant Health Status' : 'Plant Health'}
               </Text>
             </View>
 
-            <View style={styles.diagnosisCard}>
+            <View style={[styles.diagnosisCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
               <View style={styles.diseaseHeader}>
-                <Text style={styles.diseaseName}>{diagnosis.disease}</Text>
+                <Text style={[styles.diseaseName, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{diagnosis.disease}</Text>
               </View>
 
               <View style={styles.stageContainer}>
@@ -191,7 +198,7 @@ const ResultsScreen = () => {
                     <Text style={[styles.stageTitle, { color: getStageColor(diagnosis.stage) }]}> 
                       {diagnosis.stage === 'Healthy' ? 'Healthy Plant' : `${diagnosis.stage} Stage`} 
                     </Text>
-                    <Text style={styles.stageDescription}> 
+                    <Text style={[styles.stageDescription, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}> 
                       {getStageDescription(diagnosis.stage)} 
                     </Text>
                   </View>
@@ -199,8 +206,8 @@ const ResultsScreen = () => {
               </View>
 
               <View style={styles.confidenceSection}>
-                <Text style={styles.confidenceLabel}>Confidence: {diagnosis.confidence}%</Text>
-                <View style={styles.confidenceBar}>
+                <Text style={[styles.confidenceLabel, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Confidence: {diagnosis.confidence}%</Text>
+                <View style={[styles.confidenceBar, { backgroundColor: isDarkMode ? themedColors.lightGray : '#E0E0E0' }]}>
                   <View 
                     style={[
                       styles.confidenceFill, 
@@ -220,40 +227,40 @@ const ResultsScreen = () => {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="medkit-outline" size={24} color={COLORS.primary} />
-                <Text style={styles.sectionTitle}>Disease Management</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Disease Management</Text>
               </View>
-              <Text style={styles.treatmentInfo}>Choose your coffee variety:</Text>
+              <Text style={[styles.treatmentInfo, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Choose your coffee variety:</Text>
               <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
               {treatment ? (
-                <View style={styles.treatmentCardSingle}>
+                <View style={[styles.treatmentCardSingle, { backgroundColor: isDarkMode ? themedColors.background : '#F7F7F7' }]}>
                   {/* Chemical Control */}
                   <View style={styles.treatmentBlock}>
                     <View style={styles.treatmentBlockHeader}>
                       <Text style={styles.treatmentBlockIcon}>🧪</Text>
-                      <Text style={styles.treatmentBlockTitle}>Chemical Control</Text>
+                      <Text style={[styles.treatmentBlockTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>Chemical Control</Text>
                     </View>
-                    <Text style={styles.treatmentBlockDesc}>Use these only if needed and follow label instructions. Wear gloves and avoid spraying on windy days.</Text>
+                    <Text style={[styles.treatmentBlockDesc, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Use these only if needed and follow label instructions. Wear gloves and avoid spraying on windy days.</Text>
                     {treatment.chemical.map((item, idx) => (
-                      <Text key={idx} style={styles.treatmentBlockText}>• {item}</Text>
+                      <Text key={idx} style={[styles.treatmentBlockText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
                     ))}
                   </View>
                   {/* Divider */}
-                  <View style={styles.treatmentDivider} />
+                  <View style={[styles.treatmentDivider, { backgroundColor: isDarkMode ? themedColors.lightGray : '#E0E0E0' }]} />
                   {/* Cultural Control */}
                   <View style={styles.treatmentBlock}>
                     <View style={styles.treatmentBlockHeader}>
                       <Text style={styles.treatmentBlockIcon}>🌱</Text>
-                      <Text style={styles.treatmentBlockTitle}>Cultural Control</Text>
+                      <Text style={[styles.treatmentBlockTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>Cultural Control</Text>
                     </View>
-                    <Text style={styles.treatmentBlockDesc}>Simple farm practices to help prevent and control disease.</Text>
+                    <Text style={[styles.treatmentBlockDesc, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Simple farm practices to help prevent and control disease.</Text>
                     {treatment.cultural.map((item, idx) => (
-                      <Text key={idx} style={styles.treatmentBlockText}>• {item}</Text>
+                      <Text key={idx} style={[styles.treatmentBlockText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
                     ))}
                   </View>
-                  <Text style={styles.treatmentSources}>Sources: {treatment.sources.join(', ')}</Text>
+                  <Text style={[styles.treatmentSources, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Sources: {treatment.sources.join(', ')}</Text>
                 </View>
               ) : (
-                <Text style={styles.treatmentBlockText}>No recommendations available for this stage/variety.</Text>
+                <Text style={[styles.treatmentBlockText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>No recommendations available for this stage/variety.</Text>
               )}
             </View>
           )}
@@ -263,25 +270,25 @@ const ResultsScreen = () => {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="shield-checkmark-outline" size={24} color={COLORS.primary} />
-                <Text style={styles.sectionTitle}>Preventive Tips</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Preventive Tips</Text>
               </View>
-              <Text style={styles.treatmentInfo}>Choose your coffee variety:</Text>
+              <Text style={[styles.treatmentInfo, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Choose your coffee variety:</Text>
               <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
               {treatmentRecommendations['Coffee Leaf Rust']?.Healthy?.[selectedVariety]?.cultural?.length ? (
-                <View style={styles.treatmentCardSingle}>
+                <View style={[styles.treatmentCardSingle, { backgroundColor: isDarkMode ? themedColors.background : '#F7F7F7' }]}>
                   <View style={styles.treatmentBlock}>
                     <View style={styles.treatmentBlockHeader}>
                       <Text style={styles.treatmentBlockIcon}>🌱</Text>
-                      <Text style={styles.treatmentBlockTitle}>Cultural Tips</Text>
+                      <Text style={[styles.treatmentBlockTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>Cultural Tips</Text>
                     </View>
-                    <Text style={styles.treatmentBlockDesc}>Keep your plants healthy with these simple practices:</Text>
+                    <Text style={[styles.treatmentBlockDesc, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Keep your plants healthy with these simple practices:</Text>
                     {treatmentRecommendations['Coffee Leaf Rust'].Healthy[selectedVariety].cultural.map((item, idx) => (
-                      <Text key={idx} style={styles.treatmentBlockText}>• {item}</Text>
+                      <Text key={idx} style={[styles.treatmentBlockText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
                     ))}
                   </View>
                 </View>
               ) : (
-                <Text style={styles.treatmentBlockText}>No preventive tips available for this variety.</Text>
+                <Text style={[styles.treatmentBlockText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>No preventive tips available for this variety.</Text>
               )}
             </View>
           )}
@@ -291,14 +298,14 @@ const ResultsScreen = () => {
         {/* Action Buttons */}
         {!hasError && (
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleSave}>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: COLORS.primary }]} onPress={handleSave}>
             <Ionicons name="save-outline" size={24} color={COLORS.white} />
             <Text style={styles.actionButtonText}>Save Report</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]} onPress={handleShare}>
+          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white, borderColor: COLORS.primary }]} onPress={handleShare}>
             <Ionicons name="share-outline" size={24} color={COLORS.primary} />
-            <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>Share</Text>
+            <Text style={[styles.actionButtonText, styles.secondaryButtonText, { color: COLORS.primary }]}>Share</Text>
           </TouchableOpacity>
         </View>
         )}
@@ -564,4 +571,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ResultsScreen; 
+export default ResultsScreen;
