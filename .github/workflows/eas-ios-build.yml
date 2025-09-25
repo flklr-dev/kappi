@@ -1,0 +1,42 @@
+name: EAS iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ios-build
+
+jobs:
+  build-ios:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies (client directory)
+        run: |
+          cd client
+          npm install
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Login to Expo
+        run: eas login --token ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS app (Production Profile)
+        id: eas_build
+        run: |
+          cd client
+          BUILD_OUTPUT=$(npx eas build -p ios --profile production --non-interactive)
+          echo "$BUILD_OUTPUT"
+          BUILD_URL=$(echo "$BUILD_OUTPUT" | grep -o 'https://expo.dev/accounts/[^/]\+/projects/[^/]\+/builds/[[:alnum:]]\+')
+          echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
+
+      - name: Print Build URL
+        run: echo "EAS Build URL: ${{ steps.eas_build.outputs.build_url }}"
