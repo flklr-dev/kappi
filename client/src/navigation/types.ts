@@ -9,12 +9,14 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   VerifyOTP: { email: string };
   ResetPassword: { email: string; otp: string };
+  Profile: undefined; // Add Profile screen here
   MainTabs: undefined;
   Results: {
     imageUri: string;
     diagnosis: ScanResult;
   };
   ScanHistory: undefined;
+  DiseaseManagement: { diseaseName?: string };
 };
 
 // Main tab navigator params
@@ -23,4 +25,4 @@ export type MainTabParamList = {
   ScanTab: undefined;
   ReportsTab: undefined;
   ProfileTab: undefined;
-}; 
+};

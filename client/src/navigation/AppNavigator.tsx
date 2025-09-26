@@ -12,6 +12,7 @@ import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import ResultsScreen from '../screens/ResultsScreen';
 import ScanHistoryScreen from '../screens/ScanHistoryScreen';
+import DiseaseManagementScreen from '../screens/DiseaseManagementScreen';
 import { RootStackParamList } from './types';
 import { useAuthStore } from '../stores/authStore';
 import { COLORS } from '../constants/colors';
@@ -83,9 +84,10 @@ const AppNavigator = () => {
         <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
         <Stack.Screen name="Results" component={ResultsScreen} />
         <Stack.Screen name="ScanHistory" component={ScanHistoryScreen} />
+        <Stack.Screen name="DiseaseManagement" component={DiseaseManagementScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
 
-export default AppNavigator; 
+export default AppNavigator;
