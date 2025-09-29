@@ -30,6 +30,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useScanStore } from '../viewmodels/ScanViewModel';
 import { useAuthStore } from '../stores/authStore';
 import { ThemeContext } from '../context/ThemeContext';
+import ScanningTipsModal from '../components/ScanningTipsModal';
 
 type ScanScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -246,7 +247,7 @@ const ScanScreen = () => {
             style={[styles.galleryButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
             onPress={handleGalleryPick}
           >
-            <Ionicons name="images-outline" size={28} color={COLORS.primary} />
+            <Ionicons name="images-outline" size={20} color={COLORS.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -271,106 +272,11 @@ const ScanScreen = () => {
       </View>
 
       {/* Scanning Tips Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <ScanningTipsModal
         visible={showTipsModal}
-        onRequestClose={() => setShowTipsModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: isDarkMode ? themedColors.gray : `${COLORS.gray}30` }]}>
-              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Scanning Tips</Text>
-              <TouchableOpacity onPress={() => setShowTipsModal(false)}>
-                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : themedColors.black} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalContent}>
-              <View style={styles.modalSection}>
-                <Text style={[styles.sectionTitle, { color: COLORS.primary }]}>Important Reminder</Text>
-                <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
-                  Only scan coffee plant parts with these specific diseases:
-                </Text>
-              </View>
-
-              <View style={styles.diseaseSection}>
-                <View style={[styles.diseaseCategory, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
-                  <View style={styles.diseaseCategoryHeader}>
-                    <Ionicons name="leaf-outline" size={20} color={COLORS.primary} />
-                    <Text style={[styles.diseaseCategoryTitle, { color: COLORS.primary }]}>Leaves</Text>
-                  </View>
-                  <View style={styles.diseaseList}>
-                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Coffee Leaf Rust</Text>
-                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Thread Blight</Text>
-                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Anthracnose</Text>
-                  </View>
-                </View>
-
-                <View style={[styles.diseaseCategory, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
-                  <View style={styles.diseaseCategoryHeader}>
-                    <Ionicons name="git-branch-outline" size={20} color={COLORS.primary} />
-                    <Text style={[styles.diseaseCategoryTitle, { color: COLORS.primary }]}>Stems</Text>
-                  </View>
-                  <View style={styles.diseaseList}>
-                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Coffee Wilt Disease</Text>
-                  </View>
-                </View>
-
-                <View style={[styles.diseaseCategory, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
-                  <View style={styles.diseaseCategoryHeader}>
-                    <Ionicons name="ellipse-outline" size={20} color={COLORS.primary} />
-                    <Text style={[styles.diseaseCategoryTitle, { color: COLORS.primary }]}>Berries</Text>
-                  </View>
-                  <View style={styles.diseaseList}>
-                    <Text style={[styles.diseaseItem, { color: isDarkMode ? themedColors.white : themedColors.black }]}>• Coffee Berry Disease</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.modalSection}>
-                <Text style={[styles.sectionTitle, { color: COLORS.primary }]}>For Best Results</Text>
-                <View style={styles.bestResultsList}>
-                  <View style={[styles.modalTipItem, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
-                    <View style={[styles.tipIcon, { backgroundColor: isDarkMode ? `${COLORS.primary}30` : `${COLORS.primary}20` }]}>
-                      <Ionicons name="sunny-outline" size={18} color={COLORS.primary} />
-                    </View>
-                    <Text style={[styles.modalTipText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Use good lighting</Text>
-                  </View>
-                  
-                  <View style={[styles.modalTipItem, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
-                    <View style={[styles.tipIcon, { backgroundColor: isDarkMode ? `${COLORS.primary}30` : `${COLORS.primary}20` }]}>
-                      <Ionicons name="scan-outline" size={18} color={COLORS.primary} />
-                    </View>
-                    <Text style={[styles.modalTipText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Keep subject centered</Text>
-                  </View>
-                  
-                  <View style={[styles.modalTipItem, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
-                    <View style={[styles.tipIcon, { backgroundColor: isDarkMode ? `${COLORS.primary}30` : `${COLORS.primary}20` }]}>
-                      <Ionicons name="hand-left-outline" size={18} color={COLORS.primary} />
-                    </View>
-                    <Text style={[styles.modalTipText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Hold camera steady</Text>
-                  </View>
-                  
-                  <View style={[styles.modalTipItem, { backgroundColor: isDarkMode ? `${COLORS.primary}20` : `${COLORS.primary}10` }]}>
-                    <View style={[styles.tipIcon, { backgroundColor: isDarkMode ? `${COLORS.primary}30` : `${COLORS.primary}20` }]}>
-                      <Ionicons name="crop-outline" size={18} color={COLORS.primary} />
-                    </View>
-                    <Text style={[styles.modalTipText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Capture close-up of affected area</Text>
-                  </View>
-                </View>
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity 
-              style={[styles.modalButton, { backgroundColor: COLORS.primary }]}
-              onPress={() => setShowTipsModal(false)}
-            >
-              <Text style={styles.modalButtonText}>Got it</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowTipsModal(false)}
+        isDarkMode={isDarkMode}
+      />
 
       {/* Unknown Result Modal */}
       <Modal
@@ -458,112 +364,61 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 0,
+    paddingVertical: 20,
     gap: 30,
     backgroundColor: COLORS.background,
   },
   galleryButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    elevation: 0, // Removed shadow
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: COLORS.primary,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    elevation: 0, // Removed shadow
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   captureButtonDisabled: {
     opacity: 0.7,
   },
   captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: COLORS.primary,
   },
   infoButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    elevation: 0, // Removed shadow
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
-  tipsContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 15,
-    marginHorizontal: 20,
-    marginTop: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  tipsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  tipsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    marginLeft: 8,
-  },
-  tipsList: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  tipItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: `${COLORS.primary}10`,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginHorizontal: 4,
-  },
-  tipIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: `${COLORS.primary}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  tipText: {
-    fontSize: 12,
-    color: COLORS.black,
-    fontWeight: '500',
-  },
-  // Modal styles
+  // Modal styles for Unknown Result Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -571,7 +426,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: '90%',
+    width: width * 0.9,
     maxHeight: '80%',
     backgroundColor: COLORS.white,
     borderRadius: 15,
@@ -582,93 +437,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: `${COLORS.gray}30`,
-  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.black,
-  },
-  modalContent: {
-    maxHeight: '70%',
-  },
-  modalSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.primary,
     marginBottom: 10,
   },
   sectionText: {
     fontSize: 16,
     color: COLORS.black,
-    marginBottom: 10,
-  },
-  diseaseSection: {
     marginBottom: 20,
-  },
-  diseaseCategory: {
-    marginBottom: 15,
-    backgroundColor: `${COLORS.primary}10`,
-    borderRadius: 10,
-    padding: 12,
-  },
-  diseaseCategoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  diseaseCategoryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginLeft: 8,
-  },
-  diseaseList: {
-    paddingLeft: 10,
-  },
-  diseaseItem: {
-    fontSize: 15,
-    color: COLORS.black,
-    marginBottom: 4,
-  },
-  modalTipItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: `${COLORS.primary}10`,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  modalTipText: {
-    fontSize: 15,
-    color: COLORS.black,
-    fontWeight: '500',
+    textAlign: 'center',
   },
   modalButton: {
     backgroundColor: COLORS.primary,
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 15,
+    marginTop: 10,
   },
   modalButtonText: {
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  bestResultsList: {
-    flexDirection: 'column',
   },
 });
 

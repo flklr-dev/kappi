@@ -10,7 +10,7 @@ export type RootStackParamList = {
   VerifyOTP: { email: string };
   ResetPassword: { email: string; otp: string };
   Profile: undefined; // Add Profile screen here
-  MainTabs: undefined;
+  MainTabs: { screen?: keyof MainTabParamList };
   Results: {
     imageUri: string;
     diagnosis: ScanResult;

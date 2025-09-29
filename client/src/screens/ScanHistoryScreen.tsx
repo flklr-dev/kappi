@@ -194,15 +194,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   historyScanCard: {
-    borderRadius: isTablet ? 16 : 12,
+    borderRadius: 15, // Cohesive with other cards
     marginBottom: isTablet ? 16 : 12,
     overflow: 'hidden',
-    elevation: 2,
+    // elevation: 2, // Removed, relying on shadow
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, // Cohesive with other cards
+    shadowRadius: 5, // Cohesive with other cards
+    // borderWidth: 1, // Removed for cleaner look
   },
   historyScanImageContainer: {
     position: 'relative',
@@ -236,8 +236,12 @@ const styles = StyleSheet.create({
     left: width * 0.02,
     paddingHorizontal: width * 0.02,
     paddingVertical: width * 0.008,
-    borderRadius: width * 0.04,
-    elevation: 1,
+    borderRadius: 15, // Cohesive with other badges/cards
+    // elevation: 1, // Removed, relying on shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1, // Subtle shadow
+    shadowRadius: 3, // Subtle shadow
   },
   historyStatusText: {
     color: '#FFFFFF',
@@ -274,10 +278,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: width * 0.015,
     paddingVertical: width * 0.005,
-    borderRadius: width * 0.015,
+    borderRadius: 15, // Cohesive with other cards/buttons
     maxWidth: width * 0.25,
     gap: width * 0.005,
-    borderWidth: 1,
+    // borderWidth: 1, // Removed for cleaner look
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, // Subtle shadow
+    shadowRadius: 3, // Subtle shadow
   },
   historyScanLocation: {
     fontSize: width * 0.023,
@@ -295,11 +303,15 @@ const styles = StyleSheet.create({
   pageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 15, // Cohesive with other buttons/cards
     paddingVertical: 8,
     paddingHorizontal: 18,
-    elevation: 1,
-    borderWidth: 1,
+    // elevation: 1, // Removed, relying on shadow
+    // borderWidth: 1, // Removed for cleaner look
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, // Cohesive shadow
+    shadowRadius: 5, // Cohesive shadow
   },
   pageButtonDisabled: {
     opacity: 0.5,

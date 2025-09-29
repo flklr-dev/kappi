@@ -9,7 +9,9 @@ import {
   StatusBar,
   RefreshControl,
   Dimensions,
-  Image
+  Image,
+  ImageSourcePropType,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, DARK_COLORS } from '../constants/colors';
@@ -31,7 +33,7 @@ interface DiseaseManagementRouteParams {
 // Symptom data structure with image
 interface SymptomInfo {
   description: string;
-  image: string;
+  image: ImageSourcePropType;
 }
 
 // Disease data structure
@@ -42,7 +44,7 @@ interface DiseaseInfo {
   symptoms: SymptomInfo[];
   prevention: string[];
   treatment: string[];
-  image: string;
+  image: ImageSourcePropType;
 }
 
 // Mock data for diseases with images
@@ -54,15 +56,15 @@ const diseaseData: DiseaseInfo[] = [
     symptoms: [
       { 
         description: 'Yellow-orange powdery spots on leaf undersides', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-leaf-rust.png')
       },
       { 
         description: 'Leaf discoloration and premature dropping', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-rust.png')
       },
       { 
         description: 'Reduced photosynthesis and plant vigor', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-rust.png')
       }
     ],
     prevention: [
@@ -77,28 +79,28 @@ const diseaseData: DiseaseInfo[] = [
       'Remove and destroy severely infected plants',
       'Implement integrated pest management practices'
     ],
-    image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    image: require('../assets/coffee-leaf-rust.png')
   },
   {
     id: '2',
-    name: 'Thread Blight (leaf)',
+    name: 'Thread Blight',
     overview: 'A fungal disease that affects the leaves of coffee plants, causing thread-like fungal growth and leaf damage.',
     symptoms: [
       { 
         description: 'Thread-like fungal strands on leaf surfaces', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/thread-blight.jpg')
       },
       { 
         description: 'White to pale yellow fungal growth', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/thread-blight.jpg')
       },
       { 
         description: 'Leaf browning and wilting', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/thread-blight.jpg')
       },
       { 
         description: 'Progressive leaf drop', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/thread-blight.jpg')
       }
     ],
     prevention: [
@@ -113,28 +115,28 @@ const diseaseData: DiseaseInfo[] = [
       'Improve drainage around plants',
       'Use biological control agents when possible'
     ],
-    image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    image: require('../assets/thread-blight.jpg')
   },
   {
     id: '3',
-    name: 'Anthracnose (leaf)',
+    name: 'Anthracnose',
     overview: 'A fungal disease that causes dark, sunken lesions on leaves, stems, and fruits of coffee plants.',
     symptoms: [
       { 
         description: 'Dark, sunken lesions on leaves', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/anthracnose.png')
       },
       { 
         description: 'Leaf spotting and blighting', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/anthracnose.png')
       },
       { 
         description: 'Premature defoliation', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/anthracnose.png')
       },
       { 
         description: 'Twig dieback in severe cases', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/anthracnose.png')
       }
     ],
     prevention: [
@@ -149,28 +151,28 @@ const diseaseData: DiseaseInfo[] = [
       'Improve air circulation through pruning',
       'Remove and destroy fallen leaves and debris'
     ],
-    image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    image: require('../assets/anthracnose.png')
   },
   {
     id: '4',
-    name: 'Coffee Wilt Disease (stem)',
+    name: 'Coffee Wilt Disease',
     overview: 'A vascular disease caused by the fungus Fusarium xylarioides. It affects the vascular system of coffee plants, leading to wilting and death.',
     symptoms: [
       { 
         description: 'Progressive wilting of leaves starting from the top', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-wilt.jpg')
       },
       { 
         description: 'Dark streaking in the stem vascular tissue', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-wilt.jpg')
       },
       { 
         description: 'Yellowing and dropping of leaves', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-wilt.jpg')
       },
       { 
         description: 'Death of branches and eventually the entire plant', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-wilt.jpg')
       }
     ],
     prevention: [
@@ -185,28 +187,28 @@ const diseaseData: DiseaseInfo[] = [
       'Improve soil drainage and aeration',
       'Consider resistant rootstocks for replanting'
     ],
-    image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    image: require('../assets/coffee-wilt.jpg')
   },
   {
     id: '5',
-    name: 'Coffee Berry Disease (cherry)',
+    name: 'Coffee Berry Disease',
     overview: 'A fungal disease that affects coffee berries, causing significant yield losses. The disease is caused by the fungus Colletotrichum kahawae.',
     symptoms: [
       { 
         description: 'Dark, sunken lesions on coffee berries', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-berry-disease.jpg')
       },
       { 
         description: 'Pinkish spore masses on infected berries', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-berry-disease.jpg')
       },
       { 
         description: 'Premature berry drop', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-berry-disease.jpg')
       },
       { 
         description: 'Mummified berries remaining on the plant', 
-        image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80' 
+        image: require('../assets/coffee-berry-disease.jpg')
       }
     ],
     prevention: [
@@ -221,7 +223,7 @@ const diseaseData: DiseaseInfo[] = [
       'Implement integrated pest management practices',
       'Consider resistant coffee varieties when replanting'
     ],
-    image: 'https://images.unsplash.com/photo-1597250657903-f5f4a1a1a1e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    image: require('../assets/coffee-berry-disease.jpg')
   }
 ];
 
@@ -235,6 +237,8 @@ const DiseaseManagementScreen = () => {
     diseaseData.find(d => d.name === diseaseName) || diseaseData[0]
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedSymptomImage, setSelectedSymptomImage] = useState<ImageSourcePropType | null>(null);
 
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
 
@@ -247,12 +251,11 @@ const DiseaseManagementScreen = () => {
   const renderSection = (title: string, items: string[], icon: string) => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name={icon as any} size={20} color={COLORS.primary} />
         <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{title}</Text>
       </View>
       {items.map((item, index) => (
         <View key={index} style={styles.listItem}>
-          <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} style={styles.bullet} />
+          <Ionicons name="checkmark-circle" size={16} color={themedColors.primary} style={styles.bullet} />
           <Text style={[styles.listItemText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
         </View>
       ))}
@@ -261,13 +264,18 @@ const DiseaseManagementScreen = () => {
 
   const renderSymptomItem = (item: SymptomInfo, index: number) => (
     <View key={index} style={styles.symptomItem}>
-      <View style={styles.symptomImageContainer}>
-        <Image 
-          source={{ uri: item.image }} 
-          style={styles.symptomImage}
-          resizeMode="cover"
-        />
-      </View>
+      <TouchableOpacity onPress={() => {
+        setSelectedSymptomImage(item.image);
+        setShowImageModal(true);
+      }}>
+        <View style={styles.symptomImageContainer}>
+          <Image 
+            source={item.image} 
+            style={styles.symptomImage}
+            resizeMode="cover"
+          />
+        </View>
+      </TouchableOpacity>
       <View style={styles.symptomContent}>
         <Text style={[styles.symptomText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item.description}</Text>
       </View>
@@ -278,11 +286,11 @@ const DiseaseManagementScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
       <StatusBar 
         barStyle={isDarkMode ? "light-content" : "dark-content"} 
-        backgroundColor={COLORS.primary} 
+        backgroundColor={themedColors.primary} 
       />
       
       <Header
-        title="Disease Management"
+        title="Plant Care"
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
       />
@@ -296,7 +304,7 @@ const DiseaseManagementScreen = () => {
         {/* Disease Image */}
         <View style={styles.imageContainer}>
           <Image 
-            source={{ uri: selectedDisease.image }} 
+            source={selectedDisease.image} 
             style={styles.diseaseImage}
             resizeMode="cover"
           />
@@ -306,13 +314,11 @@ const DiseaseManagementScreen = () => {
         </View>
 
         {/* Disease Selector - Horizontal Scroll */}
-        <View style={styles.selectorSection}>
-          <Text style={[styles.selectorTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
-            Select Disease
-          </Text>
+        <View style={[styles.selectorSection, { marginTop: 20 }]}>
+          <Text style={[styles.selectorTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Select Disease</Text>
           <ScrollView 
             horizontal 
-            showsHorizontalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false} 
             style={styles.diseaseSelector}
             contentContainerStyle={styles.diseaseSelectorContent}
           >
@@ -321,18 +327,16 @@ const DiseaseManagementScreen = () => {
                 key={disease.id}
                 style={[
                   styles.diseaseChip,
-                  selectedDisease.id === disease.id 
-                    ? { ...styles.selectedDiseaseChip, backgroundColor: COLORS.primary }
-                    : { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }
+                  { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white },
+                  selectedDisease.id === disease.id && [styles.selectedDiseaseChip, { borderColor: themedColors.primary }]
                 ]}
                 onPress={() => setSelectedDisease(disease)}
               >
                 <Text 
                   style={[
                     styles.diseaseChipText,
-                    selectedDisease.id === disease.id 
-                      ? { color: COLORS.white }
-                      : { color: isDarkMode ? themedColors.white : themedColors.black }
+                    { color: isDarkMode ? themedColors.white : themedColors.black },
+                    selectedDisease.id === disease.id && { color: themedColors.primary }
                   ]}
                 >
                   {disease.name}
@@ -343,9 +347,8 @@ const DiseaseManagementScreen = () => {
         </View>
 
         {/* Disease Overview */}
-        <View style={styles.contentSection}>
+        <View style={[styles.contentSection, { paddingHorizontal: 20 }]}>
           <View style={styles.overviewHeader}>
-            <Ionicons name="information-circle" size={20} color={COLORS.primary} />
             <Text style={[styles.overviewTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
               About {selectedDisease.name}
             </Text>
@@ -356,9 +359,8 @@ const DiseaseManagementScreen = () => {
         </View>
 
         {/* Symptoms Section */}
-        <View style={styles.contentSection}>
+        <View style={[styles.contentSection, { paddingHorizontal: 20 }]}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="warning" size={20} color={COLORS.primary} />
             <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Symptoms</Text>
           </View>
           <View style={styles.symptomsContainer}>
@@ -374,6 +376,30 @@ const DiseaseManagementScreen = () => {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+
+      {/* Full-size Image Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showImageModal}
+        onRequestClose={() => setShowImageModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.fullImageModalOverlay} 
+          activeOpacity={1}
+          onPress={() => setShowImageModal(false)}
+        >
+          <View style={[styles.fullImageModalContent, { backgroundColor: isDarkMode ? DARK_COLORS.secondary : COLORS.white }]}>
+            {selectedSymptomImage && (
+              <Image 
+                source={selectedSymptomImage} 
+                style={styles.fullSymptomImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -387,12 +413,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   imageContainer: {
     height: 200,
-    borderRadius: 16,
-    marginVertical: 20,
+    borderRadius: 0, // No border radius for full width image
+    marginVertical: 0, // No vertical margin
     overflow: 'hidden',
   },
   diseaseImage: {
@@ -414,34 +439,35 @@ const styles = StyleSheet.create({
   },
   selectorSection: {
     marginBottom: 25,
+    paddingHorizontal: 20,
   },
   selectorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: COLORS.black,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 10,
   },
   diseaseSelector: {
-    flexGrow: 0,
+    // No specific styles needed for ScrollView, it handles horizontal scrolling
   },
   diseaseSelectorContent: {
-    paddingRight: 10,
+    alignItems: 'center',
   },
   diseaseChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
     borderRadius: 20,
     marginRight: 10,
     borderWidth: 1,
     borderColor: COLORS.lightGray,
   },
-  selectedDiseaseChip: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
   diseaseChipText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  selectedDiseaseChip: {
+    borderColor: COLORS.primary,
   },
   contentSection: {
     marginBottom: 25,
@@ -454,7 +480,6 @@ const styles = StyleSheet.create({
   overviewTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginLeft: 10,
     color: COLORS.black,
   },
   overviewText: {
@@ -464,6 +489,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 25,
+    paddingHorizontal: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -473,7 +499,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginLeft: 10,
     color: COLORS.black,
   },
   listItem: {
@@ -516,6 +541,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: COLORS.black,
+  },
+  fullImageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImageModalContent: {
+    width: Dimensions.get('window').width * 0.9,
+    height: Dimensions.get('window').height * 0.9,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  fullSymptomImage: {
+    width: '100%',
+    height: '100%',
   },
 });
 

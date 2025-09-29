@@ -32,20 +32,18 @@ const QuickAction = ({
   icon,
   title,
   subtitle,
-  color,
   onPress,
   isDarkMode,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
-  subtitle: string;
-  color: string;
+  subtitle: string; 
   onPress: () => void;
   isDarkMode: boolean;
 }) => (
   <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: isDarkMode ? DARK_COLORS.secondary : COLORS.white }]} onPress={onPress} activeOpacity={0.85}>
-    <View style={[styles.actionIconContainer, { backgroundColor: color }]}> 
-      <Ionicons name={icon} size={28} color={COLORS.white} />
+    <View style={[styles.actionIconContainer, { backgroundColor: isDarkMode ? DARK_COLORS.primary + '15' : COLORS.primary + '15' }]}> 
+      <Ionicons name={icon} size={28} color={COLORS.primary} />
     </View>
     <Text style={[styles.actionTitle, { color: isDarkMode ? DARK_COLORS.white : COLORS.black }]}>{title}</Text>
     <Text style={[styles.actionSubtitle, { color: isDarkMode ? DARK_COLORS.gray : COLORS.gray }]}>{subtitle}</Text>
@@ -233,7 +231,7 @@ const HomeScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
       <StatusBar 
-        barStyle={isDarkMode ? "light-content" : "light-content"} 
+        barStyle={isDarkMode ? "dark-content" : "light-content"} 
         backgroundColor={COLORS.primary} 
       />
       
@@ -241,73 +239,53 @@ const HomeScreen = () => {
         title="KAPPI"
       />
 
-      {/* Redesigned Welcome Section */}
-      <View style={styles.welcomeSection}>
-        <View style={styles.welcomeContent}>
-          <Text style={[styles.greetingText, { color: themedColors.gray }]}>{isDarkMode ? 'Good evening,' : 'Good day,'}</Text>
-          {user && (
-            <Text style={[styles.userNameText, { color: isDarkMode ? themedColors.white : themedColors.black }]} numberOfLines={1}>
-              {user.fullName}
-            </Text>
-          )}
-        </View>
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={24} color={COLORS.white} />
-          </View>
-        </View>
-      </View>
-
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
-        {/* Redesigned Location Status Widget */}
-        <View style={styles.locationSection}>
-          <View style={styles.locationHeader}>
-            <Text style={[styles.locationTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Your Location</Text>
-            <TouchableOpacity 
-              style={[styles.refreshButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
-              onPress={getCurrentLocation}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color={COLORS.primary} />
-              ) : (
-                <>
-                  <Ionicons name="refresh" size={16} color={COLORS.primary} />
-                  <Text style={[styles.refreshText, { color: COLORS.primary }]}>Refresh</Text>
-                </>
-              )}
-            </TouchableOpacity>
+        {/* Welcome Section with Location below name */}
+        <View style={styles.welcomeSection}>
+          <View style={styles.welcomeContent}>
+            <Text style={[styles.greetingText, { color: themedColors.gray }]}>{isDarkMode ? 'Good evening,' : 'Good day,'}</Text>
+            {user && (
+              <Text style={[styles.userNameText, { color: isDarkMode ? themedColors.white : themedColors.black }]} numberOfLines={1}>
+                {user.fullName || 'Guest'}
+              </Text>
+            )}
+            {loading ? (
+              <ActivityIndicator size="small" color={themedColors.gray} style={{ marginTop: 4 }} />
+            ) : location ? (
+              <TouchableOpacity onPress={getCurrentLocation} style={styles.locationDisplayInline}> 
+                <Ionicons name="location-sharp" size={14} color={themedColors.gray} />
+                <Text style={[styles.locationTextInline, { color: themedColors.gray }]} numberOfLines={1}> 
+                  {location}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={getCurrentLocation} style={styles.locationDisplayInline}> 
+                <Ionicons name="location-sharp" size={14} color={themedColors.gray} />
+                <Text style={[styles.locationTextInline, { color: themedColors.gray }]} numberOfLines={1}> 
+                  Location Unavailable
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
-          
-          <TouchableOpacity 
-            style={[styles.locationCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
-            onPress={getCurrentLocation}
-          >
-            <View style={styles.locationIconWrapper}>
-              <View style={styles.locationIconContainer}>
-                <Ionicons name="location" size={20} color={COLORS.white} />
-              </View>
-            </View>
-            
-            <View style={styles.locationInfo}>
-              {loading ? (
-                <ActivityIndicator size="small" color={COLORS.primary} />
-              ) : location ? (
-                <>
-                  <Text style={[styles.locationLabel, { color: themedColors.gray }]}>Current Location</Text>
-                  <Text style={[styles.locationValue, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{location}</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={[styles.locationLabel, { color: themedColors.gray }]}>Location</Text>
-                  <Text style={[styles.locationValue, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Location not available</Text>
-                </>
-              )}
-            </View>
-            
-            <View style={styles.locationAction}>
-              <Ionicons name="chevron-forward" size={20} color={themedColors.gray} />
-            </View>
+          <TouchableOpacity style={[styles.profileIconContainer, { backgroundColor: themedColors.primary }]} onPress={() => stackNavigation.navigate('Profile')}> 
+            <Ionicons name="person-circle-outline" size={40} color={themedColors.white} />
           </TouchableOpacity>
+        </View>
+        
+        {/* Farmer Hero Section */}
+        <View style={[styles.farmerHeroSection, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.primary + '15' }]}> 
+          <Image 
+            source={require('../assets/farmer.png')} 
+            style={styles.farmerImage}
+            resizeMode="contain"
+          />
+          <View style={styles.farmerCardContent}>
+            <Text style={[styles.farmerCardTitle, { color: themedColors.primary }]}>Grow Smarter and Harvest Better!</Text>
+            <Text style={[styles.farmerCardText, { color: themedColors.gray }]}>
+              <Text>Identify diseases early and</Text>
+              <Text> manage crops effectively.</Text>
+            </Text>
+          </View>
         </View>
 
         {/* Core CTAs Section */}
@@ -321,7 +299,6 @@ const HomeScreen = () => {
               icon="camera" 
               title="Scan Plant" 
               subtitle="Diagnose diseases" 
-              color={COLORS.primary}
               onPress={() => tabNavigation.navigate('ScanTab')}
               isDarkMode={isDarkMode}
             />
@@ -329,7 +306,6 @@ const HomeScreen = () => {
               icon="time" 
               title="Scan History" 
               subtitle="View past scans" 
-              color="#FF6B35"
               onPress={() => stackNavigation.navigate('ScanHistory')}
               isDarkMode={isDarkMode}
             />
@@ -337,16 +313,14 @@ const HomeScreen = () => {
               icon="analytics" 
               title="Reports" 
               subtitle="Analytics & insights" 
-              color="#4A90E2"
-              onPress={() => {}}
+              onPress={() => tabNavigation.navigate('ReportsTab')}
               isDarkMode={isDarkMode}
             />
             <QuickAction 
-              icon="medical" 
-              title="Treatment" 
-              subtitle="Browse remedies" 
-              color="#27AE60"
-              onPress={() => {}}
+              icon="leaf" 
+              title="Plant Care" 
+              subtitle="Manage & prevent" 
+              onPress={() => stackNavigation.navigate('DiseaseManagement', {})}
               isDarkMode={isDarkMode}
             />
           </View>
@@ -356,7 +330,7 @@ const HomeScreen = () => {
         <View style={styles.section}> 
           <View style={[styles.sectionHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }]}>
             <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Recent Scans</Text>
-            <TouchableOpacity style={styles.viewAllButton} onPress={() => stackNavigation.navigate('ScanHistory')}>
+            <TouchableOpacity style={styles.viewAllButton} onPress={() => stackNavigation.navigate('ScanHistory')}> 
               <Text style={[styles.viewAllText, { color: COLORS.primary }]}>View All</Text>
               <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
             </TouchableOpacity>
@@ -475,14 +449,14 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  // Redesigned Welcome Section
+  // Redesigned Welcome Section (with inline location)
   welcomeSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 10,
   },
   welcomeContent: {
     flex: 1,
@@ -492,7 +466,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.gray,
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   userNameText: {
     fontSize: 24,
@@ -500,10 +474,22 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     letterSpacing: 0.3,
   },
-  avatarContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  locationDisplayInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  locationTextInline: {
+    fontSize: 13,
+    color: COLORS.gray,
+    marginLeft: 5,
+    fontWeight: '600',
+  },
+  profileIconContainer: {
+    // Reusing the avatarContainer style conceptually
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -513,106 +499,46 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Redesigned Location Section
-  locationSection: {
-    marginHorizontal: 20,
-    marginBottom: 28,
-  },
-  locationHeader: {
+  // Farmer Hero Section
+  farmerHeroSection: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  locationTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.black,
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    alignItems: 'center', // Changed to center alignment to vertically center content
+    justifyContent: 'flex-end', // Aligns content to the right side of the card
+    marginHorizontal: 20, // Added margin to reduce overall width
+    marginTop: 20,
+    marginBottom: 30,
     borderRadius: 20,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    height: 150, // Reduced height for the card
+    overflow: 'hidden',
+    // The background color is now applied inline based on the theme.
   },
-  refreshText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  locationCard: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    alignItems: 'center',
-  },
-  locationIconWrapper: {
-    marginRight: 16,
-  },
-  locationIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  locationInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  locationLabel: {
-    fontSize: 12,
-    color: COLORS.gray,
-    marginBottom: 2,
-    fontWeight: '500',
-  },
-  locationValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.black,
-    lineHeight: 20,
-  },
-  locationAction: {
-    marginLeft: 8,
-  },
-  notificationButton: {
-    padding: 8,
-  },
-  notificationBadge: {
+  farmerImage: {
+    width: '40%', // Adjust width as needed for inside card
+    height: 130, // Reduced height for the image
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'red',
+    left: 0,
+    bottom: 0, // Align to bottom edge of the card
+    zIndex: 1,
+  },
+  farmerCardContent: {
+    flex: 1,
+    paddingLeft: '35%', // Space for the image on the left
+    justifyContent: 'center', // Vertically center content
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  farmerCardTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.primary,
+    marginBottom: 6,
+    textAlign: 'right',
+  },
+  farmerCardText: {
+    fontSize: 13,
+    color: COLORS.gray,
+    textAlign: 'right',
+    lineHeight: 18,
   },
   section: {
     marginBottom: 24,
@@ -638,50 +564,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 20,
-    gap: 16,
+    justifyContent: 'space-between', 
   },
   quickActionCard: {
-    width: (width - 56) / 2,
+    width: (width - 60) / 2, 
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: 15, 
     paddingVertical: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, 
+    shadowRadius: 5, 
+    marginBottom: 16, 
   },
   actionIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60, 
+    height: 60, 
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    marginBottom: 10, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1, 
+    shadowRadius: 3, 
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 17, 
     fontWeight: '700',
     color: COLORS.black,
-    marginBottom: 4,
+    marginBottom: 2, 
     textAlign: 'center',
     letterSpacing: 0.2,
   },
   actionSubtitle: {
-    fontSize: 12,
+    fontSize: 13, 
     color: COLORS.gray,
     textAlign: 'center',
     fontWeight: '500',
+    lineHeight: 18,
   },
   viewAllButton: {
     flexDirection: 'row',
@@ -698,16 +621,13 @@ const styles = StyleSheet.create({
   },
   scanCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: 15, // Cohesive with QuickActionCard
     marginBottom: 16,
     overflow: 'hidden',
-    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    borderWidth: 1,
-    borderColor: '#F5F7FA',
+    shadowOpacity: 0.05, // Cohesive with QuickActionCard
+    shadowRadius: 5, // Cohesive with QuickActionCard
   },
   scanImageContainer: {
     position: 'relative',
@@ -807,16 +727,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 18,
-    padding: 20,
+    borderRadius: 15, // Cohesive with QuickActionCard
+    padding: 18, // Adjusted for consistency
     marginBottom: 12,
-    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    borderWidth: 1,
-    borderColor: '#F5F5F5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, // Cohesive with QuickActionCard
+    shadowRadius: 5, // Cohesive with QuickActionCard
   },
   tipIconContainer: {
     width: 52,

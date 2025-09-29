@@ -16,7 +16,7 @@ import { COLORS, DARK_COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import { NavigationProp, RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { RootStackParamList, MainTabParamList } from '../navigation/types';
 import { ScanResult, useScanStore } from '../viewmodels/ScanViewModel';
 import { useAuthStore } from '../stores/authStore';
 import VarietySelector, { CoffeeVariety } from '../components/VarietySelector';
@@ -30,7 +30,7 @@ const ResultsScreen = () => {
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
   
   const route = useRoute<ResultsScreenRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackScreenProps<RootStackParamList>['navigation']>();
   const { imageUri, diagnosis } = route.params;
   const saveScanResult = useScanStore((s) => s.saveScanResult);
   const { user } = useAuthStore();
@@ -132,27 +132,25 @@ const ResultsScreen = () => {
       />
 
       <ScrollView style={styles.scrollView}>
-        {/* Image Preview */}
-        <View style={styles.imageSection}>
-          <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.lightGray }]}>
-            <Image 
-              source={{ uri: imageUri }} 
-              style={styles.scanImage}
-              resizeMode="cover"
-            />
-            <TouchableOpacity 
-              style={styles.retakeButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Ionicons name="camera-outline" size={20} color={COLORS.white} />
-              <Text style={styles.retakeButtonText}>Retake</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Image Preview (Full Width at Top) */}
+        <View style={styles.fullWidthImageContainer}>
+          <Image 
+            source={{ uri: imageUri }} 
+            style={styles.fullWidthScanImage}
+            resizeMode="cover"
+          />
+          <TouchableOpacity 
+            style={styles.retakeButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="camera-outline" size={20} color={COLORS.white} />
+            <Text style={styles.retakeButtonText}>Retake</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Error Message or Diagnosis Card */}
         {hasError ? (
-          <View style={styles.section}>
+          <View style={[styles.section, { paddingHorizontal: 20 }]}>
             <View style={[styles.errorCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
               <Ionicons name="alert-circle-outline" size={32} color={COLORS.error} />
               <Text style={[styles.errorMessage, { color: isDarkMode ? themedColors.white : themedColors.error }]}>{errorMessage}</Text>
@@ -170,54 +168,36 @@ const ResultsScreen = () => {
           {/* Plant Health Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Ionicons 
-                name={diagnosis.stage === 'Healthy' ? "checkmark-circle-outline" : "leaf-outline"} 
-                size={24} 
-                color={COLORS.primary} 
-              />
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
-                {diagnosis.stage === 'Healthy' ? 'Plant Health Status' : 'Plant Health'}
-              </Text>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Diagnosis</Text>
             </View>
 
             <View style={[styles.diagnosisCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-              <View style={styles.diseaseHeader}>
-                <Text style={[styles.diseaseName, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{diagnosis.disease}</Text>
-              </View>
+              <Text style={[styles.diagnosisCardDiseaseName, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{diagnosis.disease}</Text>
 
-              <View style={styles.stageContainer}>
-                <View style={[styles.stageCard, { backgroundColor: getStageColor(diagnosis.stage) + '15' }]}> 
-                  <View style={styles.stageIconContainer}>
-                    <Ionicons 
-                      name={getStageIcon(diagnosis.stage)} 
-                      size={24} 
-                      color={getStageColor(diagnosis.stage)} 
-                    />
+              <View style={styles.stageAndConfidenceRow}>
+                <View style={styles.stageBadgeContainer}>
+                  <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>Stage</Text>
+                  <View style={[styles.stageBadge, { backgroundColor: getStageColor(diagnosis.stage) }]}>
+                    <Text style={[styles.stageBadgeText, { color: COLORS.white }]}>{diagnosis.stage === 'Healthy' ? 'Healthy' : diagnosis.stage}</Text>
                   </View>
-                  <View style={styles.stageInfo}>
-                    <Text style={[styles.stageTitle, { color: getStageColor(diagnosis.stage) }]}> 
-                      {diagnosis.stage === 'Healthy' ? 'Healthy Plant' : `${diagnosis.stage} Stage`} 
-                    </Text>
-                    <Text style={[styles.stageDescription, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}> 
-                      {getStageDescription(diagnosis.stage)} 
-                    </Text>
-                  </View>
+                </View>
+
+                <View style={styles.confidenceScoreContainer}>
+                  <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>Confidence Score</Text>
+                  <Text style={[styles.confidenceValueText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{diagnosis.confidence}%</Text>
                 </View>
               </View>
 
-              <View style={styles.confidenceSection}>
-                <Text style={[styles.confidenceLabel, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Confidence: {diagnosis.confidence}%</Text>
-                <View style={[styles.confidenceBar, { backgroundColor: isDarkMode ? themedColors.lightGray : '#E0E0E0' }]}>
-                  <View 
-                    style={[
-                      styles.confidenceFill, 
-                      { 
-                        width: `${diagnosis.confidence}%`,
-                          backgroundColor: getStageColor(diagnosis.stage)
-                      }
-                    ]} 
-                  />
-                </View>
+              <View style={[styles.confidenceProgressBar, { backgroundColor: isDarkMode ? themedColors.lightGray : COLORS.lightGray, marginTop: 10 }]}>
+                <View
+                  style={[
+                    styles.confidenceProgressBarFill,
+                    {
+                      width: `${diagnosis.confidence}%`,
+                      backgroundColor: getStageColor(diagnosis.stage)
+                    }
+                  ]}
+                />
               </View>
             </View>
           </View>
@@ -226,20 +206,17 @@ const ResultsScreen = () => {
           {(diagnosis.disease === 'Coffee Leaf Rust' && diagnosis.stage !== 'Healthy') && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="medkit-outline" size={24} color={COLORS.primary} />
                 <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Disease Management</Text>
               </View>
               <Text style={[styles.treatmentInfo, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Choose your coffee variety:</Text>
               <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
               {treatment ? (
-                <View style={[styles.treatmentCardSingle, { backgroundColor: isDarkMode ? themedColors.background : '#F7F7F7' }]}>
+                <View style={[styles.treatmentCardSingle, { backgroundColor: isDarkMode ? themedColors.secondary : '#F7F7F7' }]}>
                   {/* Chemical Control */}
                   <View style={styles.treatmentBlock}>
                     <View style={styles.treatmentBlockHeader}>
-                      <Text style={styles.treatmentBlockIcon}>🧪</Text>
                       <Text style={[styles.treatmentBlockTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>Chemical Control</Text>
                     </View>
-                    <Text style={[styles.treatmentBlockDesc, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Use these only if needed and follow label instructions. Wear gloves and avoid spraying on windy days.</Text>
                     {treatment.chemical.map((item, idx) => (
                       <Text key={idx} style={[styles.treatmentBlockText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
                     ))}
@@ -249,10 +226,8 @@ const ResultsScreen = () => {
                   {/* Cultural Control */}
                   <View style={styles.treatmentBlock}>
                     <View style={styles.treatmentBlockHeader}>
-                      <Text style={styles.treatmentBlockIcon}>🌱</Text>
                       <Text style={[styles.treatmentBlockTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>Cultural Control</Text>
                     </View>
-                    <Text style={[styles.treatmentBlockDesc, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Simple farm practices to help prevent and control disease.</Text>
                     {treatment.cultural.map((item, idx) => (
                       <Text key={idx} style={[styles.treatmentBlockText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
                     ))}
@@ -269,19 +244,16 @@ const ResultsScreen = () => {
           {(diagnosis.disease === 'Healthy Plant' || diagnosis.stage === 'Healthy') && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="shield-checkmark-outline" size={24} color={COLORS.primary} />
                 <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Preventive Tips</Text>
               </View>
               <Text style={[styles.treatmentInfo, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Choose your coffee variety:</Text>
               <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
               {treatmentRecommendations['Coffee Leaf Rust']?.Healthy?.[selectedVariety]?.cultural?.length ? (
-                <View style={[styles.treatmentCardSingle, { backgroundColor: isDarkMode ? themedColors.background : '#F7F7F7' }]}>
+                <View style={[styles.treatmentCardSingle, { backgroundColor: isDarkMode ? themedColors.secondary : '#F7F7F7' }]}>
                   <View style={styles.treatmentBlock}>
                     <View style={styles.treatmentBlockHeader}>
-                      <Text style={styles.treatmentBlockIcon}>🌱</Text>
                       <Text style={[styles.treatmentBlockTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>Cultural Tips</Text>
                     </View>
-                    <Text style={[styles.treatmentBlockDesc, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>Keep your plants healthy with these simple practices:</Text>
                     {treatmentRecommendations['Coffee Leaf Rust'].Healthy[selectedVariety].cultural.map((item, idx) => (
                       <Text key={idx} style={[styles.treatmentBlockText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
                     ))}
@@ -292,22 +264,18 @@ const ResultsScreen = () => {
               )}
             </View>
           )}
+
+          {/* Action Buttons */}
+          {!hasError && (
+          <TouchableOpacity
+              style={[styles.fullWidthActionButton, { backgroundColor: COLORS.primary }]} // Use new style
+              onPress={() => navigation.navigate('MainTabs', { screen: 'ScanTab' })}
+            >
+              <Ionicons name="camera-outline" size={24} color={COLORS.white} />
+              <Text style={styles.actionButtonText}>Scan Another Image</Text>
+            </TouchableOpacity>
+          )}
         </>
-        )}
-
-        {/* Action Buttons */}
-        {!hasError && (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: COLORS.primary }]} onPress={handleSave}>
-            <Ionicons name="save-outline" size={24} color={COLORS.white} />
-            <Text style={styles.actionButtonText}>Save Report</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white, borderColor: COLORS.primary }]} onPress={handleShare}>
-            <Ionicons name="share-outline" size={24} color={COLORS.primary} />
-            <Text style={[styles.actionButtonText, styles.secondaryButtonText, { color: COLORS.primary }]}>Share</Text>
-          </TouchableOpacity>
-        </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -322,17 +290,13 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  imageSection: {
-    padding: 20,
-  },
-  imageContainer: {
+  fullWidthImageContainer: {
     width: '100%',
-    aspectRatio: 16/9,
-    borderRadius: 15,
+    height: 250, // Fixed height for full-width image
     overflow: 'hidden',
-    backgroundColor: COLORS.lightGray,
+    marginBottom: 20,
   },
-  scanImage: {
+  fullWidthScanImage: {
     width: '100%',
     height: '100%',
   },
@@ -345,7 +309,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 15, // Cohesive with other buttons/cards
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   retakeButtonText: {
     color: COLORS.white,
@@ -355,115 +323,153 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 20, // Re-enabled padding to align with HomeScreen
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 15,
+    // paddingHorizontal: 20, // Removed since card now has padding
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 22, // Adjusted for cohesion with ReportsScreen section titles
+    fontWeight: '700',
     color: COLORS.black,
-    marginLeft: 10,
   },
   diagnosisCard: {
     backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 20,
-    elevation: 2,
+    marginHorizontal: 0, // Removed to align with section padding
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    marginBottom: 20,
+  },
+  diagnosisCardLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  diagnosisCardDiseaseName: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: COLORS.black,
+    marginBottom: 15,
+  },
+  diagnosisDetailsRow: {
+    // Replaced by diseaseAndStageContainer and stageAndConfidenceRow
+  },
+  diagnosisDetailItem: {
+    alignItems: 'flex-start', // Revert to align-start for individual labels
+    marginRight: 0,
+  },
+  diagnosisDetailLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 5,
+  },
+  stageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  stageBadgeText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 0, // Removed marginLeft as icon is removed
+  },
+  confidenceValueText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.black,
+  },
+  confidenceProgressBarContainer: {
+    // Removed
+  },
+  confidenceProgressBar: {
+    height: 8,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 4,
+  },
+  confidenceProgressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  confidenceSection: {
+    // Replaced by diseaseAndStageContainer and stageAndConfidenceRow
+  },
+  confidenceLabel: {
+    // Removed
+  },
+  stageContainer: {
+    // Removed as it's now part of diagnosisSummaryRow
+  },
+  stageCard: {
+    // Removed as its content is now integrated into diagnosisSummaryRow
+  },
+  stageIconContainer: {
+    // Removed as its content is now integrated into diagnosisSummaryRow
+  },
+  stageInfo: {
+    // Removed as its content is now integrated into diagnosisSummaryRow
+  },
+  stageTitle: {
+    // Removed as its content is now integrated into diagnosisSummaryRow
+  },
+  stageDescription: {
+    // Removed as its content is now integrated into diagnosisSummaryRow
+  },
+  imageSection: {
+    // Removed as the image is now full width at top
+  },
+  imageContainer: {
+    // Removed as the image is now full width at top
+  },
+  scanImage: {
+    // Removed as the image is now full width at top
   },
   diseaseHeader: {
     marginBottom: 20,
   },
   diseaseName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.black,
-  },
-  confidenceSection: {
-    marginTop: 15,
-  },
-  confidenceLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    marginBottom: 8,
-  },
-  confidenceBar: {
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-  },
-  confidenceFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  stageContainer: {
-    marginBottom: 20,
-  },
-  stageCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-  },
-  stageIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  stageInfo: {
-    flex: 1,
-  },
-  stageTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  stageDescription: {
-    fontSize: 14,
-    color: COLORS.gray,
-    lineHeight: 20,
+    // Renamed to diseaseNameText
   },
   actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginBottom: 30,
+    // Removed, now using fullWidthActionButton directly
   },
   actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 15,
-    borderRadius: 10,
-    marginHorizontal: 5,
+    // Removed
   },
   secondaryButton: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    // Removed
   },
   actionButtonText: {
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 10,
   },
   secondaryButtonText: {
-    color: COLORS.primary,
+    // Removed
+  },
+  fullWidthActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 15,
+    borderRadius: 15,
+    marginHorizontal: 20, // Match section padding
+    marginBottom: 20, // Add bottom margin for spacing
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   centeredContainer: {
     flex: 1,
@@ -480,11 +486,10 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 20,
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   errorMessage: {
     fontSize: 16,
@@ -499,8 +504,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 25,
+    borderRadius: 15, // Cohesive with other buttons/cards
     marginTop: 10,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   retakeButtonTextLarge: {
     color: COLORS.white,
@@ -512,19 +521,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.gray,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   treatmentCardSingle: {
     backgroundColor: '#F7F7F7',
-    borderRadius: 15,
+    borderRadius: 15, // Cohesive with other cards
     padding: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    marginTop: 0, // Removed
+    marginBottom: 0, // Removed
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   treatmentBlock: {
     marginBottom: 12,
@@ -534,33 +542,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  treatmentBlockIcon: {
-    fontSize: 28,
-    marginRight: 8,
-  },
   treatmentBlockTitle: {
     fontSize: 17,
     fontWeight: 'bold',
     color: COLORS.primary,
-  },
-  treatmentBlockDesc: {
-    fontSize: 15,
-    color: COLORS.gray,
-    marginBottom: 4,
-    marginLeft: 2,
+    marginLeft: 0, // Adjusted margin after icon removal
   },
   treatmentBlockText: {
     fontSize: 16,
     color: COLORS.black,
     marginBottom: 2,
-    marginLeft: 8,
+    marginLeft: 0, // Adjusted margin
     lineHeight: 22,
   },
   treatmentDivider: {
     height: 1,
     backgroundColor: '#E0E0E0',
     marginVertical: 10,
-    borderRadius: 1,
+    borderRadius: 1, // Adjusted for consistency
   },
   treatmentSources: {
     fontSize: 12,
@@ -568,6 +567,25 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontStyle: 'italic',
     textAlign: 'right',
+  },
+  stageAndConfidenceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    // marginHorizontal: 20, // Removed since card now has padding
+  },
+  stageBadgeContainer: {
+    alignItems: 'flex-start',
+  },
+  confidenceScoreContainer: {
+    alignItems: 'flex-end',
+  },
+  diseaseNameText: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: COLORS.black,
+    marginBottom: 15,
   },
 });
 

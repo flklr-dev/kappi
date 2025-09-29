@@ -1,5 +1,5 @@
 export const LIGHT_COLORS = {
-  primary: '#6F8F3F',
+  primary: '#1aa34a',
   background: '#FBFAF8',
   secondary: '#E7DECD',
   accent: '#804E49',
@@ -13,7 +13,7 @@ export const LIGHT_COLORS = {
 };
 
 export const DARK_COLORS = {
-  primary: '#5a7a2a',
+  primary: '#1aa34a',
   background: '#121212',
   secondary: '#2a2a2a',
   accent: '#6b3d39',

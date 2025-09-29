@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
+import { DARK_COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -39,15 +40,9 @@ interface UserCapabilities {
 // Component for the profile header - more professional and clean
 const ProfileHeader = ({ user, handleEditProfile, isDarkMode, themedColors }: any) => (
   <View style={[styles.profileHeaderContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white, borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]}>
-    {user?.profilePictureUrl ? (
-      <Image source={{ uri: user.profilePictureUrl }} style={styles.profilePicture} />
-    ) : (
-      <View style={[styles.initialsContainer, { backgroundColor: isDarkMode ? themedColors.primary + '20' : COLORS.primary + '10' }]}>
-        <Text style={[styles.initialsText, { color: isDarkMode ? themedColors.primary : COLORS.primary }]}>
-          {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
-        </Text>
-      </View>
-    )}
+    <View style={[styles.profilePictureContainer, { backgroundColor: themedColors.primary }]}>
+      <Ionicons name="person-circle-outline" size={40} color={themedColors.white} />
+    </View>
     <View style={styles.profileInfo}>
       <Text style={[styles.profileName, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{user?.fullName}</Text>
       <Text style={[styles.profileEmail, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{user?.email}</Text>
@@ -61,19 +56,7 @@ const ProfileHeader = ({ user, handleEditProfile, isDarkMode, themedColors }: an
 const ProfileScreen = () => {
   const { isDarkMode } = useContext(ThemeContext);
   // Use a ternary to avoid TypeScript issues
-  const themedColors = isDarkMode ? {
-    primary: '#6F8F3F',
-    background: '#121212',
-    secondary: '#2A2A2A',
-    accent: '#804E49',
-    white: '#FFFFFF',
-    black: '#000000',
-    gray: '#AAAAAA',
-    lightGray: '#555555',
-    transparent: 'transparent',
-    error: '#D32F2F',
-    success: '#4CAF50'
-  } : COLORS;
+  const themedColors = isDarkMode ? DARK_COLORS : COLORS;
   
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { setIsAuthenticated } = useContext(AuthContext);
@@ -530,7 +513,7 @@ const ProfileScreen = () => {
                   {linkingLoading.google ? (
                     <ActivityIndicator size="small" color={themedColors.white} />
                   ) : (
-                    <Text style={[styles.linkButtonText, { color: COLORS.white }]}>Link</Text>
+                    <Text style={[styles.linkButtonText, { color: themedColors.primary }]}>Link</Text>
                   )}
                 </TouchableOpacity>
               )}
@@ -558,7 +541,7 @@ const ProfileScreen = () => {
                   {linkingLoading.facebook ? (
                     <ActivityIndicator size="small" color={themedColors.white} />
                   ) : (
-                    <Text style={[styles.linkButtonText, { color: COLORS.white }]}>Link</Text>
+                    <Text style={[styles.linkButtonText, { color: themedColors.primary }]}>Link</Text>
                   )}
                 </TouchableOpacity>
               )}
@@ -624,6 +607,21 @@ const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
+        {/* Logout Button at the very bottom */}
+        <TouchableOpacity 
+          style={[styles.logoutButtonBottom, { backgroundColor: themedColors.error }]} 
+          onPress={handleLogout}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={themedColors.white} />
+          ) : (
+            <>
+              <Ionicons name="log-out-outline" size={20} color={COLORS.white} style={styles.logoutIcon} />
+              <Text style={[styles.logoutText, { color: COLORS.white }]}>Logout</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Account Selector Modal */}
@@ -850,22 +848,6 @@ const ProfileScreen = () => {
           </View>
         </View>
       </Modal>
-
-      {/* Logout Button at the very bottom */}
-      <TouchableOpacity 
-        style={[styles.logoutButtonBottom, { backgroundColor: themedColors.error }]} 
-        onPress={handleLogout}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color={themedColors.white} />
-        ) : (
-          <>
-            <Ionicons name="log-out-outline" size={20} color={COLORS.white} style={styles.logoutIcon} />
-            <Text style={[styles.logoutText, { color: COLORS.white }]}>Logout</Text>
-          </>
-        )}
-      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -874,43 +856,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 20, // Adjusted padding to ensure the logout button is fully visible and has space below
   },
-  // --- Redesigned Styles ---
   profileHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
-    borderBottomWidth: 1,
-    marginBottom: 24, // Add margin bottom for spacing
+    marginBottom: 24, 
   },
-  profilePicture: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginRight: 15,
-  },
-  initialsContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+  profilePictureContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
-  },
-  initialsText: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, // Cohesive with QuickActionCard icon
+    shadowRadius: 4, // Cohesive with QuickActionCard icon
   },
   profileInfo: {
     flex: 1,
@@ -927,6 +896,10 @@ const styles = StyleSheet.create({
   editButton: {
     padding: 10,
     borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, // Cohesive with other elements
+    shadowRadius: 3, // Cohesive with other elements
   },
   sectionContainer: {
     marginBottom: 25,
@@ -940,12 +913,12 @@ const styles = StyleSheet.create({
   menuContainer: {
     borderRadius: 15,
     overflow: 'hidden',
-    marginBottom: 5,
+    marginBottom: 20, // Increased for better spacing
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.05, // Cohesive with QuickActionCard
+    shadowRadius: 5, // Cohesive with QuickActionCard
+    // elevation: 2, // Removed, relying on shadow
   },
   menuItem: {
     flexDirection: 'row',
@@ -953,7 +926,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 15,
-    borderBottomWidth: 1,
+    // Removed borderBottomWidth and borderBottomColor from individual menu items to simplify
   },
   menuItemContent: {
     flexDirection: 'row',
@@ -973,22 +946,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 15,
     marginBottom: 15,
-  },
-  loginWithIcon: {
-    marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, // Cohesive with other cards
+    shadowRadius: 5, // Cohesive with other cards
   },
   loginWithText: {
     fontSize: 16,
     fontWeight: '600',
+    color: COLORS.white, // Added this line to ensure text is white in all themes
   },
-  logoutButton: {
+  logoutButtonBottom: {
     borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
-    marginBottom: 15,
-    minHeight: 50,
+    paddingVertical: 16,
+    marginHorizontal: 20,
+    marginTop: 0, // Removed marginTop as it's now within scrollview
+    marginBottom: 20, // Added marginBottom for spacing after the button
+    minHeight: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, // Cohesive with other cards
+    shadowRadius: 5, // Cohesive with other cards
   },
   logoutIcon: {
     marginRight: 8,
@@ -997,32 +978,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  deleteAccountButton: {
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  deleteAccountText: {
-    fontSize: 14,
-  },
   linkedAccountItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 15,
-    borderBottomWidth: 1,
+    // Removed borderBottomWidth and borderBottomColor from individual linked account items to simplify
   },
   linkedAccountInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   accountIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36, // Slightly larger
+    height: 36, // Slightly larger
+    borderRadius: 18, // Cohesive with other icon containers
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1, // Cohesive with QuickActionCard icon
+    shadowRadius: 4, // Cohesive with QuickActionCard icon
   },
   linkedAccountText: {
     fontSize: 16,
@@ -1036,19 +1014,23 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   linkButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 15,
-    borderRadius: 15,
+    paddingVertical: 8, // Adjusted for consistency
+    paddingHorizontal: 18, // Adjusted for consistency
+    borderRadius: 15, // Cohesive with other cards
     minWidth: 70,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, // Cohesive with other cards
+    shadowRadius: 3, // Cohesive with other cards
   },
   linkButtonText: {
     fontWeight: '500',
   },
   accountLinkingNote: {
     fontSize: 14,
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: -10,
+    marginBottom: 10,
   },
   modalOverlay: {
     flex: 1,
@@ -1063,9 +1045,9 @@ const styles = StyleSheet.create({
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.05, // Cohesive with other cards
+    shadowRadius: 5, // Cohesive with other cards
+    // elevation: 5, // Removed, relying on shadow
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1085,8 +1067,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 15, // Cohesive with other cards
     marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, // Cohesive with other cards
+    shadowRadius: 5, // Cohesive with other cards
   },
   accountOptionText: {
     fontSize: 16,
@@ -1105,32 +1091,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  scanHistoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 15,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    marginTop: 10,
-    marginBottom: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-  },
-  scanHistoryIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  scanHistoryCardText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
   inputLabel: {
     fontSize: 14,
     marginBottom: 4,
@@ -1140,63 +1100,20 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 15, // Cohesive with other cards
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 2,
+    paddingVertical: 8, // Increased for better touch target
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03, // Subtle shadow
+    shadowRadius: 3, // Subtle shadow
   },
   input: {
     flex: 1,
     fontSize: 16,
     paddingVertical: 10,
     backgroundColor: 'transparent',
-  },
-  profileDetailsSection: {
-    borderRadius: 16,
-    marginHorizontal: 16,
-    marginTop: 18,
-    marginBottom: 24,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  profileLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginBottom: 2,
-    marginTop: 8,
-  },
-  profileValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  profileDivider: {
-    height: 1,
-    marginVertical: 8,
-    borderRadius: 1,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  profileIcon: {
-    marginRight: 8,
-  },
-  logoutButtonBottom: {
-    borderRadius: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    marginHorizontal: 20,
-    marginTop: 32,
-    marginBottom: 32,
-    minHeight: 50,
   },
 });
 

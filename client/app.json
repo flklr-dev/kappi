@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "client",
-    "slug": "client",
+    "name": "kappi",
+    "slug": "kappi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,7 +24,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kappi.app"
+      "bundleIdentifier": "com.kappi.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera.",
+        "NSMicrophoneUsageDescription": "$(PRODUCT_NAME) needs access to your Microphone."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -39,6 +43,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3cd1c786-a5e9-4305-a0f0-85b015be2a94"
+      }
     }
   }
 }
