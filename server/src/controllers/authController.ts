@@ -42,7 +42,7 @@ export const register = async (req: Request, res: Response) => {
     // Generate token
     const token = jwt.sign(
       { _id: user._id },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+      process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
 
@@ -90,7 +90,7 @@ export const login = async (req: Request, res: Response) => {
     // Generate token
     const token = jwt.sign(
       { _id: user._id },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+      process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
 
@@ -161,7 +161,7 @@ export const socialLogin = async (req: Request, res: Response) => {
     // Generate token
     const token = jwt.sign(
       { _id: user._id },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+      process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
 
@@ -394,7 +394,7 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     // Generate new token after password change
     const token = jwt.sign(
       { _id: user._id },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+      process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
 
