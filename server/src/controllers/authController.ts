@@ -187,7 +187,7 @@ export const linkSocialAccount = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const { provider, providerId } = req.body;
+    const { provider, providerId } = req.body as { provider: string; providerId: string; };
 
     if (!provider || !providerId) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -235,7 +235,7 @@ export const updateLocation = async (req: AuthRequest, res: Response) => {
     }
 
     const userId = req.user._id;
-    const { coordinates, address } = req.body;
+    const { coordinates, address } = req.body as { coordinates: any; address: any; };
 
     // Update user's location
     const user = await User.findByIdAndUpdate(
@@ -266,7 +266,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     }
 
     const userId = req.user._id;
-    const { fullName } = req.body;
+    const { fullName } = req.body as { fullName: string; };
 
     // Validate input
     if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
@@ -337,9 +337,9 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     const isSettingFirstPassword = !user.password;
 
     // Sanitize inputs (but NOT passwords - they need special characters)
-    const oldPassword = req.body.oldPassword; // Don't sanitize
-    const newPassword = req.body.newPassword; // Don't sanitize  
-    const confirmPassword = req.body.confirmPassword; // Don't sanitize
+    const oldPassword = (req.body as any).oldPassword; // Don't sanitize
+    const newPassword = (req.body as any).newPassword; // Don't sanitize  
+    const confirmPassword = (req.body as any).confirmPassword; // Don't sanitize
     
     console.log('Change password - lengths:', { old: oldPassword?.length, new: newPassword?.length, confirm: confirmPassword?.length });
 
@@ -431,7 +431,7 @@ export const getUserCapabilities = async (req: AuthRequest, res: Response) => {
     }
 
     // Extract provider names
-    const providers = user.providers?.map(p => p.provider) || [];
+    const providers = user.providers?.map((p: { provider: any; }) => p.provider) || [];
     
     // Determine capabilities
     const hasPasswordAuth = !!user.password && providers.includes('email');

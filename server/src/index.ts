@@ -31,7 +31,7 @@ mongoose
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scanRoutes);
 
-app.get('/', (req, res) => {
+app.get('/', (req: express.Request, res: express.Response) => {
   res.json({ message: 'Welcome to Kappi API' });
 });
 

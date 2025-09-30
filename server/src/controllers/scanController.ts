@@ -11,9 +11,9 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
     if (!req.user?._id) {
       return res.status(401).json({ message: 'Authentication required' });
     }
-    const { disease, confidence, severity, stage, imageUri, coordinates, address } = req.body;
+    const { disease, confidence, severity, stage, imageUri, coordinates, address } = req.body as any;
     const scan = new Scan({
-      user: req.user._id,
+      user: req.user._id as any,
       disease,
       confidence,
       severity,
@@ -34,7 +34,7 @@ export const getUserScans = async (req: AuthRequest, res: Response) => {
     if (!req.user?._id) {
       return res.status(401).json({ message: 'Authentication required' });
     }
-    const scans = await Scan.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const scans = await Scan.find({ user: req.user._id as any }).sort({ createdAt: -1 });
     res.json({ scans });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching scan results' });

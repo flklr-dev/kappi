@@ -59,7 +59,7 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: function() {
+      required: function(this: IUser) {
         return !this.providers || this.providers.length === 0;
       },
       minlength: 6,
@@ -95,7 +95,7 @@ const userSchema = new Schema<IUser>(
 );
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function (this: IUser, next) {
   console.log('Pre-save hook triggered');
   console.log('Password modified?', this.isModified('password'));
   console.log('Has password?', !!this.password);
