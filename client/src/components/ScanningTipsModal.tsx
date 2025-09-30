@@ -197,7 +197,7 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
       onShow={() => setCurrentStep(0)}
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor: themedColors.secondary }]}>
+        <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
           {/* Header */}
           <View style={[styles.modalHeader, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.gray + '20' }]}>
             <View style={styles.headerLeft}>
