@@ -11,10 +11,19 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "typeRoots": ["./node_modules/@types", "./src/types"], // Explicitly tell tsc where to find type definitions
+    "types": [
+      "node", // For 'process'
+      "express",
+      "jsonwebtoken",
+      "nodemailer",
+      "cors",
+      "bcryptjs"
+    ],
     "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "node_modules/@types"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules"]
 } 
