@@ -1,9 +1,11 @@
 import React, { useContext } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, StatusBar, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, DARK_COLORS } from '../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../context/ThemeContext';
+
+const { width } = Dimensions.get('window');
 
 interface HeaderProps {
   title: string;
@@ -96,12 +98,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: Math.min(24, width * 0.06), // Responsive font size
     fontWeight: 'bold',
     color: COLORS.white,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
     color: COLORS.white + 'E6', // Adding transparency
     marginTop: 2,
   },
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   themeButton: {
-    padding: 8,
+    padding: Math.min(8, width * 0.02),
   },
 });
 
