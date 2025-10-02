@@ -1,5 +1,15 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  Dimensions,
+  Modal, // Import Modal for dropdowns
+} from 'react-native';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -50,13 +60,30 @@ const ScanHistoryScreen = () => {
   const [scans, setScans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [selectedDisease, setSelectedDisease] = useState<string | null>(null); // State for disease filter
+  const [selectedStage, setSelectedStage] = useState<string | null>(null); // State for stage filter
+  const [diseaseFilterVisible, setDiseaseFilterVisible] = useState(false); // State for disease filter modal
+  const [stageFilterVisible, setStageFilterVisible] = useState(false); // State for stage filter modal
+
+  // Dummy disease options (will be replaced by actual data)
+  const diseaseOptions = ['All Diseases', 'Coffee Leaf Rust', 'Anthracnose', 'Thread Blight', 'Coffee Berry Disease', 'Coffee Wilt Disease', 'Healthy'];
+  const stageOptions = ['All Stages', 'Early', 'Progressive', 'Severe', 'Healthy', 'Unknown'];
 
   const fetchRemote = async () => {
     setLoading(true);
     try {
-      const data = await getRemoteScans();
+      const filters: { disease?: string, stage?: string } = {};
+      if (selectedDisease && selectedDisease !== 'All Diseases') {
+        filters.disease = selectedDisease;
+      }
+      if (selectedStage && selectedStage !== 'All Stages') {
+        filters.stage = selectedStage;
+      }
+      const data = await getRemoteScans(filters);
       setScans(data);
+      setPage(1); // Reset to first page on filter change
     } catch (e) {
+      console.error("Failed to fetch scans:", e);
       setScans([]);
     }
     setLoading(false);
@@ -64,7 +91,7 @@ const ScanHistoryScreen = () => {
 
   useEffect(() => {
     fetchRemote();
-  }, []);
+  }, [selectedDisease, selectedStage]); // Re-fetch when filters change
 
   const totalPages = Math.max(1, Math.ceil(scans.length / PAGE_SIZE));
   const pagedScans = scans.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -130,6 +157,90 @@ const ScanHistoryScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: themedColors.background }]}>
       <Header title="Scan History" showBackButton onBackPress={() => navigation.goBack()} />
+
+      {/* Filter Section */}
+      <View style={[styles.filterContainer, { backgroundColor: themedColors.background }]}>
+        <TouchableOpacity 
+          style={[styles.filterButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white, borderColor: isDarkMode ? themedColors.lightGray : COLORS.lightGray }]} 
+          onPress={() => setDiseaseFilterVisible(true)}
+        >
+          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{selectedDisease || 'All Diseases'}</Text>
+          <Ionicons name="chevron-down" size={width * 0.04} color={isDarkMode ? themedColors.white : themedColors.black} />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.filterButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white, borderColor: isDarkMode ? themedColors.lightGray : COLORS.lightGray }]} 
+          onPress={() => setStageFilterVisible(true)}
+        >
+          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{selectedStage || 'All Stages'}</Text>
+          <Ionicons name="chevron-down" size={width * 0.04} color={isDarkMode ? themedColors.white : themedColors.black} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Disease Filter Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={diseaseFilterVisible}
+        onRequestClose={() => setDiseaseFilterVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setDiseaseFilterVisible(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+            {diseaseOptions.map((option, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.modalOption, index === diseaseOptions.length - 1 && styles.lastModalOption]}
+                onPress={() => {
+                  setSelectedDisease(option);
+                  setDiseaseFilterVisible(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, { color: isDarkMode ? themedColors.white : themedColors.black }, selectedDisease === option && styles.selectedOptionText]}>
+                  {option}
+                </Text>
+                {selectedDisease === option && <Ionicons name="checkmark" size={width * 0.05} color={themedColors.primary} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Stage Filter Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={stageFilterVisible}
+        onRequestClose={() => setStageFilterVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setStageFilterVisible(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+            {stageOptions.map((option, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.modalOption, index === stageOptions.length - 1 && styles.lastModalOption]}
+                onPress={() => {
+                  setSelectedStage(option);
+                  setStageFilterVisible(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, { color: isDarkMode ? themedColors.white : themedColors.black }, selectedStage === option && styles.selectedOptionText]}>
+                  {option}
+                </Text>
+                {selectedStage === option && <Ionicons name="checkmark" size={width * 0.05} color={themedColors.primary} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={themedColors.primary} />
@@ -325,9 +436,65 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   pageInfo: {
-    fontSize: 15,
+    fontSize: Math.min(15, width * 0.04),
     fontWeight: '500',
-    marginHorizontal: 8,
+    marginHorizontal: width * 0.02,
+  },
+
+  // Filter styles
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray + '50',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    // backgroundColor and borderColor set inline
+  },
+  filterButtonText: {
+    fontSize: Math.min(15, width * 0.04),
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: width * 0.8,
+    borderRadius: 15,
+    paddingVertical: 10,
+    maxHeight: height * 0.7,
+    // backgroundColor set inline
+  },
+  modalOption: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray + '50',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  lastModalOption: {
+    borderBottomWidth: 0,
+  },
+  modalOptionText: {
+    fontSize: Math.min(16, width * 0.04),
+  },
+  selectedOptionText: {
+    fontWeight: '700',
+    color: COLORS.primary,
   },
 });
 

@@ -344,9 +344,17 @@ export const authService = {
   },
 };
 
-export const getRemoteScans = async () => {
+export const getRemoteScans = async (filters?: { disease?: string, stage?: string }) => {
   try {
-    const response = await api.get('/scans');
+    const params = new URLSearchParams();
+    if (filters?.disease) {
+      params.append('disease', filters.disease);
+    }
+    if (filters?.stage) {
+      params.append('stage', filters.stage);
+    }
+
+    const response = await api.get(`/scans?${params.toString()}`);
     return (response.data as any).scans || [];
   } catch (error: any) {
     if (error.response) {
