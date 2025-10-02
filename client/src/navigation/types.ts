@@ -17,6 +17,7 @@ export type RootStackParamList = {
   };
   ScanHistory: undefined;
   DiseaseManagement: { diseaseName?: string };
+  AboutApp: undefined; // Add AboutApp screen here
 };
 
 // Main tab navigator params

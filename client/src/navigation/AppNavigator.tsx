@@ -13,6 +13,7 @@ import BottomTabNavigator from './BottomTabNavigator';
 import ResultsScreen from '../screens/ResultsScreen';
 import ScanHistoryScreen from '../screens/ScanHistoryScreen';
 import DiseaseManagementScreen from '../screens/DiseaseManagementScreen';
+import AboutAppScreen from '../screens/AboutAppScreen'; // Import the new screen
 import { RootStackParamList } from './types';
 import { useAuthStore } from '../stores/authStore';
 import { COLORS } from '../constants/colors';
@@ -85,6 +86,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Results" component={ResultsScreen} />
         <Stack.Screen name="ScanHistory" component={ScanHistoryScreen} />
         <Stack.Screen name="DiseaseManagement" component={DiseaseManagementScreen} />
+        <Stack.Screen name="AboutApp" component={AboutAppScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
