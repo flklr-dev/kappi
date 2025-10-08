@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,15 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  ScrollView,
+  // ScrollView, // Removed unused import
   FlatList,
   StatusBar,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS } from '../constants/colors';
+import { COLORS, DARK_COLORS } from '../constants/colors';
+import { ThemeContext } from '../context/ThemeContext'; // Import ThemeContext
 import { Ionicons } from '@expo/vector-icons';
 
 type OnboardingScreenNavigationProp = NativeStackNavigationProp<
@@ -27,26 +28,13 @@ interface Props {
 
 const { width, height } = Dimensions.get('window');
 
-interface Disease {
-  name: string;
-  part: string;
-  color: string;
-  icon: string;
-}
-
-const diseases: Disease[] = [
-  { name: 'Coffee Leaf Rust', part: 'Leaves', color: '#E74C3C', icon: 'leaf-rust-icon.png' },
-  { name: 'Anthracnose', part: 'Leaves', color: '#9B59B6', icon: 'anthracnose-icon.png' },
-  { name: 'Thread Blight', part: 'Leaves', color: '#3498DB', icon: 'thread-blight-icon.png' },
-  { name: 'Coffee Berry Disease', part: 'Berries', color: '#27AE60', icon: 'berry-disease-icon.png' },
-  { name: 'Coffee Wilt Disease', part: 'Stems', color: '#E67E22', icon: 'wilt-disease.png' },
-];
-
-
+// Removed unused Disease interface and diseases array
 
 const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+  const { isDarkMode } = useContext(ThemeContext); // Use ThemeContext
+  const themedColors = isDarkMode ? DARK_COLORS : COLORS; // Define themedColors
 
   const onboardingData = [
     {
@@ -57,7 +45,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.introSection}>
           <View style={styles.imageContainer}>
             <Image 
-              source={require('../assets/logo-with-elements.png')}
+              source={require('../assets/farmer2.png')} // Updated image
               style={styles.captureImage}
               resizeMode="contain"
             />
@@ -128,9 +116,9 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.contentContainer}>
         {item.content}
       </View>
-      <View style={styles.textContainer}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.subtitle}>{item.subtitle}</Text>
+      <View style={[styles.textContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
+        <Text style={[styles.title, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{item.title}</Text>
+        <Text style={[styles.subtitle, { color: themedColors.gray }]}>{item.subtitle}</Text>
       </View>
     </View>
   );
@@ -150,11 +138,11 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <View style={[styles.container, { backgroundColor: themedColors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={themedColors.background} />
       
       <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-        <Text style={styles.skipText}>Skip</Text>
+        <Text style={[styles.skipText, { color: themedColors.gray }]}>Skip</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -173,7 +161,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
 
       {renderPagination()}
 
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
             {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
@@ -187,7 +175,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    // backgroundColor is now set dynamically inline
   },
   skipButton: {
     position: 'absolute',
@@ -200,15 +188,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.05)',
   },
   skipText: {
-    color: '#666',
+    // color is now set dynamically inline
     fontSize: Math.min(16, width * 0.04),
     fontWeight: '600',
   },
   slide: {
     width: width,
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: height * 0.08,
+    // paddingHorizontal: 24, // Removed to allow full width
+    paddingTop: height * 0.08, 
   },
   contentContainer: {
     flex: 1,
@@ -224,22 +212,27 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     position: 'absolute',
-    bottom: height * 0.18,
-    left: 24,
-    right: 24,
+    bottom: height * 0.08, // Adjusted bottom position
+    left: 0, // Changed from 24
+    right: 0, // Changed from 24
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 30,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    // backgroundColor is now set dynamically inline
   },
   title: {
     fontSize: Math.min(32, width * 0.08),
     fontWeight: '800',
-    color: '#1A1A1A',
+    // color is now set dynamically inline
     textAlign: 'center',
     marginBottom: height * 0.015,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: Math.min(18, width * 0.045),
-    color: '#666',
+    // color is now set dynamically inline
     textAlign: 'center',
     marginBottom: height * 0.06,
     lineHeight: Math.min(26, width * 0.065),
@@ -289,7 +282,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: height * 0.03,
     position: 'absolute',
-    bottom: height * 0.12,
+    bottom: height * 0.12, // Adjusted bottom position
     left: 0,
     right: 0,
   },
@@ -313,6 +306,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    // backgroundColor is now set dynamically inline
   },
   nextButton: {
     backgroundColor: COLORS.primary,

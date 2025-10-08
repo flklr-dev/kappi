@@ -47,7 +47,6 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [socialLoading, setSocialLoading] = useState({
     google: false,
-    facebook: false
   });
 
   // Reset form state when screen comes into focus
@@ -58,7 +57,7 @@ const LoginScreen = () => {
         setPassword('');
         setShowPassword(false);
         resetValidation();
-        setSocialLoading({ google: false, facebook: false });
+        setSocialLoading({ google: false });
       };
 
       resetForm();
@@ -93,7 +92,7 @@ const LoginScreen = () => {
               text: 'OK',
               onPress: () => {
                 setTimeout(() => {
-                  navigation.navigate('MainTabs');
+                  navigation.navigate('MainTabs', { screen: 'HomeTab' });
                 }, 1000);
               }
             }
@@ -125,7 +124,7 @@ const LoginScreen = () => {
               text: 'OK',
               onPress: () => {
                 setTimeout(() => {
-                  navigation.navigate('MainTabs');
+                  navigation.navigate('MainTabs', { screen: 'HomeTab' });
                 }, 1000);
               }
             }
@@ -138,42 +137,6 @@ const LoginScreen = () => {
       }
     } finally {
       setSocialLoading({ ...socialLoading, google: false });
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    try {
-      setSocialLoading({ ...socialLoading, facebook: true });
-      const response = await authViewModel.facebookLogin(false);
-      
-      // Check error state after login attempt
-      const currentError = authViewModel.error;
-      
-      if (currentError) {
-        Alert.alert('Error', currentError);
-      } else if (response) {
-        // Show success message and automatically navigate after 1 second
-        Alert.alert(
-          'Success',
-          'Welcome to KAPPI!',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setTimeout(() => {
-                  navigation.navigate('MainTabs');
-                }, 1000);
-              }
-            }
-          ]
-        );
-      }
-    } catch (error: any) {
-      if (!error.message?.includes('cancelled')) {
-        Alert.alert('Error', 'Failed to sign in with Facebook');
-      }
-    } finally {
-      setSocialLoading({ ...socialLoading, facebook: false });
     }
   };
 
@@ -213,6 +176,15 @@ const LoginScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       
+      {__DEV__ && (
+        <TouchableOpacity 
+          style={styles.onboardingButton}
+          onPress={() => navigation.navigate('Onboarding')}
+        >
+          <Text style={styles.onboardingButtonText}>Onboarding (DEV)</Text>
+        </TouchableOpacity>
+      )}
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -310,7 +282,7 @@ const LoginScreen = () => {
                 <TouchableOpacity 
                   style={styles.socialButton} 
                   onPress={handleGoogleLogin}
-                  disabled={socialLoading.google || socialLoading.facebook || loading}
+                  disabled={socialLoading.google || loading}
                 >
                   {socialLoading.google ? (
                     <ActivityIndicator size="small" color={COLORS.primary} />
@@ -320,36 +292,18 @@ const LoginScreen = () => {
                         source={require('../assets/google-icon.png')} 
                         style={styles.socialIcon}
                       />
-                      <Text style={styles.socialButtonText}>Google</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={styles.socialButton} 
-                  onPress={handleFacebookLogin}
-                  disabled={socialLoading.facebook || socialLoading.google || loading}
-                >
-                  {socialLoading.facebook ? (
-                    <ActivityIndicator size="small" color={COLORS.primary} />
-                  ) : (
-                    <>
-                      <Image 
-                        source={require('../assets/facebook-icon.png')} 
-                        style={styles.socialIcon}
-                      />
-                      <Text style={styles.socialButtonText}>Facebook</Text>
+                      <Text style={styles.socialButtonText}>Continue with Google</Text>
                     </>
                   )}
                 </TouchableOpacity>
               </View>
 
               <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>Don't have an account?</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                  <Text style={styles.registerButtonText}>Sign Up</Text>
-                </TouchableOpacity>
-              </View>
+                  <Text style={styles.registerText}>Don't have an account?</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                    <Text style={styles.registerButtonText}>Sign Up</Text>
+                  </TouchableOpacity>
+                </View>
             </View>
           </View>
         </ScrollView>
@@ -452,7 +406,7 @@ const styles = StyleSheet.create({
   },
   socialButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center', // Changed to center for single button
     marginBottom: height * 0.03, // 24px on 800px height screen
   },
   socialButton: {
@@ -468,8 +422,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   socialIcon: {
-    width: width * 0.06, // 24px on 400px width screen
-    height: height * 0.03, // 24px on 800px height screen
+    width: width * 0.065, // Reverted and increased width for better visibility
+    height: height * 0.03, // Increased height to prevent cutting
     marginRight: width * 0.02, // 8px on 400px width screen
   },
   socialButtonText: {
@@ -518,6 +472,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  onboardingButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: COLORS.primary,
+    padding: 10,
+    borderRadius: 8,
+  },
+  onboardingButtonText: {
+    color: COLORS.white,
+    fontSize: 12,
   },
 });
 

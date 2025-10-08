@@ -208,7 +208,7 @@ const HomeScreen = () => {
       setRecentLoading(true);
       try {
         const scans = await getRemoteScans();
-        setRecentScans(scans.slice(0, 2));
+        setRecentScans(scans.slice(0, 3));
       } catch (e) {
         setRecentScans([]);
       }
@@ -400,37 +400,6 @@ const HomeScreen = () => {
                 );
               })
             )}
-          </View>
-        </View>
-
-        {/* Tips Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Helpful Tips</Text>
-            <Text style={[styles.sectionSubtitle, { color: themedColors.gray }]}>Improve your scanning results</Text>
-          </View>
-          <View style={styles.tipsContainer}>
-            <TouchableOpacity style={[styles.tipCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]} activeOpacity={0.7}>
-              <View style={[styles.tipIconContainer, { backgroundColor: isDarkMode ? themedColors.background : COLORS.primary + '12' }]}>
-                <Ionicons name="sunny" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.tipContent}>
-                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Best Time to Scan</Text>
-                <Text style={[styles.tipText, { color: themedColors.gray }]}>Take photos in the morning (7-10 AM) for optimal lighting</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={themedColors.gray} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={[styles.tipCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]} activeOpacity={0.7}>
-              <View style={[styles.tipIconContainer, { backgroundColor: isDarkMode ? themedColors.background : COLORS.primary + '12' }]}>
-                <Ionicons name="camera" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.tipContent}>
-                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Photo Quality</Text>
-                <Text style={[styles.tipText, { color: themedColors.gray }]}>Hold steady, ensure good lighting, and focus on affected areas</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={themedColors.gray} />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -719,46 +688,6 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     fontWeight: '600',
     flex: 1,
-  },
-  tipsContainer: {
-    paddingHorizontal: 20,
-  },
-  tipCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 15, // Cohesive with QuickActionCard
-    padding: 18, // Adjusted for consistency
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, // Cohesive with QuickActionCard
-    shadowRadius: 5, // Cohesive with QuickActionCard
-  },
-  tipIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.primary + '12',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  tipContent: {
-    flex: 1,
-  },
-  tipTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.black,
-    marginBottom: 4,
-    letterSpacing: 0.2,
-  },
-  tipText: {
-    fontSize: 13,
-    color: COLORS.gray,
-    lineHeight: 18,
-    fontWeight: '500',
   },
 });
 

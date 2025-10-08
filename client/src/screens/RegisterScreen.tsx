@@ -22,6 +22,7 @@ import { RootStackParamList } from '../navigation/types';
 import PasswordComplexity from '../components/PasswordComplexity';
 import { useAuthStore } from '../stores/authStore';
 import { authViewModel } from '../viewmodels/AuthViewModel';
+import { Ionicons } from '@expo/vector-icons';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -51,7 +52,6 @@ const RegisterScreen = () => {
   const [showPasswordComplexity, setShowPasswordComplexity] = useState(false);
   const [socialLoading, setSocialLoading] = useState({
     google: false,
-    facebook: false
   });
 
   // Reset form state when screen comes into focus
@@ -65,7 +65,7 @@ const RegisterScreen = () => {
         setShowPassword(false);
         setShowConfirmPassword(false);
         setShowPasswordComplexity(false);
-        setSocialLoading({ google: false, facebook: false });
+        setSocialLoading({ google: false });
         resetValidation();
       };
 
@@ -95,11 +95,15 @@ const RegisterScreen = () => {
   const handleRegister = async () => {
     await register(fullName, email, password);
     
-    if (error) {
-      if (error.includes('already exists')) {
+    // Add logging here to see the exact error state after registration attempt
+    const currentError = useAuthStore.getState().error;
+    console.log('RegisterScreen: Error after registration attempt:', currentError);
+
+    if (currentError) {
+      if (currentError.includes('already exists')) {
         Alert.alert('Error', 'Email already exists. Please log in instead.');
       } else {
-        Alert.alert('Error', error);
+        Alert.alert('Error', currentError);
       }
     } else {
       // Reset form before showing success
@@ -183,65 +187,6 @@ const RegisterScreen = () => {
       }
     } finally {
       setSocialLoading({ ...socialLoading, google: false });
-    }
-  };
-
-  const handleFacebookSignUp = async () => {
-    try {
-      setSocialLoading({ ...socialLoading, facebook: true });
-      
-      // Pass isRegistration=true to indicate this is a registration attempt
-      const response = await authViewModel.facebookLogin(true);
-      
-      // Check error state after login attempt
-      const currentError = authViewModel.error;
-      
-      if (currentError) {
-        if (currentError.includes('already registered') || currentError.includes('already exists')) {
-          Alert.alert(
-            'Account Already Exists',
-            'This email is already registered. Please use the login screen instead.',
-            [
-              {
-                text: 'Go to Login',
-                onPress: () => navigation.navigate('Login')
-              },
-              {
-                text: 'Cancel',
-                style: 'cancel'
-              }
-            ]
-          );
-        } else {
-          Alert.alert('Error', currentError);
-        }
-      } else if (response && response.isNewUser === true) {
-        // Show success message for new accounts only
-        Alert.alert(
-          'Success',
-          'Account successfully registered.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Force authentication state update
-                useAuthStore.getState().setAuthenticated(true);
-                // Force app reload to trigger navigation
-                setTimeout(() => {
-                  console.log('Forcing navigation to home screen');
-                  useAuthStore.getState().setAuthenticated(true);
-                }, 100);
-              }
-            }
-          ]
-        );
-      }
-    } catch (error: any) {
-      if (!error.message?.includes('cancelled')) {
-        Alert.alert('Error', 'Failed to sign up with Facebook');
-      }
-    } finally {
-      setSocialLoading({ ...socialLoading, facebook: false });
     }
   };
 
@@ -343,7 +288,11 @@ const RegisterScreen = () => {
                   style={styles.passwordVisibilityButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  {/* Removed Ionicons import since we're not using it anymore */}
+                  <Ionicons 
+                    name={showPassword ? "eye-off" : "eye"} 
+                    size={20} 
+                    color={COLORS.gray} 
+                  />
                 </TouchableOpacity>
               </View>
               {/* Show password complexity when typing or when password doesn't meet requirements */}
@@ -376,7 +325,11 @@ const RegisterScreen = () => {
                   style={styles.passwordVisibilityButton}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
-                  {/* Removed Ionicons import since we're not using it anymore */}
+                  <Ionicons 
+                    name={showConfirmPassword ? "eye-off" : "eye"} 
+                    size={20} 
+                    color={COLORS.gray} 
+                  />
                 </TouchableOpacity>
               </View>
               {touchedFields.confirmPassword && validationErrors.confirmPassword && (
@@ -412,7 +365,7 @@ const RegisterScreen = () => {
                 <TouchableOpacity 
                   style={styles.socialButton} 
                   onPress={handleGoogleSignUp}
-                  disabled={socialLoading.google || socialLoading.facebook || loading}
+                  disabled={socialLoading.google || loading}
                 >
                   {socialLoading.google ? (
                     <ActivityIndicator size="small" color={COLORS.primary} />
@@ -422,25 +375,7 @@ const RegisterScreen = () => {
                         source={require('../assets/google-icon.png')} 
                         style={styles.socialIcon}
                       />
-                      <Text style={styles.socialButtonText}>Google</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={styles.socialButton} 
-                  onPress={handleFacebookSignUp}
-                  disabled={socialLoading.facebook || socialLoading.google || loading}
-                >
-                  {socialLoading.facebook ? (
-                    <ActivityIndicator size="small" color={COLORS.primary} />
-                  ) : (
-                    <>
-                      <Image 
-                        source={require('../assets/facebook-icon.png')} 
-                        style={styles.socialIcon}
-                      />
-                      <Text style={styles.socialButtonText}>Facebook</Text>
+                      <Text style={styles.socialButtonText}>Continue with Google</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -560,7 +495,7 @@ const styles = StyleSheet.create({
   },
   socialButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center', // Changed to center for single button
     marginBottom: height * 0.02, // Reduced from 0.03 to make more compact
   },
   socialButton: {
@@ -576,8 +511,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   socialIcon: {
-    width: width * 0.06, // 24px on 400px width screen
-    height: height * 0.03, // 24px on 800px height screen
+    width: width * 0.065, // Reverted and increased width for better visibility
+    height: height * 0.03, // Increased height to prevent cutting
     marginRight: width * 0.02, // 8px on 400px width screen
   },
   socialButtonText: {

@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   Modal,
   Image,
-  TextInput
+  TextInput,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -27,6 +28,8 @@ import { secureStorage } from '../utils/secureStorage';
 import PasswordComplexity from '../components/PasswordComplexity';
 import { sanitizeInput } from '../utils/secureStorage';
 import { ThemeContext } from '../context/ThemeContext';
+
+const { width, height } = Dimensions.get('window'); // Added responsive dimensions
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -54,7 +57,7 @@ const ProfileHeader = ({ user, handleEditProfile, isDarkMode, themedColors }: an
 );
 
 const ProfileScreen = () => {
-  const { isDarkMode } = useContext(ThemeContext);
+  const { isDarkMode, toggleTheme } = useContext(ThemeContext); // Reintroduce toggleTheme
   // Use a ternary to avoid TypeScript issues
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
   
@@ -64,7 +67,6 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [linkingLoading, setLinkingLoading] = useState({
     google: false,
-    facebook: false
   });
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -80,10 +82,16 @@ const ProfileScreen = () => {
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showAboutApp, setShowAboutApp] = useState(false);
   const [userCapabilities, setUserCapabilities] = useState<UserCapabilities | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Track logout state
+  const [showThemeModal, setShowThemeModal] = useState(false); // State for Theme modal
+  const [showLanguageModal, setShowLanguageModal] = useState(false); // State for Language modal
+  const [currentLanguage, setCurrentLanguage] = useState('English'); // State for selected language
   
+  // Handlers for modals
+  const handleCloseTheme = () => setShowThemeModal(false);
+  const handleCloseLanguage = () => setShowLanguageModal(false);
+
   // Fetch user data and capabilities when component mounts
   useEffect(() => {
     let isMounted = true;
@@ -254,44 +262,6 @@ const ProfileScreen = () => {
     }
   };
 
-  const handleFacebookLogin = async () => {
-    try {
-      setShowAccountSelector(false);
-      setLinkingLoading({ ...linkingLoading, facebook: true });
-      const response = await authViewModel.facebookLogin(false);
-      
-      if (!response && !authViewModel.error) {
-        console.log('Facebook sign-in cancelled');
-      } else if (authViewModel.error) {
-        Alert.alert('Error', 'Failed to sign in with Facebook account. Please try again.');
-      } else if (response) {
-        // Show success message
-        Alert.alert(
-          'Success',
-          'Signed in successfully with Facebook account!',
-          [{ 
-            text: 'OK',
-            onPress: () => {
-              // Force authentication state update
-              useAuthStore.getState().setAuthenticated(true);
-              // Force app reload to trigger navigation
-              setTimeout(() => {
-                console.log('Forcing navigation to home screen');
-                useAuthStore.getState().setAuthenticated(true);
-              }, 100);
-            }
-          }]
-        );
-      }
-    } catch (error: any) {
-      if (!error.message?.includes('cancelled')) {
-        Alert.alert('Error', 'Failed to sign in with Facebook account. Please try again.');
-      }
-    } finally {
-      setLinkingLoading({ ...linkingLoading, facebook: false });
-    }
-  };
-
   const handleLinkGoogle = async () => {
     if (hasProvider('google')) {
       Alert.alert('Account Already Linked', 'Your Google account is already linked to your profile.');
@@ -307,24 +277,6 @@ const ProfileScreen = () => {
       }
     } finally {
       setLinkingLoading({ ...linkingLoading, google: false });
-    }
-  };
-
-  const handleLinkFacebook = async () => {
-    if (hasProvider('facebook')) {
-      Alert.alert('Account Already Linked', 'Your Facebook account is already linked to your profile.');
-      return;
-    }
-
-    try {
-      setLinkingLoading({ ...linkingLoading, facebook: true });
-      await authViewModel.linkFacebookAccount();
-    } catch (error: any) {
-      if (!error.message?.includes('cancelled')) {
-        Alert.alert('Error', 'Failed to link Facebook account. Please try again.');
-      }
-    } finally {
-      setLinkingLoading({ ...linkingLoading, facebook: false });
     }
   };
 
@@ -348,6 +300,10 @@ const ProfileScreen = () => {
     setShowEditProfile(false);
     setEditedName('');
     setProfileError(null);
+  };
+
+  const handleOpenAboutApp = () => {
+    navigation.navigate('AboutApp');
   };
 
   const handleSaveProfile = async () => {
@@ -487,71 +443,6 @@ const ProfileScreen = () => {
         {/* New Profile Header Section */}
         <ProfileHeader user={user} handleEditProfile={handleEditProfile} isDarkMode={isDarkMode} themedColors={themedColors} />
         
-        {/* Connected Accounts Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Connected Accounts</Text>
-          <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
-            <View style={[styles.linkedAccountItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]}>
-              <View style={styles.linkedAccountInfo}>
-                <View style={[styles.accountIconContainer, { backgroundColor: '#4285F4' }]}>
-                  <Ionicons name="logo-google" size={18} color={themedColors.white} />
-                </View>
-                <Text style={[styles.linkedAccountText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Google Account</Text>
-              </View>
-              
-              {hasProvider('google') ? (
-                <View style={styles.linkedBadge}>
-                  <Ionicons name="checkmark-circle" size={20} color={themedColors.success} />
-                  <Text style={[styles.linkedText, { color: themedColors.success }]}>Linked</Text>
-                </View>
-              ) : (
-                <TouchableOpacity 
-                  style={styles.linkButton}
-                  onPress={handleLinkGoogle}
-                  disabled={linkingLoading.google}
-                >
-                  {linkingLoading.google ? (
-                    <ActivityIndicator size="small" color={themedColors.white} />
-                  ) : (
-                    <Text style={[styles.linkButtonText, { color: themedColors.primary }]}>Link</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-            
-            <View style={[styles.linkedAccountItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]}>
-              <View style={styles.linkedAccountInfo}>
-                <View style={[styles.accountIconContainer, { backgroundColor: '#3b5998' }]}>
-                  <Ionicons name="logo-facebook" size={18} color={themedColors.white} />
-                </View>
-                <Text style={[styles.linkedAccountText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Facebook Account</Text>
-              </View>
-              
-              {hasProvider('facebook') ? (
-                <View style={styles.linkedBadge}>
-                  <Ionicons name="checkmark-circle" size={20} color={themedColors.success} />
-                  <Text style={[styles.linkedText, { color: themedColors.success }]}>Linked</Text>
-                </View>
-              ) : (
-                <TouchableOpacity 
-                  style={styles.linkButton}
-                  onPress={handleLinkFacebook}
-                  disabled={linkingLoading.facebook}
-                >
-                  {linkingLoading.facebook ? (
-                    <ActivityIndicator size="small" color={themedColors.white} />
-                  ) : (
-                    <Text style={[styles.linkButtonText, { color: themedColors.primary }]}>Link</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-          <Text style={[styles.accountLinkingNote, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
-            Note: Accounts are automatically linked when you log in with Google or Facebook using the same email address.
-          </Text>
-        </View>
-
         {/* Account Section */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Account</Text>
@@ -570,21 +461,70 @@ const ProfileScreen = () => {
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={handleDeleteAccount}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={handleDeleteAccount}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="trash-outline" size={20} color={themedColors.error} style={styles.menuIcon} />
                 <Text style={[styles.menuText, { color: themedColors.error }]}>Delete Account</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
+            {/* Google Account Link moved here */}
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={handleLinkGoogle}>
+              <View style={styles.menuItemContent}>
+                <Ionicons name="logo-google" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Google Account</Text>
+              </View>
+              
+              {hasProvider('google') ? (
+                <View style={styles.menuItemContent}>
+                  <Ionicons name="checkmark-circle" size={20} color={themedColors.success} style={styles.menuIcon} />
+                  <Text style={[styles.menuText, { color: themedColors.success }]}>Linked</Text>
+                </View>
+              ) : (
+                <TouchableOpacity 
+                  onPress={handleLinkGoogle}
+                  disabled={linkingLoading.google}
+                >
+                  {linkingLoading.google ? (
+                    <ActivityIndicator size="small" color={themedColors.primary} />
+                  ) : (
+                    <Text style={[styles.menuText, { color: themedColors.primary }]}>Link</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.accountLinkingNote, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
+            Note: Accounts are automatically linked when you log in with Google using the same email address.
+          </Text>
+        </View>
+
+        {/* Preferences Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Preferences</Text>
+          <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => setShowThemeModal(true)}>
+              <View style={styles.menuItemContent}>
+                <Ionicons name="bulb-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Theme</Text>
+              </View>
+              <Text style={[styles.menuValueText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{isDarkMode ? 'Dark' : 'Light'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={() => setShowLanguageModal(true)}>
+              <View style={styles.menuItemContent}>
+                <Ionicons name="language-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Language</Text>
+              </View>
+              <Text style={[styles.menuValueText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{currentLanguage}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* App Info Section */}
+        {/* About Section */}
         <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>App Info</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>About</Text>
           <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => setShowAboutApp(true)}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={handleOpenAboutApp}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="information-circle-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
                 <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>About the App</Text>
@@ -623,62 +563,6 @@ const ProfileScreen = () => {
           )}
         </TouchableOpacity>
       </ScrollView>
-
-      {/* Account Selector Modal */}
-      <Modal
-        visible={showAccountSelector}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowAccountSelector(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Choose Account</Text>
-              <TouchableOpacity onPress={() => setShowAccountSelector(false)}>
-                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Select an account to sign in with</Text>
-            
-            <TouchableOpacity 
-              style={[styles.accountOption, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background }]}
-              onPress={handleGoogleLogin}
-              disabled={linkingLoading.google}
-            >
-              <View style={[styles.accountIconContainer, { backgroundColor: '#4285F4' }]}>
-                <Ionicons name="logo-google" size={18} color={themedColors.white} />
-              </View>
-              <Text style={[styles.accountOptionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Google</Text>
-              {linkingLoading.google && (
-                <ActivityIndicator size="small" color={themedColors.primary} style={styles.accountLoader} />
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.accountOption, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background }]}
-              onPress={handleFacebookLogin}
-              disabled={linkingLoading.facebook}
-            >
-              <View style={[styles.accountIconContainer, { backgroundColor: '#3b5998' }]}>
-                <Ionicons name="logo-facebook" size={18} color={themedColors.white} />
-              </View>
-              <Text style={[styles.accountOptionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Facebook</Text>
-              {linkingLoading.facebook && (
-                <ActivityIndicator size="small" color={themedColors.primary} style={styles.accountLoader} />
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={() => setShowAccountSelector(false)}
-            >
-              <Text style={[styles.cancelButtonText, { color: themedColors.primary }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Change Password Modal */}
       <Modal
@@ -821,16 +705,16 @@ const ProfileScreen = () => {
 
       {/* About the App Modal */}
       <Modal
-        visible={showAboutApp}
+        visible={false} // This modal is now handled by navigation
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowAboutApp(false)}
+        onRequestClose={() => {}} // No longer needed
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>About the App</Text>
-              <TouchableOpacity onPress={() => setShowAboutApp(false)}>
+              <TouchableOpacity onPress={() => {}}>
                 <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
@@ -845,6 +729,102 @@ const ProfileScreen = () => {
             <Text style={{ fontSize: 13, color: isDarkMode ? themedColors.gray : COLORS.gray, textAlign: 'center' }}>
               © {new Date().getFullYear()} Kappi Team. All rights reserved.
             </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Theme Modal */}
+      <Modal
+        visible={showThemeModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseTheme}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Theme</Text>
+              <TouchableOpacity onPress={handleCloseTheme}>
+                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
+              Choose your app theme.
+            </Text>
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20', paddingVertical: 15 }]}
+              onPress={() => {
+                toggleTheme();
+                handleCloseTheme();
+              }}
+            >
+              <View style={styles.menuItemContent}>
+                <Ionicons name="moon-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Dark Mode</Text>
+              </View>
+              <Ionicons name={isDarkMode ? "checkmark-circle" : "radio-button-off"} size={20} color={isDarkMode ? themedColors.success : themedColors.gray} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomWidth: 0, paddingVertical: 15 }]}
+              onPress={() => {
+                toggleTheme();
+                handleCloseTheme();
+              }}
+            >
+              <View style={styles.menuItemContent}>
+                <Ionicons name="sunny-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Light Mode</Text>
+              </View>
+              <Ionicons name={!isDarkMode ? "checkmark-circle" : "radio-button-off"} size={20} color={!isDarkMode ? themedColors.success : themedColors.gray} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Language Modal */}
+      <Modal
+        visible={showLanguageModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseLanguage}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Language</Text>
+              <TouchableOpacity onPress={handleCloseLanguage}>
+                <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
+              Choose your app language.
+            </Text>
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20', paddingVertical: 15 }]}
+              onPress={() => {
+                setCurrentLanguage('English');
+                handleCloseLanguage();
+              }}
+            >
+              <View style={styles.menuItemContent}>
+                <Ionicons name="language-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>English</Text>
+              </View>
+              <Ionicons name={currentLanguage === 'English' ? "checkmark-circle" : "radio-button-off"} size={20} color={currentLanguage === 'English' ? themedColors.success : themedColors.gray} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomWidth: 0, paddingVertical: 15 }]}
+              onPress={() => {
+                setCurrentLanguage('Spanish');
+                handleCloseLanguage();
+              }}
+            >
+              <View style={styles.menuItemContent}>
+                <Ionicons name="language-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Spanish</Text>
+              </View>
+              <Ionicons name={currentLanguage === 'Spanish' ? "checkmark-circle" : "radio-button-off"} size={20} color={currentLanguage === 'Spanish' ? themedColors.success : themedColors.gray} />
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -938,6 +918,37 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
   },
+  menuValueText: {
+    fontSize: 16,
+    marginLeft: 10,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    marginBottom: 5,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalCheckIcon: {
+    marginLeft: 10,
+  },
+  modalCancelButton: {
+    borderRadius: 10,
+    backgroundColor: COLORS.lightGray,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  modalCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   // -- Keep existing styles for other components like modals to maintain functionality
   loginWithButton: {
     borderRadius: 15,
@@ -978,55 +989,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  linkedAccountItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    // Removed borderBottomWidth and borderBottomColor from individual linked account items to simplify
-  },
-  linkedAccountInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  accountIconContainer: {
-    width: 36, // Slightly larger
-    height: 36, // Slightly larger
-    borderRadius: 18, // Cohesive with other icon containers
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1, // Cohesive with QuickActionCard icon
-    shadowRadius: 4, // Cohesive with QuickActionCard icon
-  },
-  linkedAccountText: {
-    fontSize: 16,
-  },
-  linkedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  linkedText: {
-    marginLeft: 5,
-    fontWeight: '500',
-  },
-  linkButton: {
-    paddingVertical: 8, // Adjusted for consistency
-    paddingHorizontal: 18, // Adjusted for consistency
-    borderRadius: 15, // Cohesive with other cards
-    minWidth: 70,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, // Cohesive with other cards
-    shadowRadius: 3, // Cohesive with other cards
-  },
-  linkButtonText: {
-    fontWeight: '500',
-  },
+  // Removed unused styles related to linked accounts and modals
   accountLinkingNote: {
     fontSize: 14,
     marginTop: -10,
@@ -1063,34 +1026,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 20,
   },
-  accountOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 15, // Cohesive with other cards
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, // Cohesive with other cards
-    shadowRadius: 5, // Cohesive with other cards
-  },
-  accountOptionText: {
-    fontSize: 16,
-    flex: 1,
-    marginLeft: 10,
-  },
-  accountLoader: {
-    marginLeft: 10,
-  },
-  cancelButton: {
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
   inputLabel: {
     fontSize: 14,
     marginBottom: 4,
@@ -1115,6 +1050,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'transparent',
   },
+  // socialIconProfile style is no longer used
 });
 
 export default ProfileScreen;
