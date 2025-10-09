@@ -32,7 +32,6 @@ async function processQueueItem(item: QueueItem): Promise<void> {
     }
 
     console.log(`Queue item ${item.id} processed successfully`);
-    return result;
   } catch (error) {
     console.error(`Failed to process queue item ${item.id}:`, error);
     throw error;
