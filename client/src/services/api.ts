@@ -3,6 +3,8 @@ import { secureStorage } from '../utils/secureStorage';
 import { useAuthStore } from '../stores/authStore';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5000/api';
+// Derive server origin (without /api) for building absolute asset URLs
+export const API_ORIGIN = API_URL.replace(/\/?api\/?$/, '');
 const TOKEN_KEY = '@kappi_auth_token';
 
 // Create axios instance with security headers
@@ -368,3 +370,11 @@ export const getRemoteScans = async (filters?: { disease?: string, stage?: strin
 };
 
 export default api; 
+
+// Helper to resolve image URIs that may be relative (e.g., "/uploads/...")
+export const resolveImageUri = (uri?: string): string | undefined => {
+  if (!uri) return undefined;
+  if (/^https?:\/\//i.test(uri)) return uri;
+  if (uri.startsWith('/')) return `${API_ORIGIN}${uri}`;
+  return uri;
+};

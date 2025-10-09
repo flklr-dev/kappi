@@ -12,9 +12,9 @@ import {
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../components/Header';
-import { getRemoteScans } from '../services/api';
+import { getRemoteScans, resolveImageUri } from '../services/api';
 import { ThemeContext } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
@@ -93,6 +93,15 @@ const ScanHistoryScreen = () => {
     fetchRemote();
   }, [selectedDisease, selectedStage]); // Re-fetch when filters change
 
+  // Re-fetch when screen gains focus to reflect newly synced scans
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRemote();
+      // no cleanup needed
+      return () => {};
+    }, [selectedDisease, selectedStage])
+  );
+
   const totalPages = Math.max(1, Math.ceil(scans.length / PAGE_SIZE));
   const pagedScans = scans.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -114,7 +123,7 @@ const ScanHistoryScreen = () => {
       >
         <View style={styles.historyScanImageContainer}>
           {item.imageUri ? (
-            <Image source={{ uri: item.imageUri }} style={styles.historyScanImage} resizeMode="cover" />
+            <Image source={{ uri: resolveImageUri(item.imageUri) }} style={styles.historyScanImage} resizeMode="cover" />
           ) : (
             <View style={[styles.historyScanImage, styles.historyPlaceholderImage, { 
               backgroundColor: isDarkMode ? themedColors.secondary : COLORS.primary + '08' 

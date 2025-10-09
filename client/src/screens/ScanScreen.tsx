@@ -46,6 +46,7 @@ const ScanScreen = () => {
   const [showUnknownModal, setShowUnknownModal] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [initialModalShown, setInitialModalShown] = useState(false);
+  const [isPostProcessing, setIsPostProcessing] = useState(false);
   const camera = useRef<Camera>(null);
   
   const { isProcessing, classifyImage } = useScanStore();
@@ -115,13 +116,20 @@ const ScanScreen = () => {
       }
 
       // Automatically save scan result locally and sync to backend
-      await saveScanResult({
-        ...result,
-        imageUri: `file://${photo.path}`,
-        coordinates: user?.location?.coordinates,
-        address: user?.location?.address,
-      });
-      await syncScans();
+      // Deactivate camera to avoid session reconfiguration issues during navigation/saving
+      setIsCameraActive(false);
+      setIsPostProcessing(true);
+      try {
+        await saveScanResult({
+          ...result,
+          imageUri: `file://${photo.path}`,
+          coordinates: user?.location?.coordinates,
+          address: user?.location?.address,
+        });
+        await syncScans();
+      } finally {
+        setIsPostProcessing(false);
+      }
 
       navigation.navigate('Results', { 
         imageUri: `file://${photo.path}`,
@@ -161,13 +169,20 @@ const ScanScreen = () => {
         }
 
         // Automatically save scan result locally and sync to backend
-        await saveScanResult({
-          ...result,
-          imageUri: pickerResult.assets[0].uri,
-          coordinates: user?.location?.coordinates,
-          address: user?.location?.address,
-        });
-        await syncScans();
+        // Deactivate camera to avoid session reconfiguration issues during navigation/saving
+        setIsCameraActive(false);
+        setIsPostProcessing(true);
+        try {
+          await saveScanResult({
+            ...result,
+            imageUri: pickerResult.assets[0].uri,
+            coordinates: user?.location?.coordinates,
+            address: user?.location?.address,
+          });
+          await syncScans();
+        } finally {
+          setIsPostProcessing(false);
+        }
 
         navigation.navigate('Results', {
           imageUri: pickerResult.assets[0].uri,
@@ -233,10 +248,12 @@ const ScanScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {isProcessing && (
+          {(isProcessing || isPostProcessing) && (
             <View style={[styles.processingContainer, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)' }]}>
               <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={[styles.processingText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Analyzing image...</Text>
+              <Text style={[styles.processingText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                {isProcessing ? 'Analyzing image...' : 'Saving scan and syncing...'}
+              </Text>
             </View>
           )}
         </View>

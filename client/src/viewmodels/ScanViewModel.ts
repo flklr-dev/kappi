@@ -2,7 +2,9 @@ import { create } from 'zustand';
 import { NativeModules } from 'react-native';
 import { secureStorage } from '../utils/secureStorage';
 import { useAuthStore } from '../stores/authStore';
+import { useOfflineQueue } from '../services/OfflineQueueManager';
 import api from '../services/api';
+import { eventBus } from '../utils/eventBus';
 
 const { TensorFlowModule } = NativeModules;
 
@@ -146,9 +148,21 @@ export const useScanStore = create<ScanState>((set, get) => ({
     const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const createdAt = Date.now();
     const scanWithMeta: LocalScanResult = { ...scan, id, createdAt };
-    // Get existing scans
+    
+    // Save locally first
     const existing = (await secureStorage.getItem(SCANS_KEY)) as LocalScanResult[] || [];
     await secureStorage.setItem(SCANS_KEY, [scanWithMeta, ...existing]);
+
+    // Add to offline queue for sync
+    const { addItem } = useOfflineQueue.getState();
+    await addItem({
+      type: 'SCAN_UPLOAD',
+      payload: scanWithMeta,
+      priority: 'HIGH',
+      maxRetries: 3,
+    });
+    
+    console.log('Scan saved locally and added to sync queue');
   },
 
   getLocalScans: async (options = {}) => {
@@ -169,20 +183,45 @@ export const useScanStore = create<ScanState>((set, get) => ({
     for (const scan of scans) {
       try {
         console.log('Syncing scan to backend (axios):', scan);
-        const response = await api.post('/scans', {
-          disease: scan.disease,
-          confidence: scan.confidence,
-          severity: scan.severity,
-          stage: scan.stage,
-          imageUri: scan.imageUri,
-          coordinates: scan.coordinates,
-          address: scan.address
+
+        const formData = new FormData();
+        formData.append('disease', scan.disease);
+        formData.append('confidence', scan.confidence.toString());
+        formData.append('severity', scan.severity);
+        formData.append('stage', scan.stage);
+        if (scan.coordinates) {
+          formData.append('coordinates', JSON.stringify(scan.coordinates));
+        }
+        if (scan.address) {
+          formData.append('address', JSON.stringify(scan.address));
+        }
+
+        if (scan.imageUri) {
+          // Determine file type from URI or default to jpeg
+          const fileExtension = scan.imageUri.split('.').pop()?.toLowerCase() || 'jpeg';
+          const fileName = `scan-${scan.id}.${fileExtension}`;
+          const fileType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
+
+          formData.append('image', {
+            uri: scan.imageUri,
+            type: fileType,
+            name: fileName,
+          } as any);
+        }
+
+        const response = await api.post('/scans', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         });
         console.log('Sync response:', response.data);
         // Only keep in local storage if sync failed
         const data = response.data as any;
         if (!data || !data.scan || response.status >= 400) {
           unsynced.push(scan);
+        } else {
+          // notify listeners a new scan has been synced
+          eventBus.emit('scan:added', data.scan);
         }
       } catch (error: any) {
         console.log('Sync error:', error?.response?.data || error.message || error);

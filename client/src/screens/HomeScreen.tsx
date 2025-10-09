@@ -22,8 +22,11 @@ import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MainTabParamList, RootStackParamList } from '../navigation/types';
-import { getRemoteScans } from '../services/api';
+import { getRemoteScans, resolveImageUri } from '../services/api';
 import { ThemeContext } from '../context/ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { eventBus } from '../utils/eventBus';
+// import { useOfflineQueue } from '../services/OfflineQueueManager';
 
 const { width } = Dimensions.get('window');
 
@@ -217,6 +220,32 @@ const HomeScreen = () => {
     fetchRecent();
   }, []);
 
+  // Refetch on screen focus for freshness
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+      const refetch = async () => {
+        try {
+          const scans = await getRemoteScans();
+          if (isActive) setRecentScans(scans.slice(0, 3));
+        } catch {}
+      };
+      refetch();
+      return () => { isActive = false; };
+    }, [])
+  );
+
+  // Listen for scan added events to update recent list optimistically
+  useEffect(() => {
+    const off = eventBus.on('scan:added', async () => {
+      try {
+        const scans = await getRemoteScans();
+        setRecentScans(scans.slice(0, 3));
+      } catch {}
+    });
+    return () => { off(); };
+  }, []);
+
   const formatDate = (date: string | number | Date) => {
     if (!date) return '';
     const d = new Date(date);
@@ -238,6 +267,8 @@ const HomeScreen = () => {
       <Header
         title="KAPPI"
       />
+
+      {/* Queue Status Indicator - removed per request */}
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Welcome Section with Location below name */}
@@ -365,7 +396,7 @@ const HomeScreen = () => {
                   >
                     <View style={styles.scanImageContainer}>
                       {scan.imageUri ? (
-                        <Image source={{ uri: scan.imageUri }} style={styles.scanImage} resizeMode="cover" />
+                        <Image source={{ uri: resolveImageUri(scan.imageUri) }} style={styles.scanImage} resizeMode="cover" />
                       ) : (
                         <View style={[styles.scanImage, styles.placeholderImage, { backgroundColor: isDarkMode ? themedColors.background : COLORS.primary + '08' }]}> 
                           <Ionicons name="leaf-outline" size={40} color={COLORS.primary} />
@@ -689,6 +720,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
+  // queue status styles removed
 });
 
 export default HomeScreen;

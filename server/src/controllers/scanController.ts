@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Scan } from '../models/Scan';
 import { IUser } from '../models/User';
+import path from 'path';
 
 interface AuthRequest extends Request {
   user?: IUser;
@@ -11,11 +12,27 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
     if (!req.user?._id) {
       return res.status(401).json({ message: 'Authentication required' });
     }
-    const { disease, confidence, severity, stage, imageUri, coordinates, address } = req.body;
+    let { disease, confidence, severity, stage, imageUri, coordinates, address } = req.body as any;
+
+    // Parse JSON fields if they came as strings from multipart
+    if (typeof coordinates === 'string') {
+      try { coordinates = JSON.parse(coordinates); } catch {}
+    }
+    if (typeof address === 'string') {
+      try { address = JSON.parse(address); } catch {}
+    }
+
+    // If multer uploaded a file, set imageUri to served path
+    if ((req as any).file) {
+      const fileName = path.basename((req as any).file.path);
+      imageUri = `/uploads/${fileName}`;
+    }
+
+    const numericConfidence = typeof confidence === 'string' ? parseFloat(confidence) : confidence;
     const scan = new Scan({
       user: req.user._id,
       disease,
-      confidence,
+      confidence: numericConfidence,
       severity,
       stage,
       imageUri,
@@ -25,6 +42,7 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
     await scan.save();
     res.status(201).json({ scan });
   } catch (error) {
+    console.error('Error saving scan:', error);
     res.status(500).json({ message: 'Error saving scan result' });
   }
 };
