@@ -1,32 +1,22 @@
-import React, { useEffect } from 'react';
-import AppNavigator from './src/navigation/AppNavigator';
-import { AuthProvider } from './src/context/AuthContext';
+import React from 'react';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { LanguageProvider } from './src/context/LanguageContext';
+import AppNavigator from './src/navigation/AppNavigator';
 import { useNetworkStatus } from './src/hooks/useNetworkStatus';
-import { initializeQueue } from './src/services/OfflineQueueManager';
+
+// Initialize network status monitoring
+const NetworkStatusInitializer = () => {
+  useNetworkStatus();
+  return null;
+};
 
 export default function App() {
-  // Initialize offline queue and network monitoring
-  useEffect(() => {
-    initializeQueue();
-  }, []);
-
   return (
-    <AuthProvider>
+    <LanguageProvider>
       <ThemeProvider>
-        <AppWithNetworkMonitoring />
+        <NetworkStatusInitializer />
+        <AppNavigator />
       </ThemeProvider>
-    </AuthProvider>
-  );
-}
-
-// Component that uses the network hook
-function AppWithNetworkMonitoring() {
-  useNetworkStatus(); // This hook handles network status monitoring
-
-  return (
-    <>
-      <AppNavigator />
-    </>
+    </LanguageProvider>
   );
 }

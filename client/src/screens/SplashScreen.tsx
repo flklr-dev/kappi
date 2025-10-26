@@ -37,11 +37,16 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
         // Wait a minimum time for splash screen
         await new Promise(resolve => setTimeout(resolve, 2000));
         
+        // Check if user has selected language
+        const hasSelectedLanguage = await AsyncStorage.getItem('hasSelectedLanguage');
+        
         // Check if user has seen onboarding
         const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
         
-        if (isAuthenticated) {
-          navigation.replace('MainTabs');
+        if (!hasSelectedLanguage) {
+          navigation.replace('LanguageSelection');
+        } else if (isAuthenticated) {
+          navigation.replace('MainTabs', { screen: undefined });
         } else if (hasSeenOnboarding) {
           navigation.replace('Login');
         } else {
@@ -49,7 +54,7 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
         }
       } catch (error) {
         console.error('Error during app initialization:', error);
-        navigation.replace('Onboarding');
+        navigation.replace('LanguageSelection');
       }
     };
 

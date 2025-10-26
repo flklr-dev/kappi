@@ -13,6 +13,7 @@ import Header from '../components/Header';
 import { ThemeContext } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart, LineChart } from 'react-native-chart-kit'; // Import LineChart
+import { useLanguage } from '../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -45,6 +46,7 @@ const mockWeeklyScanActivity = {
 
 const ReportsScreen = () => {
   const { isDarkMode } = useContext(ThemeContext);
+  const { t } = useLanguage();
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
 
   return (
@@ -65,18 +67,18 @@ const ReportsScreen = () => {
       >
         {/* Scan Summary Cards */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Scan Summary</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('scan_summary')}</Text>
           <View style={styles.summaryGrid}>
 
             {/* Total Scans Card */}
             <View style={[styles.summaryCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-              <Text style={[styles.summaryCardTitle, { color: themedColors.gray }]}>Total Scans</Text>
+              <Text style={[styles.summaryCardTitle, { color: themedColors.gray }]}>{t('total_scans')}</Text>
               <Text style={[styles.summaryCardValue, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{mockScanSummary.totalScans}</Text>
             </View>
 
             {/* This Month Scans Card */}
             <View style={[styles.summaryCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-              <Text style={[styles.summaryCardTitle, { color: themedColors.gray }]}>This Month</Text>
+              <Text style={[styles.summaryCardTitle, { color: themedColors.gray }]}>{t('this_month')}</Text>
               <View style={styles.summaryValueWithTrend}>
                 <Text style={[styles.summaryCardValue, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{mockScanSummary.thisMonthScans}</Text>
                 <View style={styles.trendContainer}>
@@ -92,13 +94,13 @@ const ReportsScreen = () => {
 
             {/* Healthy Percentage Card */}
             <View style={[styles.summaryCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-              <Text style={[styles.summaryCardTitle, { color: themedColors.gray }]}>Healthy Plants</Text>
+              <Text style={[styles.summaryCardTitle, { color: themedColors.gray }]}>{t('healthy_plants')}</Text>
               <Text style={[styles.summaryCardValue, { color: COLORS.success }]}>{mockScanSummary.healthyPercentage}%</Text>
             </View>
 
             {/* Diseased Percentage Card */}
             <View style={[styles.summaryCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-              <Text style={[styles.summaryCardTitle, { color: themedColors.gray }]}>Diseased Plants</Text>
+              <Text style={[styles.summaryCardTitle, { color: themedColors.gray }]}>{t('diseased_plants')}</Text>
               <Text style={[styles.summaryCardValue, { color: COLORS.error }]}>{mockScanSummary.diseasedPercentage}%</Text>
             </View>
           </View>
@@ -106,10 +108,10 @@ const ReportsScreen = () => {
 
         {/* Disease Distribution Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Disease Distribution</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('disease_distribution')}</Text>
           <View style={[styles.chartCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-            <Text style={[styles.chartCardTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Scans by Disease Type</Text>
-            <Text style={[styles.chartCardSubtitle, { color: themedColors.gray }]}>Percentage of all scans</Text>
+            <Text style={[styles.chartCardTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('scans_by_disease_type')}</Text>
+            <Text style={[styles.chartCardSubtitle, { color: themedColors.gray }]}>{t('percentage_of_all_scans')}</Text>
             <PieChart
               data={mockDiseaseDistribution.labels.map((label, index) => ({
                 name: label,
@@ -138,10 +140,10 @@ const ReportsScreen = () => {
 
         {/* Weekly Scan Activity Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Weekly Scan Activity</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('weekly_scan_activity')}</Text>
           <View style={[styles.chartCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-            <Text style={[styles.chartCardTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Number of Scans over Time</Text>
-            <Text style={[styles.chartCardSubtitle, { color: themedColors.gray }]}>Last 8 weeks</Text>
+            <Text style={[styles.chartCardTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('number_of_scans_over_time')}</Text>
+            <Text style={[styles.chartCardSubtitle, { color: themedColors.gray }]}>{t('last_8_weeks')}</Text>
             <LineChart
               data={mockWeeklyScanActivity}
               width={width - 40} // from react-native

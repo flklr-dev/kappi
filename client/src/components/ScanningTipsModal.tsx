@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, DARK_COLORS } from '../constants/colors';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -33,17 +34,18 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
   isDarkMode,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const { t } = useLanguage();
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
 
   const steps: Step[] = [
     {
       id: 'diseases',
-      title: 'What KAPPI Detects',
+      title: t('what_kappi_detects'),
       icon: 'leaf-outline',
       content: (
         <View style={styles.stepContent}>
           <Text style={[styles.stepDescription, { color: themedColors.gray }]}>
-            KAPPI can identify these specific coffee plant diseases:
+            {t('kappi_can_identify_these_coffee_diseases')}
           </Text>
           
           <View style={styles.diseaseGrid}>
@@ -51,9 +53,9 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
               <View style={[styles.diseaseIcon, { backgroundColor: '#FF6B6B20' }]}>
                 <Ionicons name="leaf-outline" size={20} color="#FF6B6B" />
               </View>
-              <Text style={[styles.diseaseCategoryTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Leaves</Text>
+              <Text style={[styles.diseaseCategoryTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('leaves')}</Text>
               <Text style={[styles.diseaseNamesList, { color: themedColors.gray }]}>
-                Coffee Leaf Rust{'\n'}Thread Blight{'\n'}Anthracnose
+                {t('coffee_leaf_rust')}{'\n'}{t('thread_blight')}{'\n'}{t('anthracnose')}
               </Text>
             </View>
 
@@ -61,9 +63,9 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
               <View style={[styles.diseaseIcon, { backgroundColor: '#3B82F620' }]}>
                 <Ionicons name="git-branch-outline" size={20} color="#3B82F6" />
               </View>
-              <Text style={[styles.diseaseCategoryTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Stems</Text>
+              <Text style={[styles.diseaseCategoryTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('stems')}</Text>
               <Text style={[styles.diseaseNamesList, { color: themedColors.gray }]}>
-                Coffee Wilt Disease
+                {t('coffee_wilt_disease')}
               </Text>
             </View>
 
@@ -71,9 +73,9 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
               <View style={[styles.diseaseIcon, { backgroundColor: '#10B98120' }]}>
                 <Ionicons name="ellipse-outline" size={20} color="#10B981" />
               </View>
-              <Text style={[styles.diseaseCategoryTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Berries</Text>
+              <Text style={[styles.diseaseCategoryTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('berries')}</Text>
               <Text style={[styles.diseaseNamesList, { color: themedColors.gray }]}>
-                Coffee Berry Disease
+                {t('coffee_berry_disease')}
               </Text>
             </View>
           </View>
@@ -82,12 +84,12 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
     },
     {
       id: 'lighting',
-      title: 'Perfect Lighting',
+      title: t('perfect_lighting'),
       icon: 'sunny-outline',
       content: (
         <View style={styles.stepContent}>
           <Text style={[styles.stepDescription, { color: themedColors.gray }]}>
-            Good lighting is crucial for accurate detection
+            {t('good_lighting_is_crucial')}
           </Text>
           
           <View style={styles.lightingTips}>
@@ -96,8 +98,8 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
                 <Ionicons name="sunny-outline" size={18} color="#F59E0B" />
               </View>
               <View style={styles.tipTextContainer}>
-                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Natural daylight is best</Text>
-                <Text style={[styles.tipSubtitle, { color: themedColors.gray }]}>Scan between 7-10 AM</Text>
+                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('natural_daylight_is_best')}</Text>
+                <Text style={[styles.tipSubtitle, { color: themedColors.gray }]}>{t('scan_between_7_10_am')}</Text>
               </View>
             </View>
 
@@ -106,8 +108,8 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
                 <Ionicons name="flash-off-outline" size={18} color="#EF4444" />
               </View>
               <View style={styles.tipTextContainer}>
-                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Avoid harsh shadows</Text>
-                <Text style={[styles.tipSubtitle, { color: themedColors.gray }]}>Find even, diffused light</Text>
+                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('avoid_harsh_shadows')}</Text>
+                <Text style={[styles.tipSubtitle, { color: themedColors.gray }]}>{t('find_even_diffused_light')}</Text>
               </View>
             </View>
 
@@ -116,8 +118,8 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
                 <Ionicons name="flash-outline" size={18} color="#10B981" />
               </View>
               <View style={styles.tipTextContainer}>
-                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Use flash indoors</Text>
-                <Text style={[styles.tipSubtitle, { color: themedColors.gray }]}>For consistent results</Text>
+                <Text style={[styles.tipTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('use_flash_indoors')}</Text>
+                <Text style={[styles.tipSubtitle, { color: themedColors.gray }]}>{t('for_consistent_results')}</Text>
               </View>
             </View>
           </View>
@@ -126,12 +128,12 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
     },
     {
       id: 'technique',
-      title: 'Scanning Technique',
+      title: t('scanning_technique'),
       icon: 'camera-outline',
       content: (
         <View style={styles.stepContent}>
           <Text style={[styles.stepDescription, { color: themedColors.gray }]}>
-            Follow these steps for the most accurate results
+            {t('follow_these_steps')}
           </Text>
           
           <View style={styles.techniqueSteps}>
@@ -140,8 +142,8 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
                 <Text style={styles.stepNumberText}>1</Text>
               </View>
               <View style={styles.stepTextContainer}>
-                <Text style={[styles.stepTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Get close to the affected area</Text>
-                <Text style={[styles.stepText, { color: themedColors.gray }]}>Fill the frame with the diseased part</Text>
+                <Text style={[styles.stepTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('get_close_to_affected_area')}</Text>
+                <Text style={[styles.stepText, { color: themedColors.gray }]}>{t('fill_frame_with_diseased_part')}</Text>
               </View>
             </View>
 
@@ -150,8 +152,8 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
               <View style={styles.stepTextContainer}>
-                <Text style={[styles.stepTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Hold steady for 2 seconds</Text>
-                <Text style={[styles.stepText, { color: themedColors.gray }]}>Let the camera focus completely</Text>
+                <Text style={[styles.stepTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('hold_steady_for_2_seconds')}</Text>
+                <Text style={[styles.stepText, { color: themedColors.gray }]}>{t('let_camera_focus_completely')}</Text>
               </View>
             </View>
 
@@ -160,8 +162,8 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
               <View style={styles.stepTextContainer}>
-                <Text style={[styles.stepTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Capture the photo</Text>
-                <Text style={[styles.stepText, { color: themedColors.gray }]}>Tap once and wait for analysis</Text>
+                <Text style={[styles.stepTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('capture_the_photo')}</Text>
+                <Text style={[styles.stepText, { color: themedColors.gray }]}>{t('tap_once_and_wait')}</Text>
               </View>
             </View>
           </View>
@@ -240,7 +242,7 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
               {currentStep > 0 && (
                 <TouchableOpacity onPress={previousStep} style={styles.secondaryButton}>
                   <Ionicons name="chevron-back-outline" size={20} color={COLORS.primary} />
-                  <Text style={[styles.secondaryButtonText, { color: COLORS.primary }]}>Back</Text>
+                  <Text style={[styles.secondaryButtonText, { color: COLORS.primary }]}>{t('back')}</Text>
                 </TouchableOpacity>
               )}
               
@@ -248,13 +250,13 @@ const ScanningTipsModal: React.FC<ScanningTipsModalProps> = ({
               
               {currentStep < steps.length - 1 && (
                 <TouchableOpacity onPress={skipToEnd} style={styles.skipButton}>
-                  <Text style={[styles.skipButtonText, { color: themedColors.gray }]}>Skip</Text>
+                  <Text style={[styles.skipButtonText, { color: themedColors.gray }]}>{t('skip')}</Text>
                 </TouchableOpacity>
               )}
               
               <TouchableOpacity onPress={nextStep} style={[styles.primaryButton, { backgroundColor: COLORS.primary }]}>
                 <Text style={styles.primaryButtonText}>
-                  {currentStep < steps.length - 1 ? 'Next' : 'Start Scanning'}
+                  {currentStep < steps.length - 1 ? t('next') : t('start_scanning')}
                 </Text>
                 {currentStep < steps.length - 1 && (
                   <Ionicons name="chevron-forward-outline" size={20} color="white" style={styles.buttonIcon} />

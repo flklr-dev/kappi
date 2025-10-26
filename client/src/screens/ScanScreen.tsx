@@ -31,6 +31,7 @@ import { useScanStore } from '../viewmodels/ScanViewModel';
 import { useAuthStore } from '../stores/authStore';
 import { ThemeContext } from '../context/ThemeContext';
 import ScanningTipsModal from '../components/ScanningTipsModal';
+import { useLanguage } from '../context/LanguageContext';
 
 type ScanScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -38,6 +39,7 @@ const { width, height } = Dimensions.get('window');
 
 const ScanScreen = () => {
   const { isDarkMode } = useContext(ThemeContext);
+  const { t } = useLanguage();
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
   
   const navigation = useNavigation<ScanScreenNavigationProp>();
@@ -83,11 +85,11 @@ const ScanScreen = () => {
       const granted = await requestCameraPermission();
       if (!granted) {
         Alert.alert(
-          'Camera Permission Required',
-          'Please grant camera permission to use the scanner.',
+          t('camera_permission_required'),
+          t('please_grant_camera_permission'),
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() }
+            { text: t('cancel'), style: 'cancel' },
+            { text: t('open_settings'), onPress: () => Linking.openSettings() }
           ]
         );
       }
@@ -142,7 +144,7 @@ const ScanScreen = () => {
       });
     } catch (error) {
       console.error('Error capturing/processing image:', error);
-      Alert.alert('Error', 'Failed to process image. Please try again.');
+      Alert.alert(t('error'), t('failed_to_process_image'));
     }
   };
 
@@ -196,7 +198,7 @@ const ScanScreen = () => {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image from gallery');
+      Alert.alert(t('error'), t('failed_to_pick_image_from_gallery'));
     }
   };
 
@@ -204,7 +206,7 @@ const ScanScreen = () => {
     return (
       <View style={[styles.centeredContainer, { backgroundColor: themedColors.background }]}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={[styles.loadingText, { color: isDarkMode ? themedColors.white : themedColors.gray }]}>Loading camera...</Text>
+        <Text style={[styles.loadingText, { color: isDarkMode ? themedColors.white : themedColors.gray }]}>{t('loading_camera')}</Text>
       </View>
     );
   }
@@ -217,7 +219,7 @@ const ScanScreen = () => {
       />
       
       <Header
-        title="Scan Plant"
+        title={t('scan_plant_title')}
       />
       
       <View style={styles.content}>
@@ -252,7 +254,7 @@ const ScanScreen = () => {
             <View style={[styles.processingContainer, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)' }]}>
               <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={[styles.processingText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
-                {isProcessing ? 'Analyzing image...' : 'Saving scan and syncing...'}
+                {isProcessing ? t('analyzing_image') : t('saving_scan_and_syncing')}
               </Text>
             </View>
           )}
@@ -304,15 +306,15 @@ const ScanScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-            <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Scan Unsuccessful</Text>
+            <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('scan_unsuccessful')}</Text>
             <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
-              We couldn't recognize a valid coffee plant part or disease. Please try again with a clearer image.
+              {t('could_not_recognize_coffee_plant')}
             </Text>
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: COLORS.primary }]}
               onPress={() => setShowUnknownModal(false)}
             >
-              <Text style={styles.modalButtonText}>Try Again</Text>
+              <Text style={styles.modalButtonText}>{t('try_again')}</Text>
             </TouchableOpacity>
           </View>
         </View>

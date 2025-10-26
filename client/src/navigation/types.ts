@@ -3,6 +3,7 @@ import { ScanResult } from '../viewmodels/ScanViewModel';
 // Root Stack contains splash, onboarding, auth screens and main app
 export type RootStackParamList = {
   Splash: undefined;
+  LanguageSelection: undefined;
   Onboarding: undefined;
   Login: undefined;
   Register: undefined;

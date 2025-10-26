@@ -2,18 +2,21 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
+import { useLanguage } from '../context/LanguageContext'; // Import LanguageContext
 
 interface PasswordComplexityProps {
   password: string;
 }
 
 const PasswordComplexity: React.FC<PasswordComplexityProps> = ({ password }) => {
+  const { t } = useLanguage(); // Use LanguageContext
+  
   const requirements = [
-    { label: 'At least 8 characters', met: password.length >= 8 },
-    { label: 'At least one uppercase letter', met: /[A-Z]/.test(password) },
-    { label: 'At least one lowercase letter', met: /[a-z]/.test(password) },
-    { label: 'At least one number', met: /[0-9]/.test(password) },
-    { label: 'At least one special character', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
+    { label: t('at_least_8_characters'), met: password.length >= 8 },
+    { label: t('at_least_one_uppercase_letter'), met: /[A-Z]/.test(password) },
+    { label: t('at_least_one_lowercase_letter'), met: /[a-z]/.test(password) },
+    { label: t('at_least_one_number'), met: /[0-9]/.test(password) },
+    { label: t('at_least_one_special_character'), met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
   ];
 
   const metRequirements = requirements.filter(req => req.met).length;
@@ -21,12 +24,12 @@ const PasswordComplexity: React.FC<PasswordComplexityProps> = ({ password }) => 
   const strengthPercentage = (metRequirements / totalRequirements) * 100;
 
   const getStrengthText = () => {
-    if (strengthPercentage === 0) return 'Very Weak';
-    if (strengthPercentage <= 20) return 'Weak';
-    if (strengthPercentage <= 40) return 'Fair';
-    if (strengthPercentage <= 60) return 'Good';
-    if (strengthPercentage <= 80) return 'Strong';
-    return 'Very Strong';
+    if (strengthPercentage === 0) return t('very_weak');
+    if (strengthPercentage <= 20) return t('weak');
+    if (strengthPercentage <= 40) return t('fair');
+    if (strengthPercentage <= 60) return t('good');
+    if (strengthPercentage <= 80) return t('strong');
+    return t('very_strong');
   };
 
   const getStrengthColor = () => {
@@ -130,4 +133,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PasswordComplexity; 
+export default PasswordComplexity;

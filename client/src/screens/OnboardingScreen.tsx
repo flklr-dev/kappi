@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS, DARK_COLORS } from '../constants/colors';
 import { ThemeContext } from '../context/ThemeContext'; // Import ThemeContext
+import { useLanguage } from '../context/LanguageContext'; // Import LanguageContext
 import { Ionicons } from '@expo/vector-icons';
 
 type OnboardingScreenNavigationProp = NativeStackNavigationProp<
@@ -34,13 +35,14 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const { isDarkMode } = useContext(ThemeContext); // Use ThemeContext
+  const { t } = useLanguage(); // Use LanguageContext
   const themedColors = isDarkMode ? DARK_COLORS : COLORS; // Define themedColors
 
   const onboardingData = [
     {
       id: '1',
-      title: 'Welcome to KAPPI',
-      subtitle: 'Your AI-powered coffee disease detection assistant for better farming',
+      title: t('welcome_to_kappi'),
+      subtitle: t('your_ai_powered_coffee_disease_detection_assistant'),
       content: (
         <View style={styles.introSection}>
           <View style={styles.imageContainer}>
@@ -55,8 +57,8 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       id: '2',
-      title: 'Capture Coffee Plants',
-      subtitle: 'Take clear photos to get accurate disease detection',
+      title: t('capture_coffee_plants'),
+      subtitle: t('take_clear_photos_to_get_accurate_disease_detection'),
       content: (
         <View style={styles.captureSection}>
           <View style={styles.imageContainer}>
@@ -71,8 +73,8 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       id: '3',
-      title: 'Diseases We Detect',
-      subtitle: 'Our AI can identify these common coffee plant diseases',
+      title: t('diseases_we_detect'),
+      subtitle: t('our_ai_can_identify_these_common_coffee_plant_diseases'),
       content: (
         <View style={styles.diseasesSection}>
           <View style={styles.imageContainer}>
@@ -142,7 +144,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={themedColors.background} />
       
       <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-        <Text style={[styles.skipText, { color: themedColors.gray }]}>Skip</Text>
+        <Text style={[styles.skipText, { color: themedColors.gray }]}>{t('skip')}</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -164,7 +166,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
       <View style={[styles.buttonContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
-            {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
+            {currentIndex === onboardingData.length - 1 ? t('get_started') : t('next')}
           </Text>
         </TouchableOpacity>
       </View>

@@ -16,6 +16,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../components/Header';
 import { getRemoteScans, resolveImageUri } from '../services/api';
 import { ThemeContext } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width > 768;
@@ -43,6 +44,7 @@ const PAGE_SIZE = 10;
 const ScanHistoryScreen = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useContext(ThemeContext);
+  const { t } = useLanguage();
   // Use inline object for dark colors to avoid TypeScript issues
   const themedColors = isDarkMode ? {
     primary: '#6F8F3F',
@@ -66,8 +68,8 @@ const ScanHistoryScreen = () => {
   const [stageFilterVisible, setStageFilterVisible] = useState(false); // State for stage filter modal
 
   // Dummy disease options (will be replaced by actual data)
-  const diseaseOptions = ['All Diseases', 'Coffee Leaf Rust', 'Anthracnose', 'Thread Blight', 'Coffee Berry Disease', 'Coffee Wilt Disease', 'Healthy'];
-  const stageOptions = ['All Stages', 'Early', 'Progressive', 'Severe', 'Healthy', 'Unknown'];
+  const diseaseOptions = [t('all_diseases'), 'Coffee Leaf Rust', 'Anthracnose', 'Thread Blight', 'Coffee Berry Disease', 'Coffee Wilt Disease', t('healthy')];
+  const stageOptions = [t('all_stages'), 'Early', 'Progressive', 'Severe', t('healthy'), t('unknown')];
 
   const fetchRemote = async () => {
     setLoading(true);
@@ -107,7 +109,7 @@ const ScanHistoryScreen = () => {
 
   const renderItem = ({ item }: { item: any }) => {
     const isHealthy = item.disease?.toLowerCase().includes('healthy');
-    const badgeText = isHealthy ? 'Healthy' : (item.stage || item.severity || 'Unknown');
+    const badgeText = isHealthy ? t('healthy') : (item.stage || item.severity || t('unknown'));
     const badgeColor = isHealthy ? '#4CAF50' : 
                       item.stage === 'Early' ? '#FF9800' :
                       item.stage === 'Progressive' ? '#FF5722' :
@@ -153,7 +155,7 @@ const ScanHistoryScreen = () => {
               }]}>
                 <Ionicons name="location" size={width * 0.025} color={isDarkMode ? themedColors.primary : COLORS.primary} />
                 <Text style={[styles.historyScanLocation, { color: isDarkMode ? themedColors.gray : '#6C757D' }]} numberOfLines={1}>
-                  {item.address.cityMunicipality || 'Unknown Location'}
+                  {item.address.cityMunicipality || t('unknown_location')}
                 </Text>
               </View>
             )}
@@ -165,7 +167,7 @@ const ScanHistoryScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: themedColors.background }]}>
-      <Header title="Scan History" showBackButton onBackPress={() => navigation.goBack()} />
+      <Header title={t('scan_history')} showBackButton onBackPress={() => navigation.goBack()} />
 
       {/* Filter Section */}
       <View style={[styles.filterContainer, { backgroundColor: themedColors.background }]}>
@@ -173,7 +175,7 @@ const ScanHistoryScreen = () => {
           style={[styles.filterButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white, borderColor: isDarkMode ? themedColors.lightGray : COLORS.lightGray }]} 
           onPress={() => setDiseaseFilterVisible(true)}
         >
-          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{selectedDisease || 'All Diseases'}</Text>
+          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{selectedDisease || t('all_diseases')}</Text>
           <Ionicons name="chevron-down" size={width * 0.04} color={isDarkMode ? themedColors.white : themedColors.black} />
         </TouchableOpacity>
 
@@ -181,7 +183,7 @@ const ScanHistoryScreen = () => {
           style={[styles.filterButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white, borderColor: isDarkMode ? themedColors.lightGray : COLORS.lightGray }]} 
           onPress={() => setStageFilterVisible(true)}
         >
-          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{selectedStage || 'All Stages'}</Text>
+          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{selectedStage || t('all_stages')}</Text>
           <Ionicons name="chevron-down" size={width * 0.04} color={isDarkMode ? themedColors.white : themedColors.black} />
         </TouchableOpacity>
       </View>
@@ -257,7 +259,7 @@ const ScanHistoryScreen = () => {
       ) : scans.length === 0 ? (
         <View style={styles.centered}>
           <Ionicons name="cloud-outline" size={48} color={themedColors.gray} style={{ marginBottom: 12 }} />
-          <Text style={[styles.emptyText, { color: themedColors.gray }]}>No scan history yet.</Text>
+          <Text style={[styles.emptyText, { color: themedColors.gray }]}>{t('no_scan_history_yet')}</Text>
         </View>
       ) : (
         <>
@@ -277,7 +279,7 @@ const ScanHistoryScreen = () => {
               disabled={page === 1}
             >
               <Ionicons name="chevron-back" size={20} color={page === 1 ? themedColors.gray : themedColors.primary} />
-              <Text style={[styles.pageButtonText, { color: page === 1 ? themedColors.gray : themedColors.primary }, page === 1 && styles.pageButtonTextDisabled]}>Prev</Text>
+              <Text style={[styles.pageButtonText, { color: page === 1 ? themedColors.gray : themedColors.primary }, page === 1 && styles.pageButtonTextDisabled]}>{t('previous_page')}</Text>
             </TouchableOpacity>
             <Text style={[styles.pageInfo, { color: themedColors.gray }]}>{page} / {totalPages}</Text>
             <TouchableOpacity
@@ -288,10 +290,11 @@ const ScanHistoryScreen = () => {
               onPress={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
             >
-              <Text style={[styles.pageButtonText, { color: page === totalPages ? themedColors.gray : themedColors.primary }, page === totalPages && styles.pageButtonTextDisabled]}>Next</Text>
+              <Text style={[styles.pageButtonText, { color: page === totalPages ? themedColors.gray : themedColors.primary }, page === totalPages && styles.pageButtonTextDisabled]}>{t('next_page')}</Text>
               <Ionicons name="chevron-forward" size={20} color={page === totalPages ? themedColors.gray : themedColors.primary} />
             </TouchableOpacity>
           </View>
+
         </>
       )}
     </View>

@@ -23,6 +23,7 @@ import PasswordComplexity from '../components/PasswordComplexity';
 import { useAuthStore } from '../stores/authStore';
 import { authViewModel } from '../viewmodels/AuthViewModel';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../context/LanguageContext'; // Import LanguageContext
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -30,6 +31,7 @@ const { width, height } = Dimensions.get('window');
 
 const RegisterScreen = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
+  const { t } = useLanguage(); // Use LanguageContext
   const { 
     register, 
     loading, 
@@ -101,9 +103,9 @@ const RegisterScreen = () => {
 
     if (currentError) {
       if (currentError.includes('already exists')) {
-        Alert.alert('Error', 'Email already exists. Please log in instead.');
+        Alert.alert(t('error'), t('email_already_exists'));
       } else {
-        Alert.alert('Error', currentError);
+        Alert.alert(t('error'), currentError);
       }
     } else {
       // Reset form before showing success
@@ -116,8 +118,8 @@ const RegisterScreen = () => {
       resetValidation();
 
       Alert.alert(
-        'Success',
-        'Account successfully registered.',
+        t('success'),
+        t('account_successfully_registered'),
         [
           {
             text: 'OK',
@@ -144,27 +146,27 @@ const RegisterScreen = () => {
       if (currentError) {
         if (currentError.includes('already registered') || currentError.includes('already exists')) {
           Alert.alert(
-            'Account Already Exists',
-            'This email is already registered. Please login instead.',
+            t('account_already_exists'),
+            t('this_email_is_already_registered'),
             [
               {
-                text: 'Go to Login',
+                text: t('go_to_login'),
                 onPress: () => navigation.navigate('Login')
               },
               {
-                text: 'Cancel',
+                text: t('cancel'),
                 style: 'cancel'
               }
             ]
           );
         } else {
-          Alert.alert('Error', currentError);
+          Alert.alert(t('error'), currentError);
         }
       } else if (response && response.isNewUser === true) {
         // Show success message for new accounts only
         Alert.alert(
-          'Success',
-          'Account successfully registered.',
+          t('success'),
+          t('account_successfully_registered'),
           [
             {
               text: 'OK',
@@ -183,7 +185,7 @@ const RegisterScreen = () => {
       }
     } catch (error: any) {
       if (!error.message?.includes('cancelled')) {
-        Alert.alert('Error', 'Failed to sign up with Google');
+        Alert.alert(t('error'), t('failed_to_sign_up_with_google'));
       }
     } finally {
       setSocialLoading({ ...socialLoading, google: false });
@@ -213,17 +215,17 @@ const RegisterScreen = () => {
                 style={styles.logo}
                 resizeMode="contain"
               />
-              <Text style={styles.title}>Create Account</Text>
-              <Text style={styles.subtitle}>Get AI-powered disease detection tools"</Text>
+              <Text style={styles.title}>{t('create_account')}</Text>
+              <Text style={styles.subtitle}>{t('get_ai_powered_disease_detection_tools')}</Text>
 
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>{t('full_name')}</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.fullName && validationErrors.fullName && styles.inputError
               ]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your full name"
+                  placeholder={t('enter_your_full_name')}
                   value={fullName}
                   onChangeText={(text) => {
                     setFullName(text);
@@ -238,14 +240,14 @@ const RegisterScreen = () => {
                 <Text style={styles.errorText}>{validationErrors.fullName}</Text>
               )}
 
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('email')}</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.email && validationErrors.email && styles.inputError
               ]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your email"
+                  placeholder={t('enter_your_email')}
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -262,14 +264,14 @@ const RegisterScreen = () => {
                 <Text style={styles.errorText}>{validationErrors.email}</Text>
               )}
 
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t('password')}</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.password && validationErrors.password && styles.inputError
               ]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your password"
+                  placeholder={t('enter_your_password')}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -303,14 +305,14 @@ const RegisterScreen = () => {
                 <Text style={styles.errorText}>{validationErrors.password}</Text>
               )}
 
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={styles.label}>{t('confirm_password')}</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.confirmPassword && validationErrors.confirmPassword && styles.inputError
               ]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Confirm your password"
+                  placeholder={t('enter_your_password')}
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);
@@ -351,13 +353,13 @@ const RegisterScreen = () => {
                     <ActivityIndicator size="small" color={COLORS.white} />
                   </View>
                 ) : (
-                  <Text style={styles.registerButtonText}>Create Account</Text>
+                  <Text style={styles.registerButtonText}>{t('create_account_button')}</Text>
                 )}
               </TouchableOpacity>
 
               <View style={styles.dividerContainer}>
                 <View style={styles.divider} />
-                <Text style={styles.dividerText}>OR</Text>
+                <Text style={styles.dividerText}>{t('or')}</Text>
                 <View style={styles.divider} />
               </View>
 
@@ -375,16 +377,16 @@ const RegisterScreen = () => {
                         source={require('../assets/google-icon.png')} 
                         style={styles.socialIcon}
                       />
-                      <Text style={styles.socialButtonText}>Continue with Google</Text>
+                      <Text style={styles.socialButtonText}>{t('continue_with_google')}</Text>
                     </>
                   )}
                 </TouchableOpacity>
               </View>
 
               <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Already have an account?</Text>
+                <Text style={styles.loginText}>{t('already_have_an_account')}</Text>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <Text style={styles.loginButtonText}>Sign In</Text>
+                  <Text style={styles.loginButtonText}>{t('sign_in')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

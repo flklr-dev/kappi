@@ -28,6 +28,8 @@ import { secureStorage } from '../utils/secureStorage';
 import PasswordComplexity from '../components/PasswordComplexity';
 import { sanitizeInput } from '../utils/secureStorage';
 import { ThemeContext } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext'; // Added LanguageContext import
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window'); // Added responsive dimensions
 
@@ -58,6 +60,7 @@ const ProfileHeader = ({ user, handleEditProfile, isDarkMode, themedColors }: an
 
 const ProfileScreen = () => {
   const { isDarkMode, toggleTheme } = useContext(ThemeContext); // Reintroduce toggleTheme
+  const { t, language, setLanguage } = useLanguage(); // Added LanguageContext usage
   // Use a ternary to avoid TypeScript issues
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
   
@@ -74,7 +77,6 @@ const ProfileScreen = () => {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [editedName, setEditedName] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -85,12 +87,21 @@ const ProfileScreen = () => {
   const [userCapabilities, setUserCapabilities] = useState<UserCapabilities | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Track logout state
   const [showThemeModal, setShowThemeModal] = useState(false); // State for Theme modal
-  const [showLanguageModal, setShowLanguageModal] = useState(false); // State for Language modal
-  const [currentLanguage, setCurrentLanguage] = useState('English'); // State for selected language
+  const [showLanguageModal, setShowLanguageModal] = useState(false); // Added showLanguageModal state
+  const [editedName, setEditedName] = useState(''); // Add this state
   
   // Handlers for modals
   const handleCloseTheme = () => setShowThemeModal(false);
-  const handleCloseLanguage = () => setShowLanguageModal(false);
+  const handleCloseLanguage = () => setShowLanguageModal(false); // Added handleCloseLanguage handler
+
+  const handleLanguageChange = async (selectedLanguage: string) => {
+    try {
+      await setLanguage(selectedLanguage);
+      handleCloseLanguage();
+    } catch (error) {
+      console.error('Error changing language:', error);
+    }
+  };
 
   // Fetch user data and capabilities when component mounts
   useEffect(() => {
@@ -178,26 +189,26 @@ const ProfileScreen = () => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your account? This action cannot be undone.",
+      t('delete_account_title'),
+      t('delete_account_message'),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => console.log("Delete account") }
+        { text: t('cancel_action'), style: "cancel" },
+        { text: t('delete_action'), style: "destructive", onPress: () => console.log("Delete account") }
       ]
     );
   };
 
   const handleLogout = () => {
     Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
+      t('logout_title'),
+      t('logout_message'),
       [
         {
-          text: "Cancel",
+          text: t('cancel_action'),
           style: "cancel"
         },
         {
-          text: "Logout",
+          text: t('logout_action'),
           style: "destructive",
           onPress: async () => {
             if (isLoggingOut) return; // Prevent multiple logout attempts
@@ -212,7 +223,7 @@ const ProfileScreen = () => {
                 routes: [{ name: 'Login' }],
               });
             } catch (error) {
-              Alert.alert("Error", "Failed to logout. Please try again.");
+              Alert.alert(t('error_message'), t('failed_to_logout'));
             } finally {
               setLoading(false);
               setIsLoggingOut(false);
@@ -233,14 +244,14 @@ const ProfileScreen = () => {
       if (!response && !authViewModel.error) {
         console.log('Google sign-in cancelled');
       } else if (authViewModel.error) {
-        Alert.alert('Error', 'Failed to sign in with Google account. Please try again.');
+        Alert.alert(t('error_message'), t('failed_to_sign_in_with_google_account'));
       } else if (response) {
         // Show success message
         Alert.alert(
-          'Success',
-          'Signed in successfully with Google account!',
+          t('success_message'),
+          t('signed_in_successfully_with_google'),
           [{ 
-            text: 'OK',
+            text: t('ok'),
             onPress: () => {
               // Force authentication state update
               useAuthStore.getState().setAuthenticated(true);
@@ -255,7 +266,7 @@ const ProfileScreen = () => {
       }
     } catch (error: any) {
       if (!error.message?.includes('cancelled')) {
-        Alert.alert('Error', 'Failed to sign in with Google account. Please try again.');
+        Alert.alert(t('error_message'), t('failed_to_sign_in_with_google_account'));
       }
     } finally {
       setLinkingLoading({ ...linkingLoading, google: false });
@@ -264,7 +275,7 @@ const ProfileScreen = () => {
 
   const handleLinkGoogle = async () => {
     if (hasProvider('google')) {
-      Alert.alert('Account Already Linked', 'Your Google account is already linked to your profile.');
+      Alert.alert(t('account_already_linked'), t('account_already_linked_message'));
       return;
     }
 
@@ -273,7 +284,7 @@ const ProfileScreen = () => {
       await authViewModel.linkGoogleAccount();
     } catch (error: any) {
       if (!error.message?.includes('cancelled')) {
-        Alert.alert('Error', 'Failed to link Google account. Please try again.');
+        Alert.alert(t('error_message'), t('failed_to_link_google'));
       }
     } finally {
       setLinkingLoading({ ...linkingLoading, google: false });
@@ -314,8 +325,8 @@ const ProfileScreen = () => {
       const result = await authViewModel.updateProfile(editedName);
       
       if (result.success) {
-        Alert.alert('Success', result.message, [
-          { text: 'OK', onPress: () => {
+        Alert.alert(t('success_message'), result.message, [
+          { text: t('ok'), onPress: () => {
             handleCloseEditProfile();
             // Update the user data in the auth store
             if (result.user) {
@@ -327,7 +338,7 @@ const ProfileScreen = () => {
         setProfileError(result.message);
       }
     } catch (error: any) {
-      setProfileError(error.message || 'An unexpected error occurred');
+      setProfileError(error.message || t('an_unexpected_error_occurred'));
     } finally {
       setProfileLoading(false);
     }
@@ -345,14 +356,14 @@ const ProfileScreen = () => {
       if (isSettingFirstPassword) {
         // For social users setting their first password, only require new password fields
         if (!newPassword.trim() || !confirmPassword.trim()) {
-          setPasswordError('New password and confirmation are required');
+          setPasswordError(t('new_password_and_confirmation_required'));
           setPasswordLoading(false);
           return;
         }
       } else {
         // For users with existing passwords, require all fields
         if (!oldPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
-          setPasswordError('Current password, new password, and confirmation are all required');
+          setPasswordError(t('all_password_fields_required'));
           setPasswordLoading(false);
           return;
         }
@@ -360,7 +371,7 @@ const ProfileScreen = () => {
       
       // Validate password match
       if (newPassword !== confirmPassword) {
-        setPasswordError('New passwords do not match');
+        setPasswordError(t('new_passwords_do_not_match'));
         setPasswordLoading(false);
         return;
       }
@@ -372,11 +383,11 @@ const ProfileScreen = () => {
       const result = await authViewModel.changePassword(sanitizedOld, newPassword, confirmPassword);
       
       if (result.success) {
-        Alert.alert('Success', result.message, [
-          { text: 'OK', onPress: () => {
+        Alert.alert(t('success_message'), result.message, [
+          { text: t('ok'), onPress: () => {
             handleCloseChangePassword();
             // Only refresh user capabilities if this was a first-time password setting (not a logout scenario)
-            if (result.message !== 'Password changed successfully. Please log in again.') {
+            if (result.message !== t('password_changed_successfully')) {
               // Check if user is still authenticated before refreshing capabilities
               const currentState = useAuthStore.getState();
               if (currentState.isAuthenticated) {
@@ -413,7 +424,7 @@ const ProfileScreen = () => {
         setPasswordError(result.message);
       }
     } catch (error: any) {
-      setPasswordError(error.message || 'An unexpected error occurred');
+      setPasswordError(error.message || t('an_unexpected_error_occurred'));
     } finally {
       setPasswordLoading(false);
     }
@@ -423,7 +434,7 @@ const ProfileScreen = () => {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
         <ActivityIndicator size="large" color={themedColors.primary} />
-        <Text style={[styles.loadingText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Loading profile...</Text>
+        <Text style={[styles.loadingText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{t('loading_profile')}</Text>
       </SafeAreaView>
     );
   }
@@ -436,7 +447,7 @@ const ProfileScreen = () => {
       />
       
       <Header
-        title="Profile"
+        title={t('profile')}
       />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -445,26 +456,26 @@ const ProfileScreen = () => {
         
         {/* Account Section */}
         <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Account</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('account')}</Text>
           <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => navigation.navigate('ScanHistory')}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="time-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>View Scan History</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('view_scan_history')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={handleOpenChangePassword}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="key-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{canSetPassword() ? t('set_password') : t('change_password')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={handleDeleteAccount}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="trash-outline" size={20} color={themedColors.error} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: themedColors.error }]}>Delete Account</Text>
+                <Text style={[styles.menuText, { color: themedColors.error }]}>{t('delete_account')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
@@ -472,13 +483,13 @@ const ProfileScreen = () => {
             <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={handleLinkGoogle}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="logo-google" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Google Account</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('google_account')}</Text>
               </View>
               
               {hasProvider('google') ? (
                 <View style={styles.menuItemContent}>
                   <Ionicons name="checkmark-circle" size={20} color={themedColors.success} style={styles.menuIcon} />
-                  <Text style={[styles.menuText, { color: themedColors.success }]}>Linked</Text>
+                  <Text style={[styles.menuText, { color: themedColors.success }]}>{t('linked')}</Text>
                 </View>
               ) : (
                 <TouchableOpacity 
@@ -488,60 +499,62 @@ const ProfileScreen = () => {
                   {linkingLoading.google ? (
                     <ActivityIndicator size="small" color={themedColors.primary} />
                   ) : (
-                    <Text style={[styles.menuText, { color: themedColors.primary }]}>Link</Text>
+                    <Text style={[styles.menuText, { color: themedColors.primary }]}>{t('link')}</Text>
                   )}
                 </TouchableOpacity>
               )}
             </TouchableOpacity>
           </View>
           <Text style={[styles.accountLinkingNote, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
-            Note: Accounts are automatically linked when you log in with Google using the same email address.
+            {t('account_linking_note')}
           </Text>
         </View>
 
         {/* Preferences Section */}
         <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Preferences</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('preferences')}</Text>
           <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => setShowThemeModal(true)}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="bulb-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Theme</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('theme')}</Text>
               </View>
-              <Text style={[styles.menuValueText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{isDarkMode ? 'Dark' : 'Light'}</Text>
+              <Text style={[styles.menuValueText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{isDarkMode ? t('dark_mode') : t('light_mode')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={() => setShowLanguageModal(true)}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="language-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Language</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('language')}</Text>
               </View>
-              <Text style={[styles.menuValueText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{currentLanguage}</Text>
+              <Text style={[styles.menuValueText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
+                {language === 'en' ? t('english') : t('bisaya')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* About Section */}
         <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>About</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('about')}</Text>
           <View style={[styles.menuContainer, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={handleOpenAboutApp}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="information-circle-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>About the App</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('about_the_app')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => console.log('Terms & Conditions')}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="document-text-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Terms & Conditions</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('terms_and_conditions')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={() => console.log('Privacy Policy')}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Privacy Policy</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('privacy_policy')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
@@ -558,7 +571,7 @@ const ProfileScreen = () => {
           ) : (
             <>
               <Ionicons name="log-out-outline" size={20} color={COLORS.white} style={styles.logoutIcon} />
-              <Text style={[styles.logoutText, { color: COLORS.white }]}>Logout</Text>
+              <Text style={[styles.logoutText, { color: COLORS.white }]}>{t('logout')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -574,23 +587,23 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{canSetPassword() ? t('set_password_title') : t('change_password_title')}</Text>
               <TouchableOpacity onPress={handleCloseChangePassword}>
                 <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
             <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
-              {canSetPassword() ? 'Set a password to enable email/password login.' : 'Enter your current and new password below.'}
+              {canSetPassword() ? t('set_password_subtitle') : t('change_password_subtitle')}
             </Text>
             {!canSetPassword() && (
               <View style={{ marginBottom: 12 }}>
-                <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Current Password</Text>
+                <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{t('current_password')}</Text>
                 <View style={[styles.inputRow, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background, borderColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '30' }]}>
                   <TextInput
                     style={[styles.input, { color: isDarkMode ? themedColors.white : COLORS.black }]}
                     value={oldPassword}
                     onChangeText={setOldPassword}
-                    placeholder="Current Password"
+                    placeholder={t('current_password')}
                     placeholderTextColor={isDarkMode ? themedColors.gray : COLORS.gray}
                     secureTextEntry={!showOld}
                     autoCapitalize="none"
@@ -602,13 +615,13 @@ const ProfileScreen = () => {
               </View>
             )}
             <View style={{ marginBottom: 12 }}>
-              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>New Password</Text>
+              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{t('new_password')}</Text>
               <View style={[styles.inputRow, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background, borderColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '30' }]}>
                 <TextInput
                   style={[styles.input, { color: isDarkMode ? themedColors.white : COLORS.black }]}
                   value={newPassword}
                   onChangeText={setNewPassword}
-                  placeholder="New Password"
+                  placeholder={t('new_password')}
                   placeholderTextColor={isDarkMode ? themedColors.gray : COLORS.gray}
                   secureTextEntry={!showNew}
                   autoCapitalize="none"
@@ -620,13 +633,13 @@ const ProfileScreen = () => {
               <PasswordComplexity password={newPassword} />
             </View>
             <View style={{ marginBottom: 12 }}>
-              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Confirm New Password</Text>
+              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{t('confirm_new_password_text')}</Text>
               <View style={[styles.inputRow, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background, borderColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '30' }]}>
                 <TextInput
                   style={[styles.input, { color: isDarkMode ? themedColors.white : COLORS.black }]}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
-                  placeholder="Confirm New Password"
+                  placeholder={t('confirm_new_password_text')}
                   placeholderTextColor={isDarkMode ? themedColors.gray : COLORS.gray}
                   secureTextEntry={!showConfirm}
                   autoCapitalize="none"
@@ -647,7 +660,7 @@ const ProfileScreen = () => {
               {passwordLoading ? (
                 <ActivityIndicator size="small" color={themedColors.white} />
               ) : (
-                <Text style={styles.loginWithText}>{canSetPassword() ? 'Set Password' : 'Change Password'}</Text>
+                <Text style={styles.loginWithText}>{canSetPassword() ? t('set_password') : t('change_password')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -664,22 +677,22 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Edit Profile</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('edit_profile')}</Text>
               <TouchableOpacity onPress={handleCloseEditProfile}>
                 <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
             <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
-              You can only change your name once every 5 days.
+              {t('you_can_only_change_name_once_every_5_days')}
             </Text>
             <View style={{ marginBottom: 12 }}>
-              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Full Name</Text>
+              <Text style={[styles.inputLabel, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>{t('full_name_label')}</Text>
               <View style={[styles.inputRow, { backgroundColor: isDarkMode ? themedColors.background : COLORS.background, borderColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '30' }]}>
                 <TextInput
                   style={[styles.input, { color: isDarkMode ? themedColors.white : COLORS.black }]}
                   value={editedName}
                   onChangeText={setEditedName}
-                  placeholder="Full Name"
+                  placeholder={t('full_name_label')}
                   placeholderTextColor={isDarkMode ? themedColors.gray : COLORS.gray}
                   autoCapitalize="words"
                 />
@@ -696,7 +709,7 @@ const ProfileScreen = () => {
               {profileLoading ? (
                 <ActivityIndicator size="small" color={themedColors.white} />
               ) : (
-                <Text style={styles.loginWithText}>Save Changes</Text>
+                <Text style={styles.loginWithText}>{t('save_changes')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -713,7 +726,7 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>About the App</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('about_the_app')}</Text>
               <TouchableOpacity onPress={() => {}}>
                 <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
@@ -743,13 +756,13 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Theme</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('theme')}</Text>
               <TouchableOpacity onPress={handleCloseTheme}>
                 <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
             <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
-              Choose your app theme.
+              {t('choose_app_theme')}
             </Text>
             <TouchableOpacity
               style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20', paddingVertical: 15 }]}
@@ -760,7 +773,7 @@ const ProfileScreen = () => {
             >
               <View style={styles.menuItemContent}>
                 <Ionicons name="moon-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Dark Mode</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('dark_mode')}</Text>
               </View>
               <Ionicons name={isDarkMode ? "checkmark-circle" : "radio-button-off"} size={20} color={isDarkMode ? themedColors.success : themedColors.gray} />
             </TouchableOpacity>
@@ -773,7 +786,7 @@ const ProfileScreen = () => {
             >
               <View style={styles.menuItemContent}>
                 <Ionicons name="sunny-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Light Mode</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('light_mode')}</Text>
               </View>
               <Ionicons name={!isDarkMode ? "checkmark-circle" : "radio-button-off"} size={20} color={!isDarkMode ? themedColors.success : themedColors.gray} />
             </TouchableOpacity>
@@ -781,7 +794,6 @@ const ProfileScreen = () => {
         </View>
       </Modal>
 
-      {/* Language Modal */}
       <Modal
         visible={showLanguageModal}
         transparent={true}
@@ -791,39 +803,33 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? themedColors.secondary : COLORS.white }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Language</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('language')}</Text>
               <TouchableOpacity onPress={handleCloseLanguage}>
                 <Ionicons name="close" size={24} color={isDarkMode ? themedColors.white : COLORS.black} />
               </TouchableOpacity>
             </View>
             <Text style={[styles.modalSubtitle, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
-              Choose your app language.
+              {t('choose_app_language')}
             </Text>
             <TouchableOpacity
               style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20', paddingVertical: 15 }]}
-              onPress={() => {
-                setCurrentLanguage('English');
-                handleCloseLanguage();
-              }}
+              onPress={() => handleLanguageChange('en')}
             >
               <View style={styles.menuItemContent}>
                 <Ionicons name="language-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>English</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('english')}</Text>
               </View>
-              <Ionicons name={currentLanguage === 'English' ? "checkmark-circle" : "radio-button-off"} size={20} color={currentLanguage === 'English' ? themedColors.success : themedColors.gray} />
+              <Ionicons name={language === 'en' ? "checkmark-circle" : "radio-button-off"} size={20} color={language === 'en' ? themedColors.success : themedColors.gray} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.menuItem, { borderBottomWidth: 0, paddingVertical: 15 }]}
-              onPress={() => {
-                setCurrentLanguage('Spanish');
-                handleCloseLanguage();
-              }}
+              onPress={() => handleLanguageChange('ceb')}
             >
               <View style={styles.menuItemContent}>
                 <Ionicons name="language-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
-                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Spanish</Text>
+                <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('bisaya')}</Text>
               </View>
-              <Ionicons name={currentLanguage === 'Spanish' ? "checkmark-circle" : "radio-button-off"} size={20} color={currentLanguage === 'Spanish' ? themedColors.success : themedColors.gray} />
+              <Ionicons name={language === 'ceb' ? "checkmark-circle" : "radio-button-off"} size={20} color={language === 'ceb' ? themedColors.success : themedColors.gray} />
             </TouchableOpacity>
           </View>
         </View>

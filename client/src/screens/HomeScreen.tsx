@@ -26,6 +26,7 @@ import { getRemoteScans, resolveImageUri } from '../services/api';
 import { ThemeContext } from '../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { eventBus } from '../utils/eventBus';
+import { useLanguage } from '../context/LanguageContext'; // Import LanguageContext
 // import { useOfflineQueue } from '../services/OfflineQueueManager';
 
 const { width } = Dimensions.get('window');
@@ -75,6 +76,7 @@ const HomeScreen = () => {
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
   const { isDarkMode } = useContext(ThemeContext);
+  const { t } = useLanguage(); // Use LanguageContext
 
   const formatAddress = (address: Location.LocationGeocodedAddress): string => {
     let barangay = '';
@@ -172,11 +174,11 @@ const HomeScreen = () => {
 
         await updateUserLocation(locationData);
       } else {
-        setLocation('Location not found');
+        setLocation(t('location_unavailable'));
       }
     } catch (error) {
       console.error('Error getting location:', error);
-      setLocation('Unable to get location');
+      setLocation(t('location_unavailable'));
     } finally {
       setLoading(false);
     }
@@ -189,8 +191,8 @@ const HomeScreen = () => {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           Alert.alert(
-            'Permission Denied',
-            'Please grant location permissions to use this feature.',
+            t('permission_denied'),
+            t('please_grant_location_permissions'),
             [{ text: 'OK' }]
           );
           setLoading(false);
@@ -274,7 +276,9 @@ const HomeScreen = () => {
         {/* Welcome Section with Location below name */}
         <View style={styles.welcomeSection}>
           <View style={styles.welcomeContent}>
-            <Text style={[styles.greetingText, { color: themedColors.gray }]}>{isDarkMode ? 'Good evening,' : 'Good day,'}</Text>
+            <Text style={[styles.greetingText, { color: themedColors.gray }]}>
+              {isDarkMode ? t('good_evening') : t('good_day')}
+            </Text>
             {user && (
               <Text style={[styles.userNameText, { color: isDarkMode ? themedColors.white : themedColors.black }]} numberOfLines={1}>
                 {user.fullName || 'Guest'}
@@ -293,7 +297,7 @@ const HomeScreen = () => {
               <TouchableOpacity onPress={getCurrentLocation} style={styles.locationDisplayInline}> 
                 <Ionicons name="location-sharp" size={14} color={themedColors.gray} />
                 <Text style={[styles.locationTextInline, { color: themedColors.gray }]} numberOfLines={1}> 
-                  Location Unavailable
+                  {t('location_unavailable')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -311,10 +315,11 @@ const HomeScreen = () => {
             resizeMode="contain"
           />
           <View style={styles.farmerCardContent}>
-            <Text style={[styles.farmerCardTitle, { color: themedColors.primary }]}>Grow Smarter and Harvest Better!</Text>
+            <Text style={[styles.farmerCardTitle, { color: themedColors.primary }]}>
+              {t('grow_smarter_and_harvest_better')}
+            </Text>
             <Text style={[styles.farmerCardText, { color: themedColors.gray }]}>
-              <Text>Identify diseases early and</Text>
-              <Text> manage crops effectively.</Text>
+              <Text>{t('identify_diseases_early_and_manage_crops_effectively')}</Text>
             </Text>
           </View>
         </View>
@@ -322,35 +327,39 @@ const HomeScreen = () => {
         {/* Core CTAs Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Quick Actions</Text>
-            <Text style={[styles.sectionSubtitle, { color: themedColors.gray }]}>What would you like to do?</Text>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+              {t('quick_actions')}
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: themedColors.gray }]}>
+              {t('what_would_you_like_to_do')}
+            </Text>
           </View>
           <View style={styles.quickActionsGrid}>
             <QuickAction 
               icon="camera" 
-              title="Scan Plant" 
-              subtitle="Diagnose diseases" 
+              title={t('scan_plant')} 
+              subtitle={t('diagnose_diseases')} 
               onPress={() => tabNavigation.navigate('ScanTab')}
               isDarkMode={isDarkMode}
             />
             <QuickAction 
               icon="time" 
-              title="Scan History" 
-              subtitle="View past scans" 
+              title={t('scan_history')} 
+              subtitle={t('view_past_scans')} 
               onPress={() => stackNavigation.navigate('ScanHistory')}
               isDarkMode={isDarkMode}
             />
             <QuickAction 
               icon="analytics" 
-              title="Reports" 
-              subtitle="Analytics & insights" 
+              title={t('reports')} 
+              subtitle={t('analytics_and_insights')} 
               onPress={() => tabNavigation.navigate('ReportsTab')}
               isDarkMode={isDarkMode}
             />
             <QuickAction 
               icon="leaf" 
-              title="Plant Care" 
-              subtitle="Manage & prevent" 
+              title={t('plant_care')} 
+              subtitle={t('manage_and_prevent')} 
               onPress={() => stackNavigation.navigate('DiseaseManagement', {})}
               isDarkMode={isDarkMode}
             />
@@ -360,9 +369,11 @@ const HomeScreen = () => {
         {/* Recent Scans Section */}
         <View style={styles.section}> 
           <View style={[styles.sectionHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }]}>
-            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Recent Scans</Text>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+              {t('recent_scans')}
+            </Text>
             <TouchableOpacity style={styles.viewAllButton} onPress={() => stackNavigation.navigate('ScanHistory')}> 
-              <Text style={[styles.viewAllText, { color: COLORS.primary }]}>View All</Text>
+              <Text style={[styles.viewAllText, { color: COLORS.primary }]}>{t('view_all')}</Text>
               <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
@@ -374,12 +385,14 @@ const HomeScreen = () => {
             ) : recentScans.length === 0 ? (
               <View style={{ alignItems: 'center', padding: 24 }}>
                 <Ionicons name="cloud-outline" size={36} color={themedColors.gray} style={{ marginBottom: 8 }} />
-                <Text style={{ color: themedColors.gray, fontSize: 15 }}>No recent scans yet.</Text>
+                <Text style={{ color: themedColors.gray, fontSize: 15 }}>
+                  {t('no_recent_scans_yet')}
+                </Text>
               </View>
             ) : (
               recentScans.map((scan, idx) => {
                 const isHealthy = scan.disease?.toLowerCase().includes('healthy');
-                const badgeText = isHealthy ? 'Healthy' : (scan.stage || scan.severity || 'Unknown');
+                const badgeText = isHealthy ? t('healthy') : (scan.stage || scan.severity || t('unknown'));
                 const badgeColor = isHealthy ? '#4CAF50' : 
                                   scan.stage === 'Early' ? '#FF9800' :
                                   scan.stage === 'Progressive' ? '#FF5722' :
@@ -413,8 +426,12 @@ const HomeScreen = () => {
                     <View style={styles.scanContent}>
                       <View style={styles.scanInfoRow}>
                         <View style={styles.scanTitleContainer}>
-                          <Text style={[styles.scanTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]} numberOfLines={1}>{scan.disease}</Text>
-                          <Text style={[styles.scanTime, { color: themedColors.gray }]}>{formatDate(scan.createdAt)}</Text>
+                          <Text style={[styles.scanTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]} numberOfLines={1}>
+                            {scan.disease}
+                          </Text>
+                          <Text style={[styles.scanTime, { color: themedColors.gray }]}>
+                            {formatDate(scan.createdAt)}
+                          </Text>
                         </View>
                         
                         {scan.address && (
