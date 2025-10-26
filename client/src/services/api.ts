@@ -369,6 +369,21 @@ export const getRemoteScans = async (filters?: { disease?: string, stage?: strin
   }
 };
 
+export const getScanStatistics = async () => {
+  try {
+    const response = await api.get('/scans/statistics');
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      throw error;
+    } else if (error.request) {
+      throw new Error('Network error');
+    } else {
+      throw new Error('An unexpected error occurred');
+    }
+  }
+};
+
 export default api; 
 
 // Helper to resolve image URIs that may be relative (e.g., "/uploads/...")

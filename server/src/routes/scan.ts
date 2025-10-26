@@ -1,5 +1,5 @@
 import express from 'express';
-import { saveScan, getUserScans } from '../controllers/scanController';
+import { saveScan, getUserScans, getScanStatistics } from '../controllers/scanController';
 import { auth } from '../middleware/auth';
 import multer from 'multer';
 import path from 'path';
@@ -30,5 +30,6 @@ const router = express.Router();
 // Accept multipart/form-data with optional image under field name 'image'
 router.post('/', auth, upload.single('image'), saveScan);
 router.get('/', auth, getUserScans);
+router.get('/statistics', auth, getScanStatistics);
 
-export default router; 
+export default router;

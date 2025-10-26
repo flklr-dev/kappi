@@ -216,6 +216,12 @@ const translations: Translations = {
     "weekly_scan_activity": "Weekly Scan Activity",
     "number_of_scans_over_time": "Number of Scans over Time",
     "last_8_weeks": "Last 8 weeks",
+    "loading_statistics": "Loading statistics...",
+    "no_data_available": "No data available",
+    "get_started_by_scanning": "Get started by scanning!",
+    "no_scans_yet": "No scans yet",
+    "retry": "Retry",
+
     
     // Results Screen
     "scan_results": "Scan Results",
@@ -525,6 +531,11 @@ const translations: Translations = {
     "weekly_scan_activity": "Binuwanang Aktibidad sa Pagscan",
     "number_of_scans_over_time": "Numero sa Scans sa Lumayong Panahon",
     "last_8_weeks": "Niaging 8 ka semana",
+    "loading_statistics": "Nag-andam sa statistics...",
+    "no_data_available": "Wala'y datos nga anaa",
+    "get_started_by_scanning": "Pagsugod pinaagi sa pagscan sa imong una nga tanom",
+    "no_scans_yet": "Wala pay na-scan",
+    "retry": "Sulayi pag-usab",
     
     // Results Screen
     "scan_results": "Mga Resulta sa Pagscan",
