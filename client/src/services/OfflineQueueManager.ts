@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { secureStorage } from '../utils/secureStorage';
 import { QueueItem, QueueConfig, QueueState } from '../types/QueueTypes';
 import api from './api';
+import { eventBus } from '../utils/eventBus';
 
 const QUEUE_KEY = '@kappi_offline_queue';
 const DEFAULT_CONFIG: QueueConfig = {
@@ -12,7 +13,7 @@ const DEFAULT_CONFIG: QueueConfig = {
 };
 
 // Process individual queue item
-async function processQueueItem(item: QueueItem): Promise<void> {
+async function processQueueItem(item: QueueItem): Promise<any> {
   try {
     console.log(`Processing queue item: ${item.type}`, item.id);
     
@@ -32,6 +33,8 @@ async function processQueueItem(item: QueueItem): Promise<void> {
     }
 
     console.log(`Queue item ${item.id} processed successfully`);
+    // Return the result for further processing
+    return result;
   } catch (error) {
     console.error(`Failed to process queue item ${item.id}:`, error);
     throw error;
@@ -147,7 +150,7 @@ export const useOfflineQueue = create<QueueState>((set, get) => ({
           await secureStorage.setItem(QUEUE_KEY, updatedItems);
 
           // Process the item
-          await processQueueItem(item);
+          const result = await processQueueItem(item);
 
           // Mark as completed
           const completedItems = get().items.map(i => 
@@ -155,6 +158,24 @@ export const useOfflineQueue = create<QueueState>((set, get) => ({
           );
           set({ items: completedItems });
           await secureStorage.setItem(QUEUE_KEY, completedItems);
+
+          // For scan uploads, we should also remove the scan from local scan storage
+          if (item.type === 'SCAN_UPLOAD' && result && result.scan) {
+            // Emit event to notify that a scan was added
+            eventBus.emit('scan:added', result.scan);
+            
+            // Remove the successfully synced scan from local scan storage
+            try {
+              const SCANS_KEY = '@kappi_scan_results';
+              let scans = (await secureStorage.getItem(SCANS_KEY)) as any[] || [];
+              // Filter out the scan that was just successfully synced
+              scans = scans.filter((scan: any) => scan.id !== item.payload.id);
+              await secureStorage.setItem(SCANS_KEY, scans);
+              console.log(`Removed scan ${item.payload.id} from local storage after successful sync`);
+            } catch (error) {
+              console.error('Error removing scan from local storage:', error);
+            }
+          }
 
           console.log(`Queue item ${item.id} completed successfully`);
 

@@ -222,6 +222,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
         } else {
           // notify listeners a new scan has been synced
           eventBus.emit('scan:added', data.scan);
+          // Don't add to unsynced list since it was successfully synced
         }
       } catch (error: any) {
         console.log('Sync error:', error?.response?.data || error.message || error);

@@ -128,7 +128,6 @@ const ScanScreen = () => {
           coordinates: user?.location?.coordinates,
           address: user?.location?.address,
         });
-        await syncScans();
       } finally {
         setIsPostProcessing(false);
       }
@@ -181,7 +180,6 @@ const ScanScreen = () => {
             coordinates: user?.location?.coordinates,
             address: user?.location?.address,
           });
-          await syncScans();
         } finally {
           setIsPostProcessing(false);
         }
