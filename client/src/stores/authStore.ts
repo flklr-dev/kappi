@@ -74,7 +74,7 @@ interface AuthState {
   loginAttempts: number;
   lockoutUntil: number | null;
   updateUserLocation: (location: LocationData) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
   verifyOTPAndResetPassword: (email: string, otp: string, newPassword: string, confirmPassword: string) => Promise<void>;
   resendOTP: (email: string) => Promise<void>;
 }
@@ -499,12 +499,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Validate email
     if (!email.trim()) {
       setError('Email is required');
-      return;
+      return false;
     }
     
     if (!validateEmail(email)) {
       setError('Invalid email format');
-      return;
+      return false;
     }
     
     try {
@@ -513,8 +513,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       await authService.forgotPassword(email);
       
-      // Success - no error means it worked
-      // The success message is handled by the component
+      // Return true to indicate success
+      return true;
     } catch (error: any) {
       let errorMessage = 'An unexpected error occurred';
       
@@ -537,6 +537,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
       setError(errorMessage);
+      return false; // Return false to indicate failure
     } finally {
       setLoading(false);
     }

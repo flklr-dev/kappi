@@ -75,7 +75,6 @@ const translations: Translations = {
     "account_already_exists": "Account Already Exists",
     "this_email_is_already_registered": "This email is already registered. Please login instead.",
     "go_to_login": "Go to Login",
-    "cancel": "Cancel",
     "failed_to_sign_up_with_google": "Failed to sign up with Google",
     "failed_to_sign_in_with_google": "Failed to sign in with Google",
     "an_unexpected_error_occurred": "An unexpected error occurred",
@@ -83,6 +82,7 @@ const translations: Translations = {
     "welcome_to_kappi_message": "Welcome to KAPPI!",
     "account_successfully_registered": "Account successfully registered.",
     "success": "Success",
+    "network_error_please_check_connection": "Network error. Please check your connection",
     "error": "Error",
     
     // Forgot Password Screen

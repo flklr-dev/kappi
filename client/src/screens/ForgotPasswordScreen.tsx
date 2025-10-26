@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { COLORS } from '../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -72,16 +73,25 @@ const ForgotPasswordScreen = () => {
     }
     
     try {
-      await resetPassword(sanitizedEmail);
+      // Check network connectivity before attempting to send code
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        Alert.alert(t('error'), t('network_error_please_check_connection'));
+        return;
+      }
       
-      if (!error) {
-        // Navigate directly to VerifyOTP screen
+      const success = await resetPassword(sanitizedEmail);
+      
+      if (success && !error) {
+        // Navigate directly to VerifyOTP screen only if the request was successful
         navigation.navigate('VerifyOTP', { email: sanitizedEmail });
-      } else {
+      } else if (error) {
         Alert.alert(
           t('error'),
           error.includes('Too many') 
             ? t('too_many_reset_attempts') 
+            : error.includes('Network') 
+            ? t('network_error_please_check_connection')
             : error
         );
       }
