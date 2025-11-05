@@ -12,6 +12,9 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
     if (!req.user?._id) {
       return res.status(401).json({ message: 'Authentication required' });
     }
+    
+    console.log('Saving scan for user:', req.user._id);
+    
     let { disease, confidence, severity, stage, imageUri, coordinates, address } = req.body as any;
 
     // Parse JSON fields if they came as strings from multipart
@@ -22,10 +25,15 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
       try { address = JSON.parse(address); } catch {}
     }
 
-    // If multer uploaded a file, set imageUri to served path
+    // Log received data
+    console.log('Received scan data:', { disease, confidence, severity, stage, imageUri, coordinates, address });
+
+    // If multer uploaded a file to Cloudinary, set imageUri to Cloudinary URL
     if ((req as any).file) {
-      const fileName = path.basename((req as any).file.path);
-      imageUri = `/uploads/${fileName}`;
+      imageUri = (req as any).file.path; // Cloudinary URL
+      console.log('Using Cloudinary URL from uploaded file:', imageUri);
+    } else {
+      console.log('No file uploaded, using provided imageUri:', imageUri);
     }
 
     const numericConfidence = typeof confidence === 'string' ? parseFloat(confidence) : confidence;
@@ -39,7 +47,11 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
       coordinates,
       address
     });
+    
+    console.log('Saving scan to database with imageUri:', imageUri);
     await scan.save();
+    console.log('Scan saved successfully:', scan._id);
+    
     res.status(201).json({ scan });
   } catch (error) {
     console.error('Error saving scan:', error);

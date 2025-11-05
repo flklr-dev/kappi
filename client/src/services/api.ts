@@ -2,7 +2,7 @@ import axios from 'axios';
 import { secureStorage } from '../utils/secureStorage';
 import { useAuthStore } from '../stores/authStore';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 // Derive server origin (without /api) for building absolute asset URLs
 export const API_ORIGIN = API_URL.replace(/\/?api\/?$/, '');
 const TOKEN_KEY = '@kappi_auth_token';
@@ -384,12 +384,14 @@ export const getScanStatistics = async () => {
   }
 };
 
-export default api; 
+export default api;
 
-// Helper to resolve image URIs that may be relative (e.g., "/uploads/...")
+// Helper to resolve image URIs - Cloudinary URLs are already absolute
 export const resolveImageUri = (uri?: string): string | undefined => {
   if (!uri) return undefined;
+  // Cloudinary URLs are already absolute, so we can return them directly
   if (/^https?:\/\//i.test(uri)) return uri;
+  // For any other cases, we'll still use the API origin as fallback
   if (uri.startsWith('/')) return `${API_ORIGIN}${uri}`;
   return uri;
 };

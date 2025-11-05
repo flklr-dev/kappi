@@ -6,7 +6,6 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import authRoutes from './routes/auth';
 import scanRoutes from './routes/scan';
-import path from 'path';
 
 // Load environment variables
 dotenv.config();
@@ -54,14 +53,6 @@ mongoose
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scanRoutes);
 
-// Serve uploaded images statically
-app.use('/uploads', (req, res, next) => {
-  // Basic safeguard headers for static files
-  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-  next();
-});
-app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
-
 app.get('/', (req: express.Request, res: express.Response) => {
   res.json({ message: 'Welcome to Kappi API' });
 });
@@ -76,4 +67,4 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-}); 
+});
