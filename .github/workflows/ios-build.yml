@@ -35,7 +35,12 @@ jobs:
       - name: Install dependencies
         run: |
           cd client
-          npm ci
+          npm install
+
+      - name: Prebuild project
+        run: |
+          cd client
+          npx expo prebuild
 
       - name: Build iOS app
         run: |
