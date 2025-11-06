@@ -40,7 +40,7 @@ jobs:
       - name: Configure EAS
         run: |
           cd client
-          echo "$EXPO_TOKEN" | eas login --non-interactive
+          eas login --token $EXPO_TOKEN
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
