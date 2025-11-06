@@ -36,11 +36,14 @@ jobs:
         run: |
           cd client
           npm install --legacy-peer-deps
+          # Explicitly install expo-dev-client to ensure it's available
+          npm install expo-dev-client --legacy-peer-deps
 
       - name: Prebuild project
         run: |
           cd client
-          npx expo prebuild
+          # Use the working directory explicitly
+          npx expo prebuild --clean
 
       - name: Build iOS app
         run: |
