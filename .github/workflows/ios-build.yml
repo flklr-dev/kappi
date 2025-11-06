@@ -39,11 +39,11 @@ jobs:
           # Explicitly install expo-dev-client to ensure it's available
           npm install expo-dev-client --legacy-peer-deps
 
-      - name: Prebuild project
+      - name: Prebuild iOS project only
         run: |
           cd client
-          # Use the working directory explicitly
-          npx expo prebuild --clean
+          # Use iOS-only prebuild to preserve Android customizations
+          npx expo prebuild --platform ios --clean
 
       - name: Build iOS app
         run: |
