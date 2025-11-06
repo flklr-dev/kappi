@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd client
-          npm install --legacy-peer-deps --verbose
+          npm install --legacy-peer-deps
 
       - name: Prebuild project
         run: |
