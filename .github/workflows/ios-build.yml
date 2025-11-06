@@ -1,0 +1,52 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - production
+
+jobs:
+  ios-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install Expo CLI
+        run: npm install -g @expo/cli
+
+      - name: Setup EAS
+        run: npm install -g eas-cli
+
+      - name: Install dependencies
+        run: |
+          cd client
+          npm ci
+
+      - name: Configure EAS
+        run: |
+          cd client
+          echo "$EXPO_TOKEN" | eas login --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS app
+        run: |
+          cd client
+          eas build --platform ios --profile ${{ github.event.inputs.build_type }} --non-interactive --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
