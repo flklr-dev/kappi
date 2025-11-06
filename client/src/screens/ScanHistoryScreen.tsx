@@ -8,13 +8,14 @@ import {
   Image,
   ActivityIndicator,
   Dimensions,
-  Modal, // Import Modal for dropdowns
+  Modal,
+  Alert, // Import Alert for confirmation dialogs
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../components/Header';
-import { getRemoteScans, resolveImageUri } from '../services/api';
+import { getRemoteScans, resolveImageUri, deleteScan } from '../services/api'; // Import deleteScan
 import { ThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -104,6 +105,36 @@ const ScanHistoryScreen = () => {
     }, [selectedDisease, selectedStage])
   );
 
+  // Add delete scan function
+  const handleDeleteScan = (scanId: string, diseaseName: string) => {
+    Alert.alert(
+      t('delete_scan_confirmation'),
+      `${t('delete_scan_message')} ${diseaseName}?`,
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel'
+        },
+        {
+          text: t('delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteScan(scanId);
+              // Remove the deleted scan from the local state
+              setScans(prevScans => prevScans.filter(scan => scan._id !== scanId));
+              // Show success message
+              Alert.alert(t('success'), t('scan_deleted_successfully'));
+            } catch (error) {
+              console.error('Failed to delete scan:', error);
+              Alert.alert(t('error'), t('failed_to_delete_scan'));
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const totalPages = Math.max(1, Math.ceil(scans.length / PAGE_SIZE));
   const pagedScans = scans.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -139,6 +170,13 @@ const ScanHistoryScreen = () => {
           <View style={[styles.historyStatusBadge, { backgroundColor: badgeColor }]}> 
             <Text style={styles.historyStatusText}>{badgeText}</Text>
           </View>
+          {/* Delete button - positioned absolutely within the image container */}
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={() => handleDeleteScan(item._id, item.disease)}
+          >
+            <Ionicons name="trash-outline" size={width * 0.045} color={themedColors.error} />
+          </TouchableOpacity>
         </View>
         
         <View style={styles.historyScanContent}>
@@ -342,7 +380,7 @@ const styles = StyleSheet.create({
   historyConfidenceBadge: {
     position: 'absolute',
     top: width * 0.02,
-    right: width * 0.02,
+    left: width * 0.02,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     paddingHorizontal: width * 0.015,
     paddingVertical: width * 0.005,
@@ -507,6 +545,25 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     fontWeight: '700',
     color: COLORS.primary,
+  },
+  
+  // Delete button styles
+  deleteButton: {
+    position: 'absolute',
+    top: width * 0.02,
+    right: width * 0.02,
+    width: width * 0.08,
+    height: width * 0.08,
+    borderRadius: (width * 0.08) / 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    // Add subtle shadow for depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
 });
 

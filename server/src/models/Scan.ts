@@ -17,6 +17,8 @@ export interface IScan extends Document {
     province: string;
   };
   createdAt: Date;
+  isDeleted: boolean; // Add soft delete flag
+  deletedAt?: Date; // Track when item was deleted
 }
 
 const scanSchema = new Schema<IScan>({
@@ -35,7 +37,9 @@ const scanSchema = new Schema<IScan>({
     cityMunicipality: String,
     province: String
   },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  isDeleted: { type: Boolean, default: false }, // Default to not deleted
+  deletedAt: { type: Date, default: null } // Only set when item is deleted
 });
 
-export const Scan = mongoose.model<IScan>('Scan', scanSchema); 
+export const Scan = mongoose.model<IScan>('Scan', scanSchema);

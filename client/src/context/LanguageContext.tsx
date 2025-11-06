@@ -173,6 +173,8 @@ const translations: Translations = {
     "scan_unsuccessful": "Scan Unsuccessful",
     "could_not_recognize_coffee_plant": "We couldn't recognize a valid coffee plant part or disease. Please try again with a clearer image.",
     "try_again": "Try Again",
+    "cancel": "Cancel",
+
     
     // Scanning Tips Modal
     "what_kappi_detects": "What KAPPI Detects",
@@ -256,6 +258,13 @@ const translations: Translations = {
     "previous_page": "Prev",
     "next_page": "Next",
     "unknown_location": "Unknown Location",
+    // Add new translation keys for delete functionality
+    "delete": "Delete",
+    "delete_scan_confirmation": "Delete Scan",
+    "delete_scan_message": "Are you sure you want to delete this scan for",
+    "scan_deleted_successfully": "Scan deleted successfully",
+    "failed_to_delete_scan": "Failed to delete scan",
+
     
     // Profile Screen
     "profile": "Profile",
@@ -570,6 +579,13 @@ const translations: Translations = {
     "previous_page": "Balik",
     "next_page": "Sunod",
     "unknown_location": "Wala Mailhi nga Lokasyon",
+    // Add new translation keys for delete functionality
+    "delete": "Tanggalon",
+    "delete_scan_confirmation": "Tanggalon ang Scan",
+    "delete_scan_message": "Sigurado ka nga gusto nimong tanggalon kining scan para sa",
+    "scan_deleted_successfully": "Malampuson nga natanggal ang scan",
+    "failed_to_delete_scan": "Napakyas sa pagtanggal sa scan",
+
     
     // Profile Screen
     "profile": "Profile",

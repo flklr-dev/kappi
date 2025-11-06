@@ -66,7 +66,8 @@ export const getUserScans = async (req: AuthRequest, res: Response) => {
     }
 
     const { disease, stage } = req.query; // Get filter parameters from query
-    const filter: any = { user: req.user._id };
+    // Update filter to handle documents that may not have isDeleted field
+    const filter: any = { user: req.user._id, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
 
     if (disease && typeof disease === 'string') {
       filter.disease = new RegExp(disease, 'i'); // Case-insensitive search
@@ -88,8 +89,8 @@ export const getScanStatistics = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    // Get all user scans
-    const scans = await Scan.find({ user: req.user._id });
+    // Update query to handle documents that may not have isDeleted field
+    const scans = await Scan.find({ user: req.user._id, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
 
     // Calculate total scans
     const totalScans = scans.length;
@@ -179,3 +180,65 @@ export const getScanStatistics = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: 'Error fetching scan statistics' });
   }
 };
+
+// Add delete scan endpoint
+export const deleteScan = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const { id } = req.params;
+    
+    // Find the scan and verify it belongs to the user
+    // Update query to handle documents that may not have isDeleted field
+    const scan = await Scan.findOne({ 
+      _id: id, 
+      user: req.user._id, 
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] 
+    });
+    
+    if (!scan) {
+      return res.status(404).json({ message: 'Scan not found or not authorized' });
+    }
+
+    // If the scan has an imageUri, try to delete it from Cloudinary
+    if (scan.imageUri) {
+      try {
+        // Extract public ID from Cloudinary URL
+        // Cloudinary URLs are in the format: https://res.cloudinary.com/{cloud_name}/{version}/{public_id}.{extension}
+        const urlParts = scan.imageUri.split('/');
+        const publicIdWithExtension = urlParts[urlParts.length - 1];
+        const publicId = publicIdWithExtension.split('.')[0];
+        
+        // Import Cloudinary SDK
+        const { v2: cloudinary } = await import('cloudinary');
+        
+        // Delete the image from Cloudinary
+        await cloudinary.uploader.destroy(publicId);
+        console.log(`[CLOUDINARY] Deleted image with public ID: ${publicId}`);
+      } catch (cloudinaryError) {
+        console.error('[CLOUDINARY] Error deleting image:', cloudinaryError);
+        // Don't fail the request if Cloudinary deletion fails
+      }
+    }
+
+    // Soft delete: Mark the scan as deleted instead of removing it from database
+    scan.isDeleted = true;
+    scan.deletedAt = new Date();
+    await scan.save();
+
+    res.json({ message: 'Scan deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting scan:', error);
+    res.status(500).json({ message: 'Error deleting scan' });
+  }
+};
+
+
+
+
+
+
+
+

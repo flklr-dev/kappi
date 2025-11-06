@@ -1,5 +1,5 @@
 import express from 'express';
-import { saveScan, getUserScans, getScanStatistics } from '../controllers/scanController';
+import { saveScan, getUserScans, getScanStatistics, deleteScan } from '../controllers/scanController';
 import { auth } from '../middleware/auth';
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
@@ -77,5 +77,7 @@ router.post('/', auth, (req, res, next) => {
 
 router.get('/', auth, getUserScans);
 router.get('/statistics', auth, getScanStatistics);
+// Add delete route
+router.delete('/:id', auth, deleteScan);
 
 export default router;

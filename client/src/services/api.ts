@@ -384,6 +384,22 @@ export const getScanStatistics = async () => {
   }
 };
 
+// Add delete scan function
+export const deleteScan = async (id: string) => {
+  try {
+    const response = await api.delete(`/scans/${id}`);
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      throw error;
+    } else if (error.request) {
+      throw new Error('Network error');
+    } else {
+      throw new Error('An unexpected error occurred');
+    }
+  }
+};
+
 export default api;
 
 // Helper to resolve image URIs - Cloudinary URLs are already absolute
