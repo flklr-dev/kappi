@@ -214,6 +214,13 @@ export const deleteScan = async (req: AuthRequest, res: Response) => {
         // Import Cloudinary SDK
         const { v2: cloudinary } = await import('cloudinary');
         
+        // Configure Cloudinary with credentials
+        cloudinary.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET
+        });
+        
         // Delete the image from Cloudinary
         await cloudinary.uploader.destroy(publicId);
         console.log(`[CLOUDINARY] Deleted image with public ID: ${publicId}`);
@@ -234,6 +241,8 @@ export const deleteScan = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: 'Error deleting scan' });
   }
 };
+
+
 
 
 
