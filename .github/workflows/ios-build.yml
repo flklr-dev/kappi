@@ -37,13 +37,6 @@ jobs:
           cd client
           npm ci
 
-      - name: Configure EAS
-        run: |
-          cd client
-          eas login --token $EXPO_TOKEN
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
       - name: Build iOS app
         run: |
           cd client
