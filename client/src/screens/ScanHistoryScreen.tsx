@@ -13,15 +13,20 @@ import {
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native'; // Add useFocusEffect to the import
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Header from '../components/Header';
 import { getRemoteScans, resolveImageUri, deleteScan } from '../services/api'; // Import deleteScan
 import { ThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { RootStackParamList } from '../navigation/types'; // Add this import
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width > 768;
 const scale = Math.min(width / 375, height / 667);
+
+// Define the navigation prop type
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ScanHistory'>;
 
 function formatDate(date: string | number | Date) {
   if (!date) return '';
@@ -43,7 +48,7 @@ const getDiseaseColor = (disease: string, isDarkMode: boolean) => {
 const PAGE_SIZE = 10;
 
 const ScanHistoryScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>(); // Update this line
   const { isDarkMode } = useContext(ThemeContext);
   const { t } = useLanguage();
   // Use inline object for dark colors to avoid TypeScript issues
@@ -153,6 +158,7 @@ const ScanHistoryScreen = () => {
           borderColor: isDarkMode ? themedColors.lightGray : '#F0F0F0'
         }]}
         activeOpacity={0.7}
+        onPress={() => navigation.navigate('ViewScan', { scan: item })} // This should now work correctly
       >
         <View style={styles.historyScanImageContainer}>
           {item.imageUri ? (
@@ -173,7 +179,10 @@ const ScanHistoryScreen = () => {
           {/* Delete button - positioned absolutely within the image container */}
           <TouchableOpacity 
             style={styles.deleteButton}
-            onPress={() => handleDeleteScan(item._id, item.disease)}
+            onPress={(e) => {
+              e.stopPropagation(); // Prevent triggering the parent onPress
+              handleDeleteScan(item._id, item.disease);
+            }}
           >
             <Ionicons name="trash-outline" size={width * 0.045} color={themedColors.error} />
           </TouchableOpacity>
@@ -193,7 +202,9 @@ const ScanHistoryScreen = () => {
               }]}>
                 <Ionicons name="location" size={width * 0.025} color={isDarkMode ? themedColors.primary : COLORS.primary} />
                 <Text style={[styles.historyScanLocation, { color: isDarkMode ? themedColors.gray : '#6C757D' }]} numberOfLines={1}>
-                  {item.address.cityMunicipality || t('unknown_location')}
+                  {[item.address.barangay, item.address.cityMunicipality, item.address.province]
+                    .filter(Boolean)
+                    .join(', ')}
                 </Text>
               </View>
             )}

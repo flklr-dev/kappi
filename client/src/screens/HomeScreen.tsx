@@ -302,7 +302,7 @@ const HomeScreen = () => {
               </TouchableOpacity>
             )}
           </View>
-          <TouchableOpacity style={[styles.profileIconContainer, { backgroundColor: themedColors.primary }]} onPress={() => stackNavigation.navigate('Profile')}> 
+          <TouchableOpacity style={[styles.profileIconContainer, { backgroundColor: themedColors.primary }]} onPress={() => tabNavigation.navigate('ProfileTab')}> 
             <Ionicons name="person-circle-outline" size={40} color={themedColors.white} />
           </TouchableOpacity>
         </View>
@@ -403,9 +403,7 @@ const HomeScreen = () => {
                     key={scan._id || scan.id || idx} 
                     style={[styles.scanCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
                     activeOpacity={0.7}
-                    onPress={() => {
-                      // Navigate to scan details or results
-                    }}
+                    onPress={() => stackNavigation.navigate('ViewScan', { scan })} // Add navigation to ViewScan
                   >
                     <View style={styles.scanImageContainer}>
                       {scan.imageUri ? (
@@ -438,7 +436,9 @@ const HomeScreen = () => {
                           <View style={styles.locationContainer}>
                             <Ionicons name="location" size={12} color={COLORS.primary} />
                             <Text style={styles.scanLocation} numberOfLines={1}>
-                              {scan.address.cityMunicipality || 'Unknown Location'}
+                              {[scan.address.barangay, scan.address.cityMunicipality, scan.address.province]
+                                .filter(Boolean)
+                                .join(', ')}
                             </Text>
                           </View>
                         )}

@@ -239,9 +239,11 @@ const translations: Translations = {
     "cultural_control": "Cultural Control",
     "no_recommendations_available": "No recommendations available for this stage/variety.",
     "preventive_tips": "Preventive Tips",
+    "preventive_care_for_healthy_plants": "Preventive Care for Healthy Plants",
     "cultural_tips": "Cultural Tips",
     "no_preventive_tips_available": "No preventive tips available for this variety.",
     "scan_another_image": "Scan Another Image",
+    "view_scan_details": "View Scan Details",
     "early_signs_good_chance_to_control": "Early signs - Good chance to control",
     "spreading_needs_immediate_action": "Spreading - Needs immediate action",
     "advanced_stage_urgent_care_needed": "Advanced stage - Urgent care needed",
@@ -250,6 +252,16 @@ const translations: Translations = {
     "saved": "Saved",
     "scan_result_saved_locally": "Scan result saved locally.",
     "failed_to_save_scan_result": "Failed to save scan result.",
+    "detected_with": "detected with",
+    "confidence": "confidence",
+    
+    // View Scan Screen
+    "scan_details": "Scan Details",
+    "scan_information": "Scan Information",
+    "date": "Date",
+    "location": "Location",
+    "city_municipality": "City/Municipality",
+    "province": "Province",
     
     // Scan History Screen
     "no_scan_history_yet": "No scan history yet.",
@@ -560,9 +572,11 @@ const translations: Translations = {
     "cultural_control": "Kultura nga Pangandam",
     "no_recommendations_available": "Wala'y rekomendasyon para niining himtanga/klase.",
     "preventive_tips": "Mga Tip sa Paglikay",
+    "preventive_care_for_healthy_plants": "Atiman sa Paglikay alang sa Himog nga Tanom",
     "cultural_tips": "Mga Tip sa Kultura",
     "no_preventive_tips_available": "Wala'y preventive tips para niining klase.",
     "scan_another_image": "Pagscan og Lain nga Litrato",
+    "view_scan_details": "Tan-awa ang Detalye sa Scan",
     "early_signs_good_chance_to_control": "Sayo nga mga timailhan - Maayo nga tsansa sa pagdumara",
     "spreading_needs_immediate_action": "Nagkalat - Kinahanglan dayon nga aksyon",
     "advanced_stage_urgent_care_needed": "Abansadong himtang - Urgente nga pangandam kinahanglan",
@@ -571,6 +585,16 @@ const translations: Translations = {
     "saved": "Nasulbar",
     "scan_result_saved_locally": "Ang resulta sa pagscan nasulbar locally.",
     "failed_to_save_scan_result": "Napakyas sa pag-save sa resulta sa pagscan.",
+    "detected_with": "nakita uban",
+    "confidence": "kumpiyansa",
+    
+    // View Scan Screen
+    "scan_details": "Detalye sa Scan",
+    "scan_information": "Impormasyon sa Scan",
+    "date": "Date",
+    "location": "Location",
+    "city_municipality": "Siyudad/Munisipyo",
+    "province": "Probinsya",
     
     // Scan History Screen
     "no_scan_history_yet": "Wala pay na-scan.",

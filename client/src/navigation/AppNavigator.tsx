@@ -12,6 +12,7 @@ import VerifyOTPScreen from '../screens/VerifyOTPScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import ResultsScreen from '../screens/ResultsScreen';
+import ViewScanScreen from '../screens/ViewScanScreen'; // Add this import
 import ScanHistoryScreen from '../screens/ScanHistoryScreen';
 import DiseaseManagementScreen from '../screens/DiseaseManagementScreen';
 import AboutAppScreen from '../screens/AboutAppScreen'; // Import the new screen
@@ -86,6 +87,7 @@ const AppNavigator = () => {
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
         <Stack.Screen name="Results" component={ResultsScreen} />
+        <Stack.Screen name="ViewScan" component={ViewScanScreen} />
         <Stack.Screen name="ScanHistory" component={ScanHistoryScreen} />
         <Stack.Screen name="DiseaseManagement" component={DiseaseManagementScreen} />
         <Stack.Screen name="AboutApp" component={AboutAppScreen} />

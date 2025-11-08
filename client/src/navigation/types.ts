@@ -10,15 +10,17 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   VerifyOTP: { email: string };
   ResetPassword: { email: string; otp: string };
-  Profile: undefined; // Add Profile screen here
   MainTabs: { screen?: keyof MainTabParamList };
   Results: {
     imageUri: string;
     diagnosis: ScanResult;
   };
+  ViewScan: {
+    scan: any; // This will be the scan object with all details
+  };
   ScanHistory: undefined;
   DiseaseManagement: { diseaseName?: string };
-  AboutApp: undefined; // Add AboutApp screen here
+  AboutApp: undefined;
 };
 
 // Main tab navigator params
