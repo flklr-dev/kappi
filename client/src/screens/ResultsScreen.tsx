@@ -33,7 +33,7 @@ const ResultsScreen = () => {
   
   const route = useRoute<ResultsScreenRouteProp>();
   const navigation = useNavigation<NativeStackScreenProps<RootStackParamList>['navigation']>();
-  const { imageUri, diagnosis } = route.params;
+  const { imageUri, diagnosis } = route.params as { imageUri: string; diagnosis: ScanResult };
   const saveScanResult = useScanStore((s) => s.saveScanResult);
   const { user } = useAuthStore();
   const [selectedVariety, setSelectedVariety] = React.useState<CoffeeVariety>('arabica');
@@ -82,6 +82,8 @@ const ResultsScreen = () => {
       default: return '#9E9E9E';
     }
   };
+
+  const isHealthyStage = (stage: string) => stage === 'Healthy';
 
   const getStageIcon = (stage: string) => {
     switch (stage.toLowerCase()) {
@@ -180,7 +182,7 @@ const ResultsScreen = () => {
                 <View style={styles.stageBadgeContainer}>
                   <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>{t('stage')}</Text>
                   <View style={[styles.stageBadge, { backgroundColor: getStageColor(diagnosis.stage) }]}>
-                    <Text style={[styles.stageBadgeText, { color: COLORS.white }]}>{diagnosis.stage === 'Healthy' ? t('healthy') : diagnosis.stage}</Text>
+                    <Text style={styles.stageBadgeText}>{isHealthyStage(diagnosis.stage) ? t('healthy') : diagnosis.stage}</Text>
                   </View>
                 </View>
 
@@ -221,7 +223,7 @@ const ResultsScreen = () => {
                       {diagnosis.disease} - {diagnosis.stage} {t('stage')}
                     </Text>
                     <View style={[styles.stageBadge, { backgroundColor: getStageColor(diagnosis.stage) }]}>
-                      <Text style={styles.stageBadgeText}>{diagnosis.stage === 'Healthy' ? t('healthy') : diagnosis.stage}</Text>
+                      <Text style={styles.stageBadgeText}>{isHealthyStage(diagnosis.stage) ? t('healthy') : diagnosis.stage}</Text>
                     </View>
                   </View>
                   
@@ -282,7 +284,7 @@ const ResultsScreen = () => {
           )}
 
           {/* Preventive Tips for Healthy Plant */}
-          {(diagnosis.disease === 'Healthy Plant' || diagnosis.stage === 'Healthy') && (
+          {(diagnosis.disease === 'Healthy Plant' || isHealthyStage(diagnosis.stage)) && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('preventive_tips')}</Text>
