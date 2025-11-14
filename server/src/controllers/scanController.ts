@@ -32,8 +32,11 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
     if ((req as any).file) {
       imageUri = (req as any).file.path; // Cloudinary URL
       console.log('Using Cloudinary URL from uploaded file:', imageUri);
+    } else if (imageUri) {
+      // Direct upload case: imageUri is already a Cloudinary URL
+      console.log('Using provided Cloudinary URL:', imageUri);
     } else {
-      console.log('No file uploaded, using provided imageUri:', imageUri);
+      console.log('No image provided for scan');
     }
 
     const numericConfidence = typeof confidence === 'string' ? parseFloat(confidence) : confidence;

@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import authRoutes from './routes/auth';
 import scanRoutes from './routes/scan';
+import uploadRoutes from './routes/upload';
 
 // Load environment variables
 dotenv.config();
@@ -52,6 +53,7 @@ mongoose
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scanRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.get('/', (req: express.Request, res: express.Response) => {
   res.json({ message: 'Welcome to Kappi API' });
