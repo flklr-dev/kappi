@@ -1,4 +1,4 @@
-name: iOS Build
+name: iOS Prebuild Only
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ on:
         - production
 
 jobs:
-  ios-build:
+  ios-prebuild:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -42,12 +42,12 @@ jobs:
       - name: Prebuild iOS project only
         run: |
           cd client
-          # Use iOS-only prebuild to preserve Android customizations
+          # Use iOS-only prebuild to generate iOS folder structure
           npx expo prebuild --platform ios --clean
 
-      - name: Build iOS app
-        run: |
-          cd client
-          eas build --platform ios --profile ${{ github.event.inputs.build_type }} --non-interactive --wait
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-prebuild-output
+          path: client/ios/
+          if-no-files-found: error
