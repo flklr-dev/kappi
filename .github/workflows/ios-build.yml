@@ -46,7 +46,7 @@ jobs:
           npx expo prebuild --platform ios --clean
 
       - name: Upload iOS artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ios-prebuild-output
           path: client/ios/
