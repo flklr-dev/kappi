@@ -77,7 +77,6 @@ interface AuthState {
   resetPassword: (email: string) => Promise<boolean>;
   verifyOTPAndResetPassword: (email: string, otp: string, newPassword: string, confirmPassword: string) => Promise<void>;
   resendOTP: (email: string) => Promise<void>;
-  deleteAccount: () => Promise<void>;
 }
 
 // Storage keys
@@ -654,44 +653,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
       setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  },
-
-  deleteAccount: async () => {
-    const { setLoading, setError } = get();
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      await authService.deleteAccount();
-      
-      // Success - account has been soft deleted
-    } catch (error: any) {
-      let errorMessage = 'An unexpected error occurred';
-      
-      if (error.response) {
-        switch (error.response.status) {
-          case 400:
-            errorMessage = error.response.data?.message || 'Account cannot be deleted';
-            break;
-          case 401:
-            errorMessage = 'Authentication required';
-            break;
-          case 500:
-            errorMessage = 'Server error. Please try again later';
-            break;
-          default:
-            errorMessage = error.response.data?.message || 'Failed to delete account';
-        }
-      } else if (error.request) {
-        errorMessage = 'Network error. Please check your connection';
-      }
-      
-      setError(errorMessage);
-      throw error;
     } finally {
       setLoading(false);
     }

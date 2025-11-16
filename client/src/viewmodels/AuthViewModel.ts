@@ -587,26 +587,6 @@ class AuthViewModel {
     }
   }
 
-  async deleteAccount() {
-    try {
-      this.setLoading(true);
-      this.setError(null);
-      
-      const response = await authService.deleteAccount();
-      
-      return response;
-    } catch (error: any) {
-      let message = 'Failed to delete account';
-      if (error.response && error.response.data && error.response.data.message) {
-        message = error.response.data.message;
-      }
-      this.setError(message);
-      throw error;
-    } finally {
-      this.setLoading(false);
-    }
-  }
-
   async changePassword(oldPassword: string, newPassword: string, confirmPassword: string) {
     try {
       this.setLoading(true);
