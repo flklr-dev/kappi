@@ -15,7 +15,11 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction) 
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key_here');
-    const user = await User.findOne({ _id: (decoded as any)._id });
+    // Exclude soft-deleted users from authentication
+    const user = await User.findOne({ 
+      _id: (decoded as any)._id,
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    });
 
     if (!user) {
       throw new Error();

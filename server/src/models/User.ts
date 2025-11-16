@@ -26,6 +26,9 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   nameLastUpdated?: Date;
+  isDeleted: boolean;
+  deletedAt?: Date;
+  originalEmail?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -87,6 +90,18 @@ const userSchema = new Schema<IUser>(
     nameLastUpdated: {
       type: Date,
       default: null
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
+    },
+    originalEmail: {
+      type: String,
+      select: false // Don't include in queries by default, used for reactivation
     }
   },
   {

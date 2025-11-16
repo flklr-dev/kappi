@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { User, IUser } from '../models/User';
+import { Scan } from '../models/Scan';
 
 // Extend Request type to include user
 interface AuthRequest extends Request<any, any, any, any, Record<string, any>> {
@@ -23,9 +24,44 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { fullName, email, password } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Check if user already exists (including soft-deleted users)
+    const existingUser = await User.findOne({ email }).select('+originalEmail');
+    
     if (existingUser) {
+      // If user is soft-deleted, reactivate their account
+      if (existingUser.isDeleted) {
+        console.log('Reactivating soft-deleted user:', email);
+        
+        // Restore the account
+        existingUser.isDeleted = false;
+        existingUser.deletedAt = undefined;
+        existingUser.fullName = fullName;
+        existingUser.password = password;
+        existingUser.nameLastUpdated = undefined;
+        
+        // Clear originalEmail since account is active again
+        existingUser.originalEmail = undefined;
+        
+        await existingUser.save();
+        
+        // Generate token
+        const token = jwt.sign(
+          { _id: existingUser._id },
+          process.env.JWT_SECRET as string,
+          { expiresIn: '7d' }
+        );
+
+        return res.status(200).json({
+          token,
+          user: {
+            id: existingUser._id,
+            fullName: existingUser.fullName,
+            email: existingUser.email,
+          },
+          message: 'Account reactivated successfully'
+        });
+      }
+      
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -34,7 +70,7 @@ export const register = async (req: Request, res: Response) => {
       fullName,
       email,
       password,
-      nameLastUpdated: null, // Initialize as null since name hasn't been updated yet
+      nameLastUpdated: null,
     });
 
     await user.save();
@@ -68,8 +104,12 @@ export const login = async (req: Request, res: Response) => {
     console.log('Login password length:', password?.length);
     console.log('Login password characters:', password?.split('').map((c: string) => `${c}(${c.charCodeAt(0)})`).join(' '));
 
-    // Find user
-    const user = await User.findOne({ email });
+    // Find user, excluding soft-deleted users
+    const user = await User.findOne({ 
+      email,
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    });
+    
     if (!user) {
       console.log('User not found for email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -112,38 +152,82 @@ export const login = async (req: Request, res: Response) => {
 
 export const socialLogin = async (req: Request, res: Response) => {
   try {
-    const { email, fullName, provider, providerId } = req.body;
+    const { email, fullName, provider, providerId, isRegistration } = req.body;
 
     if (!email || !provider || !providerId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // Check if user already exists
-    let user = await User.findOne({ email });
+    // Check if user already exists (including soft-deleted users)
+    let user = await User.findOne({ email }).select('+originalEmail');
     let isNewUser = false;
 
     if (user) {
-      // User exists, check if this provider is already linked
-      const isProviderLinked = user.providers?.some(p => p.provider === provider && p.providerId === providerId);
-      
-      if (!isProviderLinked) {
-        // Check if this is a registration attempt (can be determined by client-side flag)
-        const isRegistrationAttempt = req.body.isRegistration === true;
+      // If user is soft-deleted, reactivate their account
+      if (user.isDeleted) {
+        console.log('Reactivating soft-deleted user via social login:', email);
         
-        if (isRegistrationAttempt) {
-          // For registration attempts, return an error if the email already exists
-          return res.status(400).json({ 
-            message: 'This email is already registered. Please use the login screen instead.' 
-          });
+        // Restore the account
+        user.isDeleted = false;
+        user.deletedAt = undefined;
+        user.fullName = fullName;
+        user.nameLastUpdated = undefined;
+        
+        // Clear originalEmail since account is active again
+        user.originalEmail = undefined;
+        
+        // Add the provider if not already linked
+        const isProviderLinked = user.providers?.some(p => p.provider === provider && p.providerId === providerId);
+        if (!isProviderLinked) {
+          if (!user.providers) {
+            user.providers = [];
+          }
+          user.providers.push({ provider, providerId });
         }
         
-        // Add the provider to existing user
-        if (!user.providers) {
-          user.providers = [];
-        }
-        
-        user.providers.push({ provider, providerId });
         await user.save();
+        isNewUser = false;
+        
+        // Return a special flag to indicate reactivation
+        const token = jwt.sign(
+          { _id: user._id },
+          process.env.JWT_SECRET as string,
+          { expiresIn: '7d' }
+        );
+
+        return res.json({
+          token,
+          user: {
+            id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            providers: user.providers?.map(p => p.provider)
+          },
+          isNewUser: false,
+          isReactivated: true,
+          message: 'Account reactivated successfully'
+        });
+      } else {
+        // User exists and is not deleted, check if this provider is already linked
+        const isProviderLinked = user.providers?.some(p => p.provider === provider && p.providerId === providerId);
+        
+        if (!isProviderLinked) {
+          // Check if this is a registration attempt (can be determined by client-side flag)
+          if (isRegistration) {
+            // For registration attempts, return an error if the email already exists
+            return res.status(400).json({ 
+              message: 'This email is already registered. Please use the login screen instead.' 
+            });
+          }
+          
+          // Add the provider to existing user
+          if (!user.providers) {
+            user.providers = [];
+          }
+          
+          user.providers.push({ provider, providerId });
+          await user.save();
+        }
       }
     } else {
       // Create new user with social login (no password)
@@ -151,7 +235,7 @@ export const socialLogin = async (req: Request, res: Response) => {
         fullName,
         email,
         providers: [{ provider, providerId }],
-        nameLastUpdated: null, // Initialize as null since name hasn't been updated yet
+        nameLastUpdated: null,
       });
 
       await user.save();
@@ -452,6 +536,51 @@ export const getUserCapabilities = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Get user capabilities error:', error);
     res.status(500).json({ message: 'Error fetching user capabilities' });
+  }
+};
+
+export const deleteAccount = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const user = await User.findById(req.user._id).select('+originalEmail');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Soft delete the user
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    
+    // Store original email for potential reactivation
+    user.originalEmail = user.email;
+    
+    // Anonymize email to allow reuse
+    user.email = `deleted_${user._id}_${user.email}`;
+    
+    await user.save();
+
+    // Also soft delete all user's scans
+    await Scan.updateMany(
+      { user: user._id, isDeleted: { $ne: true } },
+      { 
+        $set: { 
+          isDeleted: true, 
+          deletedAt: new Date() 
+        } 
+      }
+    );
+
+    console.log('User account soft deleted:', user._id);
+
+    res.json({ 
+      message: 'Account deleted successfully. Your data will be permanently removed after 90 days.' 
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ message: 'Error deleting account' });
   }
 };
 

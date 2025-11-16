@@ -344,6 +344,21 @@ export const authService = {
       }
     }
   },
+
+  async deleteAccount() {
+    try {
+      const response = await api.delete('/auth/account');
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
 };
 
 export const getRemoteScans = async (filters?: { disease?: string, stage?: string }) => {

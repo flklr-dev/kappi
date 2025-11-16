@@ -24,11 +24,12 @@ import { RootStackParamList } from '../navigation/types';
 import { AuthContext } from '../context/AuthContext';
 import { useAuthStore } from '../stores/authStore';
 import { authViewModel } from '../viewmodels/AuthViewModel';
+import { authService } from '../services/api';
 import { secureStorage } from '../utils/secureStorage';
 import PasswordComplexity from '../components/PasswordComplexity';
 import { sanitizeInput } from '../utils/secureStorage';
 import { ThemeContext } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext'; // Added LanguageContext import
+import { useLanguage } from '../context/LanguageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window'); // Added responsive dimensions
@@ -193,7 +194,43 @@ const ProfileScreen = () => {
       t('delete_account_message'),
       [
         { text: t('cancel_action'), style: "cancel" },
-        { text: t('delete_action'), style: "destructive", onPress: () => console.log("Delete account") }
+        { 
+          text: t('delete_action'), 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await authService.deleteAccount();
+              
+              // Clear local data
+              await logout();
+              
+              // Navigate to login screen
+              Alert.alert(
+                t('account_deleted'),
+                t('account_deleted_message'),
+                [
+                  {
+                    text: t('ok'),
+                    onPress: () => {
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                      });
+                    }
+                  }
+                ]
+              );
+            } catch (error: any) {
+              Alert.alert(
+                t('error_message'), 
+                error.response?.data?.message || t('failed_to_delete_account')
+              );
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
       ]
     );
   };

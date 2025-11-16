@@ -162,26 +162,44 @@ const RegisterScreen = () => {
         } else {
           Alert.alert(t('error'), currentError);
         }
-      } else if (response && response.isNewUser === true) {
-        // Show success message for new accounts only
-        Alert.alert(
-          t('success'),
-          t('account_successfully_registered'),
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Force authentication state update
-                useAuthStore.getState().setAuthenticated(true);
-                // Force app reload to trigger navigation
-                setTimeout(() => {
-                  console.log('Forcing navigation to home screen');
-                  useAuthStore.getState().setAuthenticated(true);
-                }, 100);
+      } else if (response) {
+        // Handle reactivation case
+        if ((response as any).isReactivated) {
+          // Show reactivation message
+          Alert.alert(
+            t('account_reactivated'),
+            t('account_reactivated_message'),
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Navigate to home screen
+                  navigation.navigate('MainTabs', { screen: 'HomeTab' });
+                }
               }
-            }
-          ]
-        );
+            ]
+          );
+        } else if (response.isNewUser === true) {
+          // Show success message for new accounts only
+          Alert.alert(
+            t('success'),
+            t('account_successfully_registered'),
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Force authentication state update
+                  useAuthStore.getState().setAuthenticated(true);
+                  // Force app reload to trigger navigation
+                  setTimeout(() => {
+                    console.log('Forcing navigation to home screen');
+                    useAuthStore.getState().setAuthenticated(true);
+                  }, 100);
+                }
+              }
+            ]
+          );
+        }
       }
     } catch (error: any) {
       if (!error.message?.includes('cancelled')) {

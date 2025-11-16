@@ -369,6 +369,31 @@ class AuthViewModel {
       const response = await socialAuthService.signInWithGoogle(isRegistration) as AuthResponse;
       
       if (response) {
+        // Handle reactivation case
+        if ((response as any).isReactivated) {
+          // Show reactivation message
+          Alert.alert('Account Reactivated', 'Your account has been reactivated successfully.');
+          
+          // Calculate expiration (7 days from now)
+          const expiresAt = Date.now() + TOKEN_EXPIRY;
+          
+          // Store token and user data securely
+          await secureStorage.setItem(TOKEN_KEY, {
+            token: response.token,
+            expiresAt
+          });
+          await secureStorage.setItem(USER_KEY, response.user);
+          
+          // Remove old storage
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+          
+          this.setAuthenticated(true);
+          this.setUser(response.user);
+          
+          return response;
+        }
+        
         // If this is a registration attempt and the user already exists (not a new user)
         if (isRegistration && !response.isNewUser) {
           this.setError('This email is already registered. Please use the login screen instead.');
@@ -422,6 +447,32 @@ class AuthViewModel {
       const response = await socialAuthService.signInWithFacebook(isRegistration) as AuthResponse;
       
       if (response) {
+        // Handle reactivation case
+        if ((response as any).isReactivated) {
+          // Show reactivation message
+          Alert.alert('Account Reactivated', 'Your account has been reactivated successfully.');
+          
+          // Calculate expiration (7 days from now)
+          const expiresAt = Date.now() + TOKEN_EXPIRY;
+          
+          // Store token and user data securely
+          await secureStorage.setItem(TOKEN_KEY, {
+            token: response.token,
+            expiresAt
+          });
+          await secureStorage.setItem(USER_KEY, response.user);
+          
+          // Remove old storage
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+          
+          this.setAuthenticated(true);
+          this.setUser(response.user);
+          
+          console.log('Facebook authentication successful');
+          return response;
+        }
+        
         // If this is a registration attempt and the user already exists (not a new user)
         if (isRegistration && !response.isNewUser) {
           this.setError('This email is already registered. Please use the login screen instead.');
