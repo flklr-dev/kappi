@@ -3,6 +3,12 @@ import { secureStorage } from '../utils/secureStorage';
 import { QueueItem, QueueConfig, QueueState } from '../types/QueueTypes';
 import api from './api';
 import { eventBus } from '../utils/eventBus';
+import {
+  getUploadSignature,
+  uploadImageToCloudinary,
+  uploadImageToServer,
+  cleanupOrphanedImage,
+} from './CloudinaryUploadService';
 
 const QUEUE_KEY = '@kappi_offline_queue';
 const DEFAULT_CONFIG: QueueConfig = {
@@ -43,38 +49,58 @@ async function processQueueItem(item: QueueItem): Promise<any> {
 
 // API functions for different operations
 async function uploadScan(scanData: any) {
-  const formData = new FormData();
-  formData.append('disease', scanData.disease);
-  formData.append('confidence', scanData.confidence.toString());
-  formData.append('severity', scanData.severity);
-  formData.append('stage', scanData.stage);
-  
-  if (scanData.coordinates) {
-    formData.append('coordinates', JSON.stringify(scanData.coordinates));
-  }
-  if (scanData.address) {
-    formData.append('address', JSON.stringify(scanData.address));
-  }
+  try {
+    // Try direct Cloudinary upload if image is provided
+    if (scanData.imageUri && !scanData.imageUri.startsWith('https://')) {
+      console.log('Attempting direct Cloudinary upload...');
+      
+      try {
+        // Get upload signature
+        const uploadSignature = await getUploadSignature();
+        
+        // Upload image directly to Cloudinary
+        const uploadResponse = await uploadImageToCloudinary(scanData.imageUri, uploadSignature);
+        
+        // Update scanData with Cloudinary URL
+        scanData.imageUri = uploadResponse.secure_url;
+        scanData.publicId = uploadResponse.public_id;
+        
+        console.log('Direct upload successful, saving scan metadata to server');
+      } catch (directUploadError) {
+        console.error('Direct upload failed, falling back to server upload:', directUploadError);
+        // Fall back to server upload
+        return await uploadImageToServer(scanData.imageUri, scanData);
+      }
+    }
+    
+    // Save scan metadata to server
+    const formData = new FormData();
+    formData.append('disease', scanData.disease);
+    formData.append('confidence', scanData.confidence.toString());
+    formData.append('severity', scanData.severity);
+    formData.append('stage', scanData.stage);
+    
+    if (scanData.coordinates) {
+      formData.append('coordinates', JSON.stringify(scanData.coordinates));
+    }
+    if (scanData.address) {
+      formData.append('address', JSON.stringify(scanData.address));
+    }
+    if (scanData.imageUri) {
+      formData.append('imageUri', scanData.imageUri);
+    }
 
-  if (scanData.imageUri) {
-    const fileExtension = scanData.imageUri.split('.').pop()?.toLowerCase() || 'jpeg';
-    const fileName = `scan-${scanData.id}.${fileExtension}`;
-    const fileType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
-
-    formData.append('image', {
-      uri: scanData.imageUri,
-      type: fileType,
-      name: fileName,
-    } as any);
+    const response = await api.post('/scans', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error uploading scan:', error);
+    throw error;
   }
-
-  const response = await api.post('/scans', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  
-  return response.data;
 }
 
 async function updateUser(userData: any) {
@@ -163,6 +189,16 @@ export const useOfflineQueue = create<QueueState>((set, get) => ({
           if (item.type === 'SCAN_UPLOAD' && result && result.scan) {
             // Emit event to notify that a scan was added
             eventBus.emit('scan:added', result.scan);
+            
+            // Clean up orphaned image from Cloudinary if it was uploaded directly
+            if (item.payload.publicId) {
+              try {
+                // The image is already saved in the scan, no cleanup needed
+                console.log(`Image ${item.payload.publicId} successfully associated with scan`);
+              } catch (error) {
+                console.error('Error handling image metadata:', error);
+              }
+            }
             
             // Remove the successfully synced scan from local scan storage
             try {
