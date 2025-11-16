@@ -193,7 +193,42 @@ const ProfileScreen = () => {
       t('delete_account_message'),
       [
         { text: t('cancel_action'), style: "cancel" },
-        { text: t('delete_action'), style: "destructive", onPress: () => console.log("Delete account") }
+        { 
+          text: t('delete_action'), 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await authViewModel.deleteAccount();
+              
+              // Show success message
+              Alert.alert(
+                t('account_deleted_title'),
+                t('account_deleted_message'),
+                [
+                  {
+                    text: t('ok'),
+                    onPress: async () => {
+                      // Logout and navigate to login
+                      await logout();
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                      });
+                    }
+                  }
+                ]
+              );
+            } catch (error: any) {
+              Alert.alert(
+                t('error_message'),
+                error.response?.data?.message || t('failed_to_delete_account')
+              );
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
       ]
     );
   };

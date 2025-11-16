@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { secureStorage } from '../utils/secureStorage';
-import { useAuthStore } from '../stores/authStore';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 // Derive server origin (without /api) for building absolute asset URLs
@@ -71,9 +70,8 @@ api.interceptors.response.use(
         await secureStorage.removeItem(TOKEN_KEY);
         await secureStorage.removeItem('@kappi_auth_user');
         
-        // Update auth store state
-        useAuthStore.getState().setAuthenticated(false);
-        useAuthStore.getState().setUser(null);
+        // Note: Auth store will be updated by the app's auth state listener
+        // This prevents circular dependency
       } catch (logoutError) {
         console.error('Error during logout:', logoutError);
       } finally {
@@ -333,6 +331,21 @@ export const authService = {
           timestamp: new Date().toISOString()
         }
       });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        throw new Error('Network error');
+      } else {
+        throw new Error('An unexpected error occurred');
+      }
+    }
+  },
+
+  async deleteAccount() {
+    try {
+      const response = await api.delete('/auth/account');
       return response.data;
     } catch (error: any) {
       if (error.response) {

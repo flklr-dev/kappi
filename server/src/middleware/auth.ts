@@ -8,17 +8,23 @@ interface AuthRequest extends Request {
 
 export const auth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const token = (req as any).header('Authorization')?.replace('Bearer ', '');
+    const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       throw new Error();
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key_here');
-    const user = await User.findOne({ _id: (decoded as any)._id });
+    // Ensure JWT_SECRET is configured
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET not configured in environment variables');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findOne({ _id: (decoded as any)._id, isDeleted: false });
 
     if (!user) {
-      throw new Error();
+      throw new Error('User account has been deleted or does not exist');
     }
 
     req.user = user;

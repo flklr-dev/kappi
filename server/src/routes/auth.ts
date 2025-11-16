@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, updateLocation, updateProfile, socialLogin, linkSocialAccount, changePassword, getUserCapabilities, forgotPassword, verifyOTP, verifyOTPAndResetPassword, resendOTP } from '../controllers/authController';
+import { register, login, updateLocation, updateProfile, socialLogin, linkSocialAccount, changePassword, getUserCapabilities, forgotPassword, verifyOTP, verifyOTPAndResetPassword, resendOTP, deleteAccount } from '../controllers/authController';
 import { auth } from '../middleware/auth';
 import { 
   validateRequest, 
@@ -58,5 +58,7 @@ router.post('/resend-otp',
   [validateEmail, validateRequest], 
   resendOTP
 );
+
+router.delete('/account', auth, deleteAccount);
 
 export default router; 
