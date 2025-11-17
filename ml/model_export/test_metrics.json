@@ -1,0 +1,91 @@
+{
+  "per_class": {
+    "brown_spot": {
+      "precision": 1.0,
+      "recall": 0.9666666666666667,
+      "f1-score": 0.9830508474576272,
+      "support": 30.0
+    },
+    "healthy": {
+      "precision": 0.967741935483871,
+      "recall": 1.0,
+      "f1-score": 0.9836065573770492,
+      "support": 30.0
+    },
+    "leaf_rust": {
+      "precision": 0.9310344827586207,
+      "recall": 0.9,
+      "f1-score": 0.9152542372881356,
+      "support": 30.0
+    },
+    "leaf_spot": {
+      "precision": 1.0,
+      "recall": 0.9666666666666667,
+      "f1-score": 0.9830508474576272,
+      "support": 30.0
+    },
+    "sooty_mold": {
+      "precision": 0.875,
+      "recall": 0.9333333333333333,
+      "f1-score": 0.9032258064516129,
+      "support": 30.0
+    },
+    "accuracy": 0.9533333333333334,
+    "macro avg": {
+      "precision": 0.9547552836484983,
+      "recall": 0.9533333333333334,
+      "f1-score": 0.9536376592064103,
+      "support": 150.0
+    },
+    "weighted avg": {
+      "precision": 0.9547552836484984,
+      "recall": 0.9533333333333334,
+      "f1-score": 0.9536376592064105,
+      "support": 150.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      29,
+      0,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      30,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      27,
+      0,
+      3
+    ],
+    [
+      0,
+      1,
+      0,
+      29,
+      0
+    ],
+    [
+      0,
+      0,
+      2,
+      0,
+      28
+    ]
+  ],
+  "class_labels": [
+    "brown_spot",
+    "healthy",
+    "leaf_rust",
+    "leaf_spot",
+    "sooty_mold"
+  ]
+}
