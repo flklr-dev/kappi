@@ -22,6 +22,7 @@ import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../stores/authStore';
 import { authViewModel } from '../viewmodels/AuthViewModel';
+import { useLanguage } from '../context/LanguageContext'; // Import LanguageContext
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -29,6 +30,7 @@ const { width, height } = Dimensions.get('window');
 
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const { t } = useLanguage(); // Use LanguageContext
   const { 
     login, 
     loading, 
@@ -75,7 +77,7 @@ const LoginScreen = () => {
       const isAuthenticated = currentState.isAuthenticated;
       
       if (currentError) {
-        Alert.alert('Error', currentError);
+        Alert.alert(t('error'), currentError);
       } else if (isAuthenticated) {
         // Reset form before showing success
         setEmail('');
@@ -85,8 +87,8 @@ const LoginScreen = () => {
         
         // Show success message and automatically navigate after 1 second
         Alert.alert(
-          'Success',
-          'Welcome back!',
+          t('success'),
+          t('welcome_back_message'),
           [
             {
               text: 'OK',
@@ -100,7 +102,7 @@ const LoginScreen = () => {
         );
       }
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert(t('error'), t('an_unexpected_error_occurred'));
     }
   };
 
@@ -113,12 +115,12 @@ const LoginScreen = () => {
       const currentError = authViewModel.error;
       
       if (currentError) {
-        Alert.alert('Error', currentError);
+        Alert.alert(t('error'), currentError);
       } else if (response) {
         // Show success message and automatically navigate after 1 second
         Alert.alert(
-          'Success',
-          'Welcome to KAPPI!',
+          t('success'),
+          t('welcome_to_kappi_message'),
           [
             {
               text: 'OK',
@@ -133,7 +135,7 @@ const LoginScreen = () => {
       }
     } catch (error: any) {
       if (!error.message?.includes('cancelled')) {
-        Alert.alert('Error', 'Failed to sign in with Google');
+        Alert.alert(t('error'), t('failed_to_sign_in_with_google'));
       }
     } finally {
       setSocialLoading({ ...socialLoading, google: false });
@@ -154,7 +156,7 @@ const LoginScreen = () => {
         // We don't validate password complexity like in registration
         if (!value) {
           // Set a simple "required" error without complexity validation
-          useAuthStore.getState().setValidationErrors({ ...validationErrors, password: 'This field is required' });
+          useAuthStore.getState().setValidationErrors({ ...validationErrors, password: t('this_field_is_required') });
           useAuthStore.getState().setTouchedField('password', true);
         } else {
           // Clear password error for login
@@ -201,17 +203,17 @@ const LoginScreen = () => {
                 style={styles.logo}
                 resizeMode="contain"
               />
-              <Text style={styles.title}>Welcome Back</Text>
-              <Text style={styles.subtitle}>Detect diseases early and save your harvest</Text>
+              <Text style={styles.title}>{t('welcome_back')}</Text>
+              <Text style={styles.subtitle}>{t('detect_diseases_early_and_save_your_harvest')}</Text>
 
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('email')}</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.email && validationErrors.email && styles.inputError
               ]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your email"
+                  placeholder={t('enter_your_email')}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -223,14 +225,14 @@ const LoginScreen = () => {
                 <Text style={styles.errorText}>{validationErrors.email}</Text>
               )}
 
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t('password')}</Text>
               <View style={[
                 styles.inputContainer,
                 touchedFields.password && validationErrors.password && styles.inputError
               ]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your password"
+                  placeholder={t('enter_your_password')}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -255,7 +257,7 @@ const LoginScreen = () => {
                 style={styles.forgotPasswordButton}
                 onPress={() => navigation.navigate('ForgotPassword')}
               >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                <Text style={styles.forgotPasswordText}>{t('forgot_password')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -268,13 +270,13 @@ const LoginScreen = () => {
                     <ActivityIndicator size="small" color={COLORS.white} />
                   </View>
                 ) : (
-                  <Text style={styles.loginButtonText}>Login</Text>
+                  <Text style={styles.loginButtonText}>{t('login')}</Text>
                 )}
               </TouchableOpacity>
 
               <View style={styles.dividerContainer}>
                 <View style={styles.divider} />
-                <Text style={styles.dividerText}>OR</Text>
+                <Text style={styles.dividerText}>{t('or')}</Text>
                 <View style={styles.divider} />
               </View>
 
@@ -292,16 +294,16 @@ const LoginScreen = () => {
                         source={require('../assets/google-icon.png')} 
                         style={styles.socialIcon}
                       />
-                      <Text style={styles.socialButtonText}>Continue with Google</Text>
+                      <Text style={styles.socialButtonText}>{t('continue_with_google')}</Text>
                     </>
                   )}
                 </TouchableOpacity>
               </View>
 
               <View style={styles.registerContainer}>
-                  <Text style={styles.registerText}>Don't have an account?</Text>
+                  <Text style={styles.registerText}>{t('dont_have_an_account')}</Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                    <Text style={styles.registerButtonText}>Sign Up</Text>
+                    <Text style={styles.registerButtonText}>{t('sign_up')}</Text>
                   </TouchableOpacity>
                 </View>
             </View>

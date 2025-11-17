@@ -3,21 +3,24 @@ import { ScanResult } from '../viewmodels/ScanViewModel';
 // Root Stack contains splash, onboarding, auth screens and main app
 export type RootStackParamList = {
   Splash: undefined;
+  LanguageSelection: undefined;
   Onboarding: undefined;
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
   VerifyOTP: { email: string };
   ResetPassword: { email: string; otp: string };
-  Profile: undefined; // Add Profile screen here
   MainTabs: { screen?: keyof MainTabParamList };
   Results: {
     imageUri: string;
     diagnosis: ScanResult;
   };
+  ViewScan: {
+    scan: any; // This will be the scan object with all details
+  };
   ScanHistory: undefined;
   DiseaseManagement: { diseaseName?: string };
-  AboutApp: undefined; // Add AboutApp screen here
+  AboutApp: undefined;
 };
 
 // Main tab navigator params

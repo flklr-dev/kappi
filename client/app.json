@@ -8,6 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "plugins": [
+      "expo-dev-client",
       [
         "react-native-vision-camera",
         {

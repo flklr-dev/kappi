@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authService } from '../services/api';
 import { secureStorage } from '../utils/secureStorage';
+import { useOfflineQueue } from '../services/OfflineQueueManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface LocationData {
@@ -73,7 +74,7 @@ interface AuthState {
   loginAttempts: number;
   lockoutUntil: number | null;
   updateUserLocation: (location: LocationData) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
   verifyOTPAndResetPassword: (email: string, otp: string, newPassword: string, confirmPassword: string) => Promise<void>;
   resendOTP: (email: string) => Promise<void>;
 }
@@ -466,16 +467,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Update state
       setUser(updatedUser);
 
-      // Get token for API call
-      const tokenData = await secureStorage.getItem(TOKEN_KEY) as TokenData | null;
-      if (!tokenData) return;
-
-      // Send update to backend
+      // Try to update on server, fallback to queue if offline
       try {
         await authService.updateLocation(location);
-      } catch (error) {
-        console.error('Failed to update location on server:', error);
-        // Still keep the local update even if server update fails
+        console.log('Location updated on server successfully');
+      } catch (error: any) {
+        console.log('Failed to update location on server, adding to queue:', error.message);
+        
+        // Add to offline queue if network error
+        if (error.code === 'NETWORK_ERROR' || !navigator.onLine || error.message?.includes('Network Error')) {
+          const { addItem } = useOfflineQueue.getState();
+          await addItem({
+            type: 'LOCATION_UPDATE',
+            payload: location,
+            priority: 'MEDIUM',
+            maxRetries: 2,
+          });
+          console.log('Location update added to offline queue');
+        } else {
+          throw error; // Re-throw if it's not a network error
+        }
       }
     } catch (error) {
       console.error('Error updating location:', error);
@@ -488,12 +499,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Validate email
     if (!email.trim()) {
       setError('Email is required');
-      return;
+      return false;
     }
     
     if (!validateEmail(email)) {
       setError('Invalid email format');
-      return;
+      return false;
     }
     
     try {
@@ -502,8 +513,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       await authService.forgotPassword(email);
       
-      // Success - no error means it worked
-      // The success message is handled by the component
+      // Return true to indicate success
+      return true;
     } catch (error: any) {
       let errorMessage = 'An unexpected error occurred';
       
@@ -526,6 +537,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
       setError(errorMessage);
+      return false; // Return false to indicate failure
     } finally {
       setLoading(false);
     }

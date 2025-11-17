@@ -12,7 +12,9 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { COLORS } from '../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,11 +22,16 @@ import { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../stores/authStore';
 import { sanitizeInput } from '../utils/secureStorage';
+import { useLanguage } from '../context/LanguageContext'; // Import LanguageContext
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+// Get screen dimensions for responsive design
+const { width, height } = Dimensions.get('window');
+
 const ForgotPasswordScreen = () => {
   const navigation = useNavigation<ForgotPasswordScreenNavigationProp>();
+  const { t } = useLanguage(); // Use LanguageContext
   const { 
     resetPassword, 
     loading, 
@@ -50,37 +57,46 @@ const ForgotPasswordScreen = () => {
     const sanitizedEmail = sanitizeInput(email.toLowerCase().trim());
     
     if (sanitizedEmail !== email.toLowerCase().trim()) {
-      Alert.alert('Invalid Input', 'Email contains invalid characters.');
+      Alert.alert(t('error'), t('please_enter_a_valid_email'));
       return;
     }
     
     // Client-side validation
     if (!sanitizedEmail) {
-      Alert.alert('Validation Error', 'Email is required.');
+      Alert.alert(t('validation_error'), t('this_field_is_required'));
       return;
     }
     
     if (!validateEmail(sanitizedEmail)) {
-      Alert.alert('Validation Error', 'Please enter a valid email address.');
+      Alert.alert(t('validation_error'), t('please_enter_a_valid_email'));
       return;
     }
     
     try {
-      await resetPassword(sanitizedEmail);
+      // Check network connectivity before attempting to send code
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        Alert.alert(t('error'), t('network_error_please_check_connection'));
+        return;
+      }
       
-      if (!error) {
-        // Navigate directly to VerifyOTP screen
+      const success = await resetPassword(sanitizedEmail);
+      
+      if (success && !error) {
+        // Navigate directly to VerifyOTP screen only if the request was successful
         navigation.navigate('VerifyOTP', { email: sanitizedEmail });
-      } else {
+      } else if (error) {
         Alert.alert(
-          'Error',
+          t('error'),
           error.includes('Too many') 
-            ? 'Too many reset attempts. Please wait before trying again.'
+            ? t('too_many_reset_attempts') 
+            : error.includes('Network') 
+            ? t('network_error_please_check_connection')
             : error
         );
       }
     } catch (err) {
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      Alert.alert(t('error'), t('an_unexpected_error_occurred'));
     }
   };
 
@@ -106,11 +122,11 @@ const ForgotPasswordScreen = () => {
           <View style={styles.content}>
             <View style={styles.headerContainer}>
               <View style={styles.iconContainer}>
-                <Ionicons name="key-outline" size={48} color={COLORS.primary} />
+                <Ionicons name="key-outline" size={Math.min(48, width * 0.12)} color={COLORS.primary} />
               </View>
-              <Text style={styles.title}>Forgot Password?</Text>
+              <Text style={styles.title}>{t('forgot_password_title')}</Text>
               <Text style={styles.subtitle}>
-                Don't worry! Enter your email address and we'll send you a verification code to reset your password.
+                {t('forgot_password_subtitle')}
               </Text>
             </View>
 
@@ -121,13 +137,13 @@ const ForgotPasswordScreen = () => {
               ]}>
                 <Ionicons 
                   name="mail-outline" 
-                  size={20} 
+                  size={Math.min(20, width * 0.05)} 
                   color={touchedFields.email && validationErrors.email ? COLORS.error : COLORS.gray} 
                   style={styles.inputIcon} 
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Email"
+                  placeholder={t('email')}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -135,6 +151,7 @@ const ForgotPasswordScreen = () => {
                   autoCorrect={false}
                   onBlur={() => validateField('email', email)}
                   editable={!loading}
+                  placeholderTextColor={COLORS.gray}
                 />
               </View>
               
@@ -153,16 +170,16 @@ const ForgotPasswordScreen = () => {
                 {loading ? (
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
-                  <Text style={styles.sendButtonText}>Send Verification Code</Text>
+                  <Text style={styles.sendButtonText}>{t('send_verification_code')}</Text>
                 )}
               </TouchableOpacity>
 
 
 
               <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Remember your password?</Text>
+                <Text style={styles.loginText}>{t('remember_your_password')}</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                  <Text style={styles.loginButtonText}>Sign In</Text>
+                  <Text style={styles.loginButtonText}>{t('sign_in')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -186,75 +203,78 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: Math.min(24, width * 0.06), // Responsive padding
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 40,
+    marginBottom: Math.min(32, height * 0.04), // Responsive margin
+    marginTop: Math.min(40, height * 0.05), // Responsive margin
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: Math.min(80, width * 0.2), // Responsive width
+    height: Math.min(80, width * 0.2), // Responsive height (square)
+    borderRadius: Math.min(40, width * 0.1), // Responsive border radius
     backgroundColor: `${COLORS.primary}15`,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Math.min(20, height * 0.025), // Responsive margin
   },
   formContainer: {
   },
   title: {
-    fontSize: 28,
+    fontSize: Math.min(28, width * 0.07), // Responsive font size
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 8,
+    marginBottom: Math.min(8, height * 0.01), // Responsive margin
+    textAlign: 'center', // Center align for better responsiveness
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     color: COLORS.gray,
-    marginBottom: 32,
+    marginBottom: Math.min(32, height * 0.04), // Responsive margin
     textAlign: 'center',
+    lineHeight: Math.min(24, width * 0.06), // Responsive line height
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.lightGray,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: Math.min(12, width * 0.03), // Responsive border radius
+    marginBottom: Math.min(16, height * 0.02), // Responsive margin
     backgroundColor: COLORS.white,
+    height: Math.min(50, height * 0.07), // Responsive height
   },
   inputIcon: {
-    paddingHorizontal: 16,
+    paddingHorizontal: Math.min(16, width * 0.04), // Responsive padding
   },
   input: {
     flex: 1,
-    height: 50,
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     color: COLORS.black,
+    paddingVertical: Math.min(10, height * 0.015), // Responsive padding
   },
   errorText: {
     color: COLORS.error,
-    fontSize: 12,
-    marginTop: -12,
-    marginBottom: 8,
-    marginLeft: 8,
+    fontSize: Math.min(12, width * 0.03), // Responsive font size
+    marginTop: -Math.min(12, height * 0.015), // Responsive margin
+    marginBottom: Math.min(8, height * 0.01), // Responsive margin
+    marginLeft: Math.min(8, width * 0.02), // Responsive margin
   },
   inputError: {
     borderColor: COLORS.error,
   },
   sendButton: {
     backgroundColor: COLORS.primary,
-    height: 50,
-    borderRadius: 12,
+    height: Math.min(50, height * 0.07), // Responsive height
+    borderRadius: Math.min(12, width * 0.03), // Responsive border radius
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: Math.min(24, height * 0.03), // Responsive margin
   },
   sendButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04), // Responsive font size
     fontWeight: 'bold',
   },
   sendButtonDisabled: {
@@ -264,18 +284,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: Math.min(8, height * 0.01), // Responsive margin
+    flexWrap: 'wrap', // Allow wrapping on small screens
   },
   loginText: {
     color: COLORS.gray,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
   },
   loginButtonText: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035), // Responsive font size
     fontWeight: 'bold',
-    marginLeft: 5,
+    marginLeft: Math.min(5, width * 0.012), // Responsive margin
   },
 });
 
-export default ForgotPasswordScreen; 
+export default ForgotPasswordScreen;

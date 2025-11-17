@@ -7,11 +7,13 @@ import { ThemeContext } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { useLanguage } from '../context/LanguageContext'; // Added LanguageContext import
 
 type AboutAppScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const AboutAppScreen = () => {
   const { isDarkMode } = useContext(ThemeContext);
+  const { t } = useLanguage(); // Added LanguageContext usage
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
   const navigation = useNavigation<AboutAppScreenNavigationProp>();
 
@@ -22,7 +24,7 @@ const AboutAppScreen = () => {
         backgroundColor={themedColors.primary} 
       />
       <Header
-        title="About Kappi"
+        title={t('about_kappi')}
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
       />
@@ -34,43 +36,43 @@ const AboutAppScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Overview</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('overview')}</Text>
           <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>
-            Kappi is a mobile application designed to help coffee farmers detect and manage plant diseases using AI-powered image recognition. Our core purpose is to provide accessible, real-time disease detection, enabling farmers to take timely action to protect their crops.
+            {t('overview_description')}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Key Features</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('key_features')}</Text>
           <View>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• AI-powered disease detection: Identify common coffee plant diseases.</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• Personalized recommendations: Get variety-specific advice and stage-based treatment plans (chemical and cultural options).</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• Scan history: Keep track of past scans with geolocation data.</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• User profile: Manage your profile and settings.</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('ai_powered_disease_detection_feature')}</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('personalized_recommendations_feature')}</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('scan_history_feature')}</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('user_profile_feature')}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Supported Diseases</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('supported_diseases')}</Text>
           <View>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Kappi currently focuses on detecting:</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• Coffee Leaf Rust (CLR)</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• Thread Blight</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• Anthracnose</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• Coffee Wilt Disease</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>• Coffee Berry Disease</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('kappi_currently_focuses_on_detecting')}</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('coffee_leaf_rust_disease')}</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('thread_blight_disease')}</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('anthracnose_disease')}</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('coffee_wilt_disease_disease')}</Text>
+            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('coffee_berry_disease_disease')}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>Target Users</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('target_users')}</Text>
           <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>
-            This app is built for coffee farmers, agricultural workers, extension officers, and researchers studying coffee plant diseases.
+            {t('target_users_description')}
           </Text>
         </View>
 
         <Text style={[styles.footerText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
-          © {new Date().getFullYear()} Kappi Team. All rights reserved.
+          {t('kappi_team_copyright').replace('{year}', new Date().getFullYear().toString())}
         </Text>
       </ScrollView>
     </SafeAreaView>

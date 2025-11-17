@@ -1,0 +1,53 @@
+name: iOS Prebuild Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - production
+
+jobs:
+  ios-prebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install Expo CLI
+        run: npm install -g @expo/cli
+
+      - name: Setup EAS
+        run: npm install -g eas-cli
+
+      - name: Install dependencies
+        run: |
+          cd client
+          npm install --legacy-peer-deps
+          # Explicitly install expo-dev-client to ensure it's available
+          npm install expo-dev-client --legacy-peer-deps
+
+      - name: Prebuild iOS project only
+        run: |
+          cd client
+          # Use iOS-only prebuild to generate iOS folder structure
+          npx expo prebuild --platform ios --clean
+
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-prebuild-output
+          path: client/ios/
+          if-no-files-found: error
