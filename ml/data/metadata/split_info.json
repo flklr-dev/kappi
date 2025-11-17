@@ -1,0 +1,46 @@
+{
+  "random_seed": 42,
+  "split_ratio": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "class_distribution": {
+    "healthy": {
+      "total": 200,
+      "train": 140,
+      "val": 30,
+      "test": 30
+    },
+    "leaf_rust": {
+      "total": 200,
+      "train": 140,
+      "val": 30,
+      "test": 30
+    },
+    "leaf_spot": {
+      "total": 200,
+      "train": 140,
+      "val": 30,
+      "test": 30
+    },
+    "brown_spot": {
+      "total": 200,
+      "train": 140,
+      "val": 30,
+      "test": 30
+    },
+    "sooty_mold": {
+      "total": 200,
+      "train": 140,
+      "val": 30,
+      "test": 30
+    }
+  },
+  "totals": {
+    "train": 700,
+    "val": 150,
+    "test": 150,
+    "total": 1000
+  }
+}
