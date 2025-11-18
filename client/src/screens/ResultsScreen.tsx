@@ -9,7 +9,9 @@ import {
   Image,
   StatusBar,
   Share,
-  Alert
+  Alert,
+  Modal,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, DARK_COLORS } from '../constants/colors';
@@ -37,6 +39,7 @@ const ResultsScreen = () => {
   const saveScanResult = useScanStore((s) => s.saveScanResult);
   const { user } = useAuthStore();
   const [selectedVariety, setSelectedVariety] = React.useState<CoffeeVariety>('arabica');
+  const [showFullScreenImage, setShowFullScreenImage] = React.useState(false);
 
   if (!diagnosis) {
     return (
@@ -79,6 +82,7 @@ const ResultsScreen = () => {
       case 'progressive': return '#FFA000';
       case 'severe': return '#F44336';
       case 'healthy': return '#4CAF50';
+      case 'infected': return '#FF6B6B'; // Orange-red for infected
       default: return '#9E9E9E';
     }
   };
@@ -108,15 +112,33 @@ const ResultsScreen = () => {
   // Check if there's an error message
   const hasError = diagnosis.error !== undefined;
   const errorMessage = diagnosis.error;
+  
+  // Debug: Log diagnosis object
+  console.log('=== DIAGNOSIS IN RESULTS SCREEN ===');
+  console.log('Diagnosis object:', JSON.stringify(diagnosis, null, 2));
+  console.log('Has secondaryPrediction?', !!diagnosis.secondaryPrediction);
+  console.log('SecondaryPrediction value:', diagnosis.secondaryPrediction);
+  console.log('===================================');
 
-  // Helper to get treatment recommendations
+  // Helper to get treatment recommendations with fallback to default
   const getTreatment = () => {
-    if (
-      diagnosis.disease === 'Coffee Leaf Rust' &&
-      treatmentRecommendations['Coffee Leaf Rust'] &&
-      treatmentRecommendations['Coffee Leaf Rust'][diagnosis.stage]
-    ) {
-      return treatmentRecommendations['Coffee Leaf Rust'][diagnosis.stage][selectedVariety];
+    // Map disease names to treatment keys
+    const diseaseKey = diagnosis.disease === 'Coffee Brown Spot' ? 'Brown Spot' :
+                       diagnosis.disease === 'Coffee Leaf Spot' ? 'Leaf Spot' :
+                       diagnosis.disease === 'Coffee Sooty Mold' ? 'Sooty Mold' :
+                       diagnosis.disease;
+    
+    if (treatmentRecommendations[diseaseKey]) {
+      // Try to get stage-specific treatment
+      const stageTreatment = treatmentRecommendations[diseaseKey][diagnosis.stage];
+      if (stageTreatment && stageTreatment[selectedVariety]) {
+        return stageTreatment[selectedVariety];
+      }
+      // Fallback to default if stage not found
+      const defaultTreatment = treatmentRecommendations[diseaseKey]['Default'];
+      if (defaultTreatment && defaultTreatment[selectedVariety]) {
+        return defaultTreatment[selectedVariety];
+      }
     }
     return null;
   };
@@ -137,20 +159,32 @@ const ResultsScreen = () => {
 
       <ScrollView style={styles.scrollView}>
         {/* Image Preview (Full Width at Top) */}
-        <View style={styles.fullWidthImageContainer}>
-          <Image 
-            source={{ uri: imageUri }} 
-            style={styles.fullWidthScanImage}
-            resizeMode="cover"
-          />
-          <TouchableOpacity 
-            style={styles.retakeButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="camera-outline" size={20} color={COLORS.white} />
-            <Text style={styles.retakeButtonText}>{t('retake')}</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          activeOpacity={0.9}
+          onPress={() => setShowFullScreenImage(true)}
+        >
+          <View style={styles.fullWidthImageContainer}>
+            <Image 
+              source={{ uri: imageUri }} 
+              style={styles.fullWidthScanImage}
+              resizeMode="cover"
+            />
+            <View style={styles.imageOverlay}>
+              <Ionicons name="expand-outline" size={24} color={COLORS.white} />
+              <Text style={styles.tapToViewText}>{t('tap_to_view_full_image')}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.retakeButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                navigation.goBack();
+              }}
+            >
+              <Ionicons name="camera-outline" size={20} color={COLORS.white} />
+              <Text style={styles.retakeButtonText}>{t('retake')}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
 
         {/* Error Message or Diagnosis Card */}
         {hasError ? (
@@ -171,28 +205,37 @@ const ResultsScreen = () => {
         <>
           {/* Plant Health Section */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('diagnosis')}</Text>
-            </View>
-
             <View style={[styles.diagnosisCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-              <Text style={[styles.diagnosisCardDiseaseName, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{diagnosis.disease}</Text>
+              {/* Disease Name */}
+              <Text style={[styles.diagnosisCardDiseaseName, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                {diagnosis.disease}
+              </Text>
 
+              {/* Stage and Confidence Row */}
               <View style={styles.stageAndConfidenceRow}>
                 <View style={styles.stageBadgeContainer}>
-                  <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>{t('stage')}</Text>
+                  <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>
+                    {t('stage')}
+                  </Text>
                   <View style={[styles.stageBadge, { backgroundColor: getStageColor(diagnosis.stage) }]}>
-                    <Text style={styles.stageBadgeText}>{isHealthyStage(diagnosis.stage) ? t('healthy') : diagnosis.stage}</Text>
+                    <Text style={styles.stageBadgeText}>
+                      {isHealthyStage(diagnosis.stage) ? t('healthy') : diagnosis.stage}
+                    </Text>
                   </View>
                 </View>
 
                 <View style={styles.confidenceScoreContainer}>
-                  <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>{t('confidence_score')}</Text>
-                  <Text style={[styles.confidenceValueText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{diagnosis.confidence}%</Text>
+                  <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>
+                    {t('confidence_score')}
+                  </Text>
+                  <Text style={[styles.confidenceValueText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                    {diagnosis.confidence}%
+                  </Text>
                 </View>
               </View>
 
-              <View style={[styles.confidenceProgressBar, { backgroundColor: isDarkMode ? themedColors.lightGray : COLORS.lightGray, marginTop: 10 }]}>
+              {/* Progress Bar */}
+              <View style={[styles.confidenceProgressBar, { backgroundColor: isDarkMode ? themedColors.lightGray : '#E8EBF0' }]}>
                 <View
                   style={[
                     styles.confidenceProgressBarFill,
@@ -206,64 +249,104 @@ const ResultsScreen = () => {
             </View>
           </View>
 
-          {/* Treatment Recommendations or Preventive Tips Section */}
-          {(diagnosis.disease === 'Coffee Leaf Rust' && diagnosis.stage !== 'Healthy') && (
+          {/* Secondary Prediction - Modern Design */}
+          {diagnosis.secondaryPrediction && (
+            <View style={[styles.secondaryPredictionCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+              <View style={styles.secondaryPredictionHeader}>
+                <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />
+                <Text style={[styles.secondaryPredictionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                  {t('also_detected')}
+                </Text>
+              </View>
+              <View style={styles.secondaryPredictionContent}>
+                <Text style={[styles.secondaryPredictionDisease, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                  {diagnosis.secondaryPrediction.disease}
+                </Text>
+                <Text style={[styles.secondaryPredictionConfidence, { color: COLORS.primary }]}>
+                  {diagnosis.secondaryPrediction.confidence}% {t('confidence').toLowerCase()}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Treatment Recommendations - Show for all diseases except Healthy */}
+          {(diagnosis.disease !== 'Healthy Plant' && diagnosis.disease !== 'Healthy' && diagnosis.stage !== 'Healthy') && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('disease_management')}</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                  {t('disease_management')}
+                </Text>
               </View>
-              <Text style={[styles.treatmentInfo, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>{t('choose_your_coffee_variety')}</Text>
+              <Text style={[styles.treatmentInfo, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>
+                {t('choose_your_coffee_variety')}
+              </Text>
               <View style={styles.varietySelectorContainer}>
                 <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
               </View>
-              {treatment ? (
+              {treatment && (
                 <View style={[styles.treatmentContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
                   <View style={styles.treatmentHeader}>
                     <Text style={[styles.treatmentHeaderTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
-                      {diagnosis.disease} - {diagnosis.stage} {t('stage')}
+                      {diagnosis.disease}
                     </Text>
                     <View style={[styles.stageBadge, { backgroundColor: getStageColor(diagnosis.stage) }]}>
-                      <Text style={styles.stageBadgeText}>{isHealthyStage(diagnosis.stage) ? t('healthy') : diagnosis.stage}</Text>
+                      <Text style={styles.stageBadgeText}>
+                        {isHealthyStage(diagnosis.stage) ? t('healthy') : diagnosis.stage}
+                      </Text>
                     </View>
                   </View>
                   
                   <View style={styles.treatmentCardsContainer}>
                     {/* Chemical Control Card */}
-                    <View style={[styles.treatmentCard, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA' }]}>
-                      <View style={styles.treatmentCardHeader}>
-                        <Ionicons name="flask" size={20} color={COLORS.primary} />
-                        <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>{t('chemical_control')}</Text>
+                    {treatment.chemical && treatment.chemical.length > 0 && (
+                      <View style={[styles.treatmentCard, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA' }]}>
+                        <View style={styles.treatmentCardHeader}>
+                          <Ionicons name="flask" size={20} color={COLORS.primary} />
+                          <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>
+                            {t('chemical_control')}
+                          </Text>
+                        </View>
+                        <View style={styles.treatmentCardContent}>
+                          {treatment.chemical.map((item, idx) => (
+                            <View key={idx} style={styles.treatmentItem}>
+                              <View style={[styles.bulletPoint, { backgroundColor: COLORS.primary }]} />
+                              <Text style={[styles.treatmentItemText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                                {item}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
                       </View>
-                      <View style={styles.treatmentCardContent}>
-                        {treatment.chemical.map((item, idx) => (
-                          <View key={idx} style={styles.treatmentItem}>
-                            <View style={[styles.bulletPoint, { backgroundColor: COLORS.primary }]} />
-                            <Text style={[styles.treatmentItemText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
+                    )}
                     
                     {/* Cultural Control Card */}
-                    <View style={[styles.treatmentCard, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA' }]}>
-                      <View style={styles.treatmentCardHeader}>
-                        <Ionicons name="leaf" size={20} color={COLORS.primary} />
-                        <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>{t('cultural_control')}</Text>
+                    {treatment.cultural && treatment.cultural.length > 0 && (
+                      <View style={[styles.treatmentCard, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA' }]}>
+                        <View style={styles.treatmentCardHeader}>
+                          <Ionicons name="leaf" size={20} color={COLORS.primary} />
+                          <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>
+                            {t('cultural_control')}
+                          </Text>
+                        </View>
+                        <View style={styles.treatmentCardContent}>
+                          {treatment.cultural.map((item, idx) => (
+                            <View key={idx} style={styles.treatmentItem}>
+                              <View style={[styles.bulletPoint, { backgroundColor: COLORS.primary }]} />
+                              <Text style={[styles.treatmentItemText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                                {item}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
                       </View>
-                      <View style={styles.treatmentCardContent}>
-                        {treatment.cultural.map((item, idx) => (
-                          <View key={idx} style={styles.treatmentItem}>
-                            <View style={[styles.bulletPoint, { backgroundColor: COLORS.primary }]} />
-                            <Text style={[styles.treatmentItemText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
+                    )}
                   </View>
                   
                   {treatment.sources && treatment.sources.length > 0 && (
                     <View style={styles.sourcesContainer}>
-                      <Text style={[styles.sourcesTitle, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>{t('sources')}:</Text>
+                      <Text style={[styles.sourcesTitle, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>
+                        {t('sources')}:
+                      </Text>
                       <View style={styles.sourcesList}>
                         {treatment.sources.map((source, idx) => (
                           <Text key={idx} style={[styles.sourceItem, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>
@@ -273,11 +356,6 @@ const ResultsScreen = () => {
                       </View>
                     </View>
                   )}
-                </View>
-              ) : (
-                <View style={[styles.noTreatmentContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-                  <Ionicons name="information-circle-outline" size={24} color={isDarkMode ? themedColors.gray : COLORS.gray} />
-                  <Text style={[styles.noTreatmentText, { color: isDarkMode ? themedColors.gray : themedColors.gray }]}>{t('no_recommendations_available')}</Text>
                 </View>
               )}
             </View>
@@ -341,6 +419,36 @@ const ResultsScreen = () => {
         </>
         )}
       </ScrollView>
+
+      {/* Full-Screen Image Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showFullScreenImage}
+        onRequestClose={() => setShowFullScreenImage(false)}
+        statusBarTranslucent
+      >
+        <View style={styles.fullScreenModalOverlay}>
+          <TouchableOpacity 
+            style={styles.closeFullScreenButton}
+            onPress={() => setShowFullScreenImage(false)}
+          >
+            <Ionicons name="close" size={32} color={COLORS.white} />
+          </TouchableOpacity>
+          
+          <Image 
+            source={{ uri: imageUri }} 
+            style={styles.fullScreenImage}
+            resizeMode="contain"
+          />
+          
+          <View style={styles.fullScreenImageInfo}>
+            <Text style={styles.fullScreenImageInfoText}>
+              {diagnosis.disease} - {diagnosis.confidence}%
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -358,10 +466,28 @@ const styles = StyleSheet.create({
     height: 250, // Fixed height for full-width image
     overflow: 'hidden',
     marginBottom: 20,
+    position: 'relative',
   },
   fullWidthScanImage: {
     width: '100%',
     height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 15,
+    left: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  tapToViewText: {
+    color: COLORS.white,
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: '500',
   },
   retakeButton: {
     position: 'absolute',
@@ -401,14 +527,12 @@ const styles = StyleSheet.create({
   },
   diagnosisCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 20,
-    marginHorizontal: 0, // Removed to align with section padding
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    marginBottom: 20,
+    borderRadius: 16,
+    padding: 24,
+    marginHorizontal: 0,
+    marginBottom: 0,
+    borderWidth: 1,
+    borderColor: '#E8EBF0',
   },
   diagnosisCardLabel: {
     fontSize: 14,
@@ -416,10 +540,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   diagnosisCardDiseaseName: {
-    fontSize: 24,
-    fontWeight: '900',
+    fontSize: 26,
+    fontWeight: '700',
     color: COLORS.black,
-    marginBottom: 15,
+    marginBottom: 20,
+    letterSpacing: -0.5,
   },
   diagnosisDetailsRow: {
     // Replaced by diseaseAndStageContainer and stageAndConfidenceRow
@@ -456,13 +581,14 @@ const styles = StyleSheet.create({
     // Removed
   },
   confidenceProgressBar: {
-    height: 8,
+    height: 6,
     backgroundColor: COLORS.lightGray,
-    borderRadius: 4,
+    borderRadius: 3,
+    marginTop: 16,
   },
   confidenceProgressBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   confidenceSection: {
     // Replaced by diseaseAndStageContainer and stageAndConfidenceRow
@@ -638,11 +764,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E8EBF0',
   },
   treatmentHeader: {
     flexDirection: 'row',
@@ -727,10 +851,8 @@ const styles = StyleSheet.create({
     padding: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    borderWidth: 1,
+    borderColor: '#E8EBF0',
   },
   noTreatmentText: {
     fontSize: 16,
@@ -743,7 +865,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 0,
   },
   stageBadgeContainer: {
     alignItems: 'flex-start',
@@ -756,6 +878,97 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: COLORS.black,
     marginBottom: 15,
+  },
+  secondaryPredictionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(158, 158, 158, 0.1)',
+    borderRadius: 8,
+  },
+  secondaryPredictionLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.gray,
+    marginRight: 6,
+  },
+  secondaryPredictionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.black,
+  },
+  secondaryPredictionCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E8EBF0',
+  },
+  secondaryPredictionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  secondaryPredictionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginLeft: 8,
+  },
+  secondaryPredictionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  secondaryPredictionDisease: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.black,
+  },
+  secondaryPredictionConfidence: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  fullScreenModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeFullScreenButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 50 : 60,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+  },
+  fullScreenImageInfo: {
+    position: 'absolute',
+    bottom: Platform.OS === 'android' ? 40 : 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingVertical: 12,
+  },
+  fullScreenImageInfoText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
