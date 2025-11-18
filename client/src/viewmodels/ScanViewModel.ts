@@ -17,7 +17,11 @@ export interface ScanResult {
   disease: string;
   confidence: number;
   severity: 'low' | 'medium' | 'high' | 'healthy' | 'Unknown';
-  stage: 'Early' | 'Progressive' | 'Severe' | 'Healthy' | 'Unknown';
+  stage: 'Early' | 'Progressive' | 'Severe' | 'Healthy' | 'Infected' | 'Unknown';
+  secondaryPrediction?: {
+    disease: string;
+    confidence: number;
+  };
   error?: string;  // Optional error message
 }
 
@@ -89,12 +93,19 @@ export const useScanStore = create<ScanState>((set, get) => ({
       console.log('Processed disease name:', diseaseName);
       console.log('Is healthy?', isHealthy);
 
+      // Extract secondary prediction if available
+      const secondaryPrediction = result.secondaryPrediction ? {
+        disease: result.secondaryPrediction.disease,
+        confidence: Math.round(result.secondaryPrediction.confidence)
+      } : undefined;
+
       if (isHealthy) {
         const healthyResult = {
           disease: 'Healthy Plant',
           confidence: Math.round(result.confidence),
           severity: 'healthy' as const,
-          stage: 'Healthy' as const
+          stage: 'Healthy' as const,
+          secondaryPrediction
         };
         console.log('Processed healthy result:', healthyResult);
         
@@ -113,15 +124,16 @@ export const useScanStore = create<ScanState>((set, get) => ({
         formattedDiseaseName = 'Coffee Leaf Rust';
       }
       
-      // Use the model's severity and stage directly
-      const severity = result.severity?.toLowerCase() as 'low' | 'medium' | 'high';
-      const stage = result.stage as 'Early' | 'Progressive' | 'Severe';
+      // Since the model only classifies diseases (not severity stages),
+      // default to "Infected" stage for any disease detection
+      const stage = 'Infected' as const;
       
       const finalResult: ScanResult = {
         disease: formattedDiseaseName,
         confidence: Math.round(result.confidence),
-        severity,
-        stage
+        severity: 'medium' as const, // Default severity for infected plants
+        stage,
+        secondaryPrediction
       };
 
       console.log('Final processed result:', finalResult);

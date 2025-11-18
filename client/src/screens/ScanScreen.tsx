@@ -3,7 +3,6 @@ import {
   StyleSheet, 
   Text, 
   View, 
-  SafeAreaView, 
   StatusBar, 
   TouchableOpacity,
   Dimensions,
@@ -134,12 +133,7 @@ const ScanScreen = () => {
 
       navigation.navigate('Results', { 
         imageUri: `file://${photo.path}`,
-        diagnosis: {
-          disease: result.disease,
-          confidence: result.confidence,
-          severity: result.severity,
-          stage: result.stage
-        }
+        diagnosis: result  // Pass the entire result object to preserve secondaryPrediction
       });
     } catch (error) {
       console.error('Error capturing/processing image:', error);
@@ -150,10 +144,11 @@ const ScanScreen = () => {
   const handleGalleryPick = async () => {
     try {
       const pickerResult = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         quality: 1,
-        allowsEditing: true,
-        aspect: [4, 3],
+        allowsEditing: false,
+        // Removed aspect ratio to allow both portrait and landscape images
+        exif: false,
       });
 
       if (!pickerResult.canceled && pickerResult.assets[0]) {
@@ -186,12 +181,7 @@ const ScanScreen = () => {
 
         navigation.navigate('Results', {
           imageUri: pickerResult.assets[0].uri,
-          diagnosis: {
-            disease: result.disease,
-            confidence: result.confidence,
-            severity: result.severity,
-            stage: result.stage
-          }
+          diagnosis: result  // Pass the entire result object to preserve secondaryPrediction
         });
       }
     } catch (error) {
@@ -210,61 +200,72 @@ const ScanScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themedColors.background }]}>
+    <View style={[styles.container, { backgroundColor: themedColors.background }]}>
       <StatusBar 
-        barStyle={isDarkMode ? "light-content" : "light-content"} 
-        backgroundColor={COLORS.primary} 
+        barStyle="light-content" 
+        backgroundColor="transparent"
+        translucent
       />
       
-      <Header
-        title={t('scan_plant_title')}
-      />
-      
-      <View style={styles.content}>
+      {/* Full-screen camera container */}
+      <View style={styles.fullScreenCameraContainer}>
         {/* Camera Preview */}
-        <View style={styles.cameraContainer}>
-          {hasCameraPermission && device && isCameraActive && (
-            <Camera
-              ref={camera}
-              style={StyleSheet.absoluteFill}
-              device={device}
-              isActive={isCameraActive}
-              photo={true}
-              enableZoomGesture
-            />
-          )}
+        {hasCameraPermission && device && isCameraActive && (
+          <Camera
+            ref={camera}
+            style={StyleSheet.absoluteFill}
+            device={device}
+            isActive={isCameraActive}
+            photo={true}
+            enableZoomGesture
+          />
+        )}
 
-          {/* Camera Controls Overlay */}
-          <View style={styles.cameraControlsOverlay}>
-            <TouchableOpacity 
-              style={[styles.cameraControlButton, flashEnabled && styles.cameraControlButtonActive]}
-              onPress={() => setFlashEnabled(!flashEnabled)}
-            >
-              <Ionicons 
-                name={flashEnabled ? "flash" : "flash-outline"} 
-                size={24} 
-                color={flashEnabled ? COLORS.primary : COLORS.white} 
-              />
-            </TouchableOpacity>
+        {!hasCameraPermission && (
+          <View style={[styles.centeredContainer, { backgroundColor: themedColors.background }]}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={[styles.loadingText, { color: isDarkMode ? themedColors.white : themedColors.gray }]}>{t('loading_camera')}</Text>
           </View>
+        )}
 
-          {(isProcessing || isPostProcessing) && (
-            <View style={[styles.processingContainer, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)' }]}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={[styles.processingText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
-                {isProcessing ? t('analyzing_image') : t('saving_scan_and_syncing')}
-              </Text>
-            </View>
-          )}
+        {/* Header Overlay */}
+        <View style={styles.headerOverlay}>
+          <Header
+            title={t('scan_plant_title')}
+          />
         </View>
 
-        {/* Action Buttons */}
-        <View style={[styles.actionButtonsContainer, { backgroundColor: themedColors.background }]}>
+        {/* Camera Controls Overlay (Flash) */}
+        <View style={styles.cameraControlsOverlay}>
+          <TouchableOpacity 
+            style={[styles.cameraControlButton, flashEnabled && styles.cameraControlButtonActive]}
+            onPress={() => setFlashEnabled(!flashEnabled)}
+          >
+            <Ionicons 
+              name={flashEnabled ? "flash" : "flash-outline"} 
+              size={24} 
+              color={flashEnabled ? COLORS.primary : COLORS.white} 
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Processing Overlay */}
+        {(isProcessing || isPostProcessing) && (
+          <View style={[styles.processingContainer, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)' }]}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={[styles.processingText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+              {isProcessing ? t('analyzing_image') : t('saving_scan_and_syncing')}
+            </Text>
+          </View>
+        )}
+
+        {/* Floating Action Buttons */}
+        <View style={styles.floatingActionButtonsContainer}>
           <TouchableOpacity 
             style={[styles.galleryButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}
             onPress={handleGalleryPick}
           >
-            <Ionicons name="images-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="images-outline" size={24} color={COLORS.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -317,17 +318,28 @@ const ScanScreen = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.black,
   },
-  content: {
+  fullScreenCameraContainer: {
     flex: 1,
+    width: '100%',
+    position: 'relative',
+    backgroundColor: COLORS.black,
+  },
+  headerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    backgroundColor: 'transparent',
   },
   centeredContainer: {
     flex: 1,
@@ -342,98 +354,101 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     textAlign: 'center',
   },
-  cameraContainer: {
-    flex: 1,
-    width: '100%',
-    position: 'relative',
-    backgroundColor: COLORS.black,
-  },
   cameraControlsOverlay: {
     position: 'absolute',
-    top: 16,
+    top: Platform.OS === 'android' ? 80 : 100,
     right: 16,
-    zIndex: 1,
+    zIndex: 11,
   },
   cameraControlButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   cameraControlButtonActive: {
     backgroundColor: COLORS.white,
   },
   processingContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 20,
   },
   processingText: {
     marginTop: 15,
     fontSize: 16,
-    color: COLORS.black,
+    color: COLORS.white,
     fontWeight: '500',
   },
-  actionButtonsContainer: {
+  floatingActionButtonsContainer: {
+    position: 'absolute',
+    bottom: Platform.OS === 'android' ? 40 : 50,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
-    gap: 30,
-    backgroundColor: COLORS.background,
+    gap: 40,
+    zIndex: 11,
   },
   galleryButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 0, // Removed shadow
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   captureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: COLORS.primary,
-    elevation: 0, // Removed shadow
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 10,
   },
   captureButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   captureButtonInner: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: COLORS.primary,
   },
   infoButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 0, // Removed shadow
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   // Modal styles for Unknown Result Modal
   modalOverlay: {

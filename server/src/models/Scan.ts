@@ -5,7 +5,7 @@ export interface IScan extends Document {
   disease: string;
   confidence: number;
   severity: 'low' | 'medium' | 'high' | 'healthy' | 'Unknown';
-  stage: 'Early' | 'Progressive' | 'Severe' | 'Healthy' | 'Unknown';
+  stage: 'Early' | 'Progressive' | 'Severe' | 'Healthy' | 'Infected' | 'Unknown';
   imageUri?: string;
   coordinates?: {
     latitude: number;
@@ -26,7 +26,7 @@ const scanSchema = new Schema<IScan>({
   disease: { type: String, required: true },
   confidence: { type: Number, required: true },
   severity: { type: String, enum: ['low', 'medium', 'high', 'healthy', 'Unknown'], required: true },
-  stage: { type: String, enum: ['Early', 'Progressive', 'Severe', 'Healthy', 'Unknown'], required: true },
+  stage: { type: String, enum: ['Early', 'Progressive', 'Severe', 'Healthy', 'Infected', 'Unknown'], required: true },
   imageUri: { type: String },
   coordinates: {
     latitude: Number,
