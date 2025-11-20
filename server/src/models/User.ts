@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { encrypt, decrypt } from '../utils/encryption';
 
 // Provider interface for social logins
 interface Provider {
@@ -14,13 +15,22 @@ export interface IUser extends Document {
   providers?: Provider[];
   location?: {
     coordinates: {
-      latitude: number;
-      longitude: number;
+      // Encrypted fields stored in DB
+      encryptedLatitude: string;
+      encryptedLongitude: string;
+      // Virtual getters/setters for decrypted values
+      latitude?: number;
+      longitude?: number;
     };
     address: {
-      barangay: string;
-      cityMunicipality: string;
-      province: string;
+      // Encrypted fields stored in DB
+      encryptedBarangay?: string;
+      encryptedCity?: string;
+      encryptedProvince?: string;
+      // Virtual getters/setters for decrypted values
+      barangay?: string;
+      cityMunicipality?: string;
+      province?: string;
     };
   };
   resetPasswordToken?: string;
@@ -70,13 +80,15 @@ const userSchema = new Schema<IUser>(
     providers: [providerSchema],
     location: {
       coordinates: {
-        latitude: Number,
-        longitude: Number
+        // Encrypted fields (stored in DB)
+        encryptedLatitude: String,
+        encryptedLongitude: String
       },
       address: {
-        barangay: String,
-        cityMunicipality: String,
-        province: String
+        // Encrypted fields (stored in DB)
+        encryptedBarangay: String,
+        encryptedCity: String,
+        encryptedProvince: String
       }
     },
     resetPasswordToken: {
@@ -137,6 +149,128 @@ userSchema.pre('save', async function (this: IUser, next) {
     next(error);
   }
 });
+
+// Virtual getters/setters for decrypted location coordinates
+userSchema.virtual('location.coordinates.latitude')
+  .get(function(this: IUser) {
+    if (this.location?.coordinates?.encryptedLatitude) {
+      try {
+        return parseFloat(decrypt(this.location.coordinates.encryptedLatitude));
+      } catch (error) {
+        console.error('Error decrypting latitude:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IUser, value: number) {
+    if (!this.location) {
+      this.location = { coordinates: {} as any, address: {} as any };
+    }
+    if (!this.location.coordinates) {
+      this.location.coordinates = {} as any;
+    }
+    if (value !== undefined && value !== null) {
+      this.location.coordinates.encryptedLatitude = encrypt(value.toString());
+    }
+  });
+
+userSchema.virtual('location.coordinates.longitude')
+  .get(function(this: IUser) {
+    if (this.location?.coordinates?.encryptedLongitude) {
+      try {
+        return parseFloat(decrypt(this.location.coordinates.encryptedLongitude));
+      } catch (error) {
+        console.error('Error decrypting longitude:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IUser, value: number) {
+    if (!this.location) {
+      this.location = { coordinates: {} as any, address: {} as any };
+    }
+    if (!this.location.coordinates) {
+      this.location.coordinates = {} as any;
+    }
+    if (value !== undefined && value !== null) {
+      this.location.coordinates.encryptedLongitude = encrypt(value.toString());
+    }
+  });
+
+// Virtual getters/setters for decrypted address fields
+userSchema.virtual('location.address.barangay')
+  .get(function(this: IUser) {
+    if (this.location?.address?.encryptedBarangay) {
+      try {
+        return decrypt(this.location.address.encryptedBarangay);
+      } catch (error) {
+        console.error('Error decrypting barangay:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IUser, value: string) {
+    if (!this.location) {
+      this.location = { coordinates: {} as any, address: {} as any };
+    }
+    if (!this.location.address) {
+      this.location.address = {} as any;
+    }
+    if (value) {
+      this.location.address.encryptedBarangay = encrypt(value);
+    }
+  });
+
+userSchema.virtual('location.address.cityMunicipality')
+  .get(function(this: IUser) {
+    if (this.location?.address?.encryptedCity) {
+      try {
+        return decrypt(this.location.address.encryptedCity);
+      } catch (error) {
+        console.error('Error decrypting city:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IUser, value: string) {
+    if (!this.location) {
+      this.location = { coordinates: {} as any, address: {} as any };
+    }
+    if (!this.location.address) {
+      this.location.address = {} as any;
+    }
+    if (value) {
+      this.location.address.encryptedCity = encrypt(value);
+    }
+  });
+
+userSchema.virtual('location.address.province')
+  .get(function(this: IUser) {
+    if (this.location?.address?.encryptedProvince) {
+      try {
+        return decrypt(this.location.address.encryptedProvince);
+      } catch (error) {
+        console.error('Error decrypting province:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IUser, value: string) {
+    if (!this.location) {
+      this.location = { coordinates: {} as any, address: {} as any };
+    }
+    if (!this.location.address) {
+      this.location.address = {} as any;
+    }
+    if (value) {
+      this.location.address.encryptedProvince = encrypt(value);
+    }
+  });
 
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {

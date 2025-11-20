@@ -321,14 +321,15 @@ export const updateLocation = async (req: AuthRequest, res: Response) => {
     const userId = req.user._id;
     const { coordinates, address } = req.body;
 
-    // Update user's location
+    // Update user's location (virtuals will handle encryption)
     const user = await User.findByIdAndUpdate(
       userId,
       {
-        location: {
-          coordinates,
-          address
-        }
+        'location.coordinates.latitude': coordinates?.latitude,
+        'location.coordinates.longitude': coordinates?.longitude,
+        'location.address.barangay': address?.barangay,
+        'location.address.cityMunicipality': address?.cityMunicipality,
+        'location.address.province': address?.province
       },
       { new: true }
     ).select('-password');
@@ -337,8 +338,25 @@ export const updateLocation = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ user });
+    // Return decrypted location data via virtuals
+    res.json({ 
+      user: {
+        ...user.toObject({ virtuals: true }),
+        location: {
+          coordinates: {
+            latitude: user.location?.coordinates?.latitude,
+            longitude: user.location?.coordinates?.longitude
+          },
+          address: {
+            barangay: user.location?.address?.barangay,
+            cityMunicipality: user.location?.address?.cityMunicipality,
+            province: user.location?.address?.province
+          }
+        }
+      }
+    });
   } catch (error) {
+    console.error('Update location error:', error);
     res.status(500).json({ message: 'Error updating location' });
   }
 }; 

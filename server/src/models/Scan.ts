@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { encrypt, decrypt } from '../utils/encryption';
 
 export interface IScan extends Document {
   user: mongoose.Types.ObjectId;
@@ -8,13 +9,22 @@ export interface IScan extends Document {
   stage: 'Early' | 'Progressive' | 'Severe' | 'Healthy' | 'Infected' | 'Unknown';
   imageUri?: string;
   coordinates?: {
-    latitude: number;
-    longitude: number;
+    // Encrypted fields stored in DB
+    encryptedLatitude?: string;
+    encryptedLongitude?: string;
+    // Virtual getters/setters for decrypted values
+    latitude?: number;
+    longitude?: number;
   };
   address?: {
-    barangay: string;
-    cityMunicipality: string;
-    province: string;
+    // Encrypted fields stored in DB
+    encryptedBarangay?: string;
+    encryptedCity?: string;
+    encryptedProvince?: string;
+    // Virtual getters/setters for decrypted values
+    barangay?: string;
+    cityMunicipality?: string;
+    province?: string;
   };
   createdAt: Date;
   isDeleted: boolean; // Add soft delete flag
@@ -29,13 +39,15 @@ const scanSchema = new Schema<IScan>({
   stage: { type: String, enum: ['Early', 'Progressive', 'Severe', 'Healthy', 'Infected', 'Unknown'], required: true },
   imageUri: { type: String },
   coordinates: {
-    latitude: Number,
-    longitude: Number
+    // Encrypted fields (stored in DB)
+    encryptedLatitude: String,
+    encryptedLongitude: String
   },
   address: {
-    barangay: String,
-    cityMunicipality: String,
-    province: String
+    // Encrypted fields (stored in DB)
+    encryptedBarangay: String,
+    encryptedCity: String,
+    encryptedProvince: String
   },
   createdAt: { type: Date, default: Date.now },
   isDeleted: { type: Boolean, default: false }, // Default to not deleted
@@ -58,5 +70,112 @@ scanSchema.index({ user: 1, isDeleted: 1 }, { background: true });
 
 // Index for finding specific scans by ID and user (for delete operations)
 scanSchema.index({ _id: 1, user: 1 }, { background: true });
+
+// Virtual getters/setters for decrypted location coordinates
+scanSchema.virtual('coordinates.latitude')
+  .get(function(this: IScan) {
+    if (this.coordinates?.encryptedLatitude) {
+      try {
+        return parseFloat(decrypt(this.coordinates.encryptedLatitude));
+      } catch (error) {
+        console.error('Error decrypting scan latitude:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IScan, value: number) {
+    if (!this.coordinates) {
+      this.coordinates = {} as any;
+    }
+    if (value !== undefined && value !== null) {
+      this.coordinates!.encryptedLatitude = encrypt(value.toString());
+    }
+  });
+
+scanSchema.virtual('coordinates.longitude')
+  .get(function(this: IScan) {
+    if (this.coordinates?.encryptedLongitude) {
+      try {
+        return parseFloat(decrypt(this.coordinates.encryptedLongitude));
+      } catch (error) {
+        console.error('Error decrypting scan longitude:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IScan, value: number) {
+    if (!this.coordinates) {
+      this.coordinates = {} as any;
+    }
+    if (value !== undefined && value !== null) {
+      this.coordinates!.encryptedLongitude = encrypt(value.toString());
+    }
+  });
+
+// Virtual getters/setters for decrypted address fields
+scanSchema.virtual('address.barangay')
+  .get(function(this: IScan) {
+    if (this.address?.encryptedBarangay) {
+      try {
+        return decrypt(this.address.encryptedBarangay);
+      } catch (error) {
+        console.error('Error decrypting scan barangay:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IScan, value: string) {
+    if (!this.address) {
+      this.address = {} as any;
+    }
+    if (value) {
+      this.address!.encryptedBarangay = encrypt(value);
+    }
+  });
+
+scanSchema.virtual('address.cityMunicipality')
+  .get(function(this: IScan) {
+    if (this.address?.encryptedCity) {
+      try {
+        return decrypt(this.address.encryptedCity);
+      } catch (error) {
+        console.error('Error decrypting scan city:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IScan, value: string) {
+    if (!this.address) {
+      this.address = {} as any;
+    }
+    if (value) {
+      this.address!.encryptedCity = encrypt(value);
+    }
+  });
+
+scanSchema.virtual('address.province')
+  .get(function(this: IScan) {
+    if (this.address?.encryptedProvince) {
+      try {
+        return decrypt(this.address.encryptedProvince);
+      } catch (error) {
+        console.error('Error decrypting scan province:', error);
+        return undefined;
+      }
+    }
+    return undefined;
+  })
+  .set(function(this: IScan, value: string) {
+    if (!this.address) {
+      this.address = {} as any;
+    }
+    if (value) {
+      this.address!.encryptedProvince = encrypt(value);
+    }
+  });
 
 export const Scan = mongoose.model<IScan>('Scan', scanSchema);

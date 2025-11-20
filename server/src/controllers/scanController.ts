@@ -46,16 +46,31 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
       confidence: numericConfidence,
       severity,
       stage,
-      imageUri,
-      coordinates,
-      address
+      imageUri
     });
+    
+    // Set location data (virtuals will encrypt automatically)
+    if (coordinates) {
+      scan.coordinates = {
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude
+      } as any;
+    }
+    if (address) {
+      scan.address = {
+        barangay: address.barangay,
+        cityMunicipality: address.cityMunicipality,
+        province: address.province
+      } as any;
+    }
     
     console.log('Saving scan to database with imageUri:', imageUri);
     await scan.save();
     console.log('Scan saved successfully:', scan._id);
     
-    res.status(201).json({ scan });
+    // Return scan with decrypted location data via virtuals
+    const scanResponse = scan.toObject({ virtuals: true });
+    res.status(201).json({ scan: scanResponse });
   } catch (error) {
     console.error('Error saving scan:', error);
     res.status(500).json({ message: 'Error saving scan result' });
@@ -80,7 +95,9 @@ export const getUserScans = async (req: AuthRequest, res: Response) => {
     }
 
     const scans = await Scan.find(filter).sort({ createdAt: -1 });
-    res.json({ scans });
+    // Return scans with decrypted location data via virtuals
+    const scansResponse = scans.map(scan => scan.toObject({ virtuals: true }));
+    res.json({ scans: scansResponse });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching scan results' });
   }
