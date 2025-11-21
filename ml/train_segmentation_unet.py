@@ -628,6 +628,111 @@ def train_model():
     print("\n✅ Training complete!")
     print(f"   Model saved to: {final_path}")
     
+    # Save training history plot (accuracy & loss)
+    try:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+        ax1.plot(history.history.get('accuracy', []), label='Training')
+        ax1.plot(history.history.get('val_accuracy', []), label='Validation')
+        ax1.set_title('Segmentation Accuracy')
+        ax1.set_xlabel('Epoch')
+        ax1.set_ylabel('Accuracy')
+        ax1.legend()
+        ax2.plot(history.history.get('loss', []), label='Training')
+        ax2.plot(history.history.get('val_loss', []), label='Validation')
+        ax2.set_title('Segmentation Loss')
+        ax2.set_xlabel('Epoch')
+        ax2.set_ylabel('Loss')
+        ax2.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(CONFIG['model_export_path'], f'training_history_segmentation_{CONFIG["backbone"]}.png'))
+        plt.close()
+        print(f"   📈 Training history saved: training_history_segmentation_{CONFIG['backbone']}.png")
+    except Exception as e:
+        print(f"   ⚠️  Could not save training history plot: {e}")
+    
+    # Save training metrics JSON
+    try:
+        # Friendly model name mapping
+        backbone_name_map = {
+            'mobilenetv2': 'MobileNetV2',
+            'efficientnetb0': 'EfficientNetB0',
+            'resnet50': 'ResNet50',
+        }
+        model_name = f"Segmentation_{backbone_name_map.get(CONFIG['backbone'], CONFIG['backbone'])}"
+        metrics = {
+            'model_name': model_name,
+            'final_train_accuracy': float(history.history.get('accuracy', [0])[-1]) if history.history.get('accuracy') else None,
+            'final_val_accuracy': float(history.history.get('val_accuracy', [0])[-1]) if history.history.get('val_accuracy') else None,
+            'best_val_accuracy': float(max(history.history.get('val_accuracy', [0]))) if history.history.get('val_accuracy') else None,
+            'final_train_loss': float(history.history.get('loss', [0])[-1]) if history.history.get('loss') else None,
+            'final_val_loss': float(history.history.get('val_loss', [0])[-1]) if history.history.get('val_loss') else None,
+            'best_val_loss': float(min(history.history.get('val_loss', [0]))) if history.history.get('val_loss') else None,
+            'total_epochs': len(history.history.get('loss', [])),
+            'config': CONFIG
+        }
+        with open(os.path.join(CONFIG['model_export_path'], f"{model_name}_metrics.json"), 'w') as f:
+            json.dump(metrics, f, indent=2)
+        print(f"   🧾 Metrics JSON saved: {model_name}_metrics.json")
+    except Exception as e:
+        print(f"   ⚠️  Could not save metrics JSON: {e}")
+    
+    # Compute and save per-pixel confusion matrix on validation set
+    try:
+        from sklearn.metrics import confusion_matrix
+        labels = [0, 1, 2]  # background, leaf, lesion
+        y_true_list = []
+        y_pred_list = []
+        for i in range(len(val_gen)):
+            batch_imgs, batch_masks = val_gen[i]
+            preds = model.predict(batch_imgs, verbose=0)
+            pred_classes = np.argmax(preds, axis=-1)
+            y_true_list.append(batch_masks.reshape(-1))
+            y_pred_list.append(pred_classes.reshape(-1))
+        y_true = np.concatenate(y_true_list)
+        y_pred = np.concatenate(y_pred_list)
+        cm = confusion_matrix(y_true, y_pred, labels=labels)
+        # IoU and Dice per class
+        eps = 1e-7
+        iou_per_class = {}
+        dice_per_class = {}
+        class_labels = ['background', 'leaf', 'lesion']
+        for idx, cls_name in enumerate(class_labels):
+            tp = float(cm[idx, idx])
+            fp = float(cm[:, idx].sum() - tp)
+            fn = float(cm[idx, :].sum() - tp)
+            iou = tp / (tp + fp + fn + eps)
+            dice = (2 * tp) / (2 * tp + fp + fn + eps)
+            iou_per_class[cls_name] = iou
+            dice_per_class[cls_name] = dice
+        seg_metrics = {
+            'confusion_matrix': cm.tolist(),
+            'class_labels': class_labels,
+            'iou_per_class': iou_per_class,
+            'dice_per_class': dice_per_class
+        }
+        with open(os.path.join(CONFIG['model_export_path'], f'test_metrics_segmentation_{CONFIG["backbone"]}.json'), 'w') as f:
+            json.dump(seg_metrics, f, indent=2)
+        # Plot confusion matrix
+        plt.figure(figsize=(8, 6))
+        plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+        plt.title(f'Confusion Matrix - Segmentation ({CONFIG["backbone"]})')
+        plt.colorbar()
+        tick_marks = np.arange(len(class_labels))
+        plt.xticks(tick_marks, class_labels, rotation=45)
+        plt.yticks(tick_marks, class_labels)
+        for i in range(cm.shape[0]):
+            for j in range(cm.shape[1]):
+                plt.text(j, i, format(cm[i, j], 'd'), ha='center', va='center',
+                         color='white' if cm[i, j] > (cm.max() / 2.0) else 'black')
+        plt.ylabel('True Label')
+        plt.xlabel('Predicted Label')
+        plt.tight_layout()
+        plt.savefig(os.path.join(CONFIG['model_export_path'], f'confusion_matrix_segmentation_{CONFIG["backbone"]}.png'))
+        plt.close()
+        print(f"   🔢 Confusion matrix saved: confusion_matrix_segmentation_{CONFIG['backbone']}.png")
+    except Exception as e:
+        print(f"   ⚠️  Could not compute/save confusion matrix: {e}")
+    
     return model, history
 
 # ============================================================================
