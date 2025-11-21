@@ -93,36 +93,50 @@ def load_dataset_with_masks(data_dir, masks_dir, manifest_path=None):
     # Try to load manifest first (most robust)
     if manifest_path and Path(manifest_path).exists():
         print(f"\n📂 Loading from manifest: {manifest_path}")
-        import pandas as pd
         
-        # Try JSON first
-        if str(manifest_path).endswith('.json'):
-            with open(manifest_path, 'r') as f:
-                manifest = json.load(f)
-            # Expect format: [{"original_path": ..., "annotation_path": ..., "class": ..., "split": ...}]
-            for entry in manifest:
-                img_path = Path(entry['original_path'])
-                mask_filename = Path(entry.get('annotation_path', '')).name
-                mask_path = masks_dir / mask_filename
-                
-                if img_path.exists() and mask_path.exists():
-                    images.append(str(img_path))
-                    masks.append(str(mask_path))
-                    classes.append(entry['class'])
-                    splits.append(entry.get('split', 'train'))
+        # Load JSON
+        with open(manifest_path, 'r') as f:
+            manifest_data = json.load(f)
+        
+        # Handle different manifest formats
+        if isinstance(manifest_data, dict) and 'images' in manifest_data:
+            # New format: {"images": [{...}, {...}]}
+            manifest = manifest_data['images']
+        elif isinstance(manifest_data, list):
+            # Old format: [{...}, {...}]
+            manifest = manifest_data
         else:
-            # CSV format
-            df = pd.read_csv(manifest_path)
-            for _, row in df.iterrows():
-                img_path = Path(row['original_path'])
-                mask_filename = Path(row.get('annotation_path', '')).name if 'annotation_path' in row else f"{img_path.stem}.png"
-                mask_path = masks_dir / mask_filename
-                
-                if img_path.exists() and mask_path.exists():
-                    images.append(str(img_path))
-                    masks.append(str(mask_path))
-                    classes.append(row['class'])
-                    splits.append(row.get('split', 'train'))
+            print("⚠️  Unknown manifest format, falling back to stem matching")
+            manifest = []
+        
+        # Process manifest entries
+        for entry in manifest:
+            img_path = Path(entry['original_path'])
+            
+            # Get mask filename from annotation_path or filename
+            if 'annotation_path' in entry:
+                # Extract just the filename from path like "brown_spot\annotated_train\brown_spot_annotated_train_001.jpg"
+                mask_filename = Path(entry['annotation_path']).name
+                # Change .jpg to .png for mask
+                mask_filename = mask_filename.replace('.jpg', '.png')
+            elif 'filename' in entry:
+                mask_filename = entry['filename'].replace('.jpg', '.png')
+            else:
+                continue
+            
+            mask_path = masks_dir / mask_filename
+            
+            if img_path.exists() and mask_path.exists():
+                images.append(str(img_path))
+                masks.append(str(mask_path))
+                classes.append(entry['class'])
+                # Extract split from annotated_split (e.g., "annotated_train" -> "train")
+                split = entry.get('annotated_split', 'train').replace('annotated_', '')
+                splits.append(split)
+            elif not img_path.exists():
+                print(f"⚠️  Image not found: {img_path}")
+            elif not mask_path.exists():
+                print(f"⚠️  Mask not found: {mask_path}")
     else:
         # Fallback: Match by stem (filename without extension)
         print(f"\n📂 Manifest not found, using stem matching...")
@@ -564,7 +578,7 @@ def train_model():
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=CONFIG['learning_rate']),
         loss='sparse_categorical_crossentropy',
-        metrics=['accuracy', tf.keras.metrics.MeanIoU(num_classes=CONFIG['num_classes'])]
+        metrics=['accuracy']  # Remove MeanIoU - causes shape issues with variable batch sizes
     )
     
     print(f"\n📊 Model Summary:")
