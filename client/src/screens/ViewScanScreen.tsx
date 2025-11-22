@@ -57,11 +57,11 @@ const ViewScanScreen = () => {
 
   const getStageColor = (stage: string) => {
     switch (stage.toLowerCase()) {
-      case 'early': return '#4CAF50';
-      case 'progressive': return '#FFA000';
-      case 'severe': return '#F44336';
-      case 'healthy': return '#4CAF50';
-      case 'infected': return '#FF6B6B'; // Orange-red for infected
+      case 'early': return '#4CAF50'; // Green
+      case 'progressive': return '#FFA000'; // Yellow/Orange
+      case 'severe': return '#F44336'; // Red
+      case 'infected': return '#F44336'; // Red
+      case 'healthy': return '#4CAF50'; // Green
       default: return '#9E9E9E';
     }
   };
@@ -86,22 +86,36 @@ const ViewScanScreen = () => {
     }
   };
 
+  // Helper to get scientific name for each disease
+  const getScientificName = (disease: string) => {
+    switch (disease) {
+      case 'Coffee Leaf Rust':
+        return 'Hemileia vastatrix';
+      case 'Coffee Brown Spot':
+        return 'Cercospora coffeicola';
+      case 'Coffee Leaf Spot':
+        return 'Phoma costaricensis';
+      case 'Coffee Sooty Mold':
+        return 'Capnodium / Cladosporium / Scorias spp.';
+      default:
+        return null;
+    }
+  };
+
   // Helper to get treatment recommendations with fallback to default
   const getTreatment = () => {
-    // Map disease names to treatment keys
-    const diseaseKey = scan.disease === 'Coffee Brown Spot' ? 'Brown Spot' :
-                       scan.disease === 'Coffee Leaf Spot' ? 'Leaf Spot' :
-                       scan.disease === 'Coffee Sooty Mold' ? 'Sooty Mold' :
-                       scan.disease;
+    // Get the disease name from scan
+    const diseaseName = scan.disease;
     
-    if (treatmentRecommendations[diseaseKey]) {
+    // Check if treatment recommendations exist for this disease
+    if (treatmentRecommendations[diseaseName]) {
       // Try to get stage-specific treatment
-      const stageTreatment = treatmentRecommendations[diseaseKey][scan.stage];
+      const stageTreatment = treatmentRecommendations[diseaseName][scan.stage];
       if (stageTreatment && stageTreatment[selectedVariety]) {
         return stageTreatment[selectedVariety];
       }
       // Fallback to default if stage not found
-      const defaultTreatment = treatmentRecommendations[diseaseKey]['Default'];
+      const defaultTreatment = treatmentRecommendations[diseaseName]['Default'];
       if (defaultTreatment && defaultTreatment[selectedVariety]) {
         return defaultTreatment[selectedVariety];
       }
@@ -172,24 +186,48 @@ const ViewScanScreen = () => {
             <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{t('diagnosis')}</Text>
           </View>
 
-          <View style={[styles.diagnosisCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
-            <Text style={[styles.diagnosisCardDiseaseName, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{scan.disease}</Text>
+          <View style={[styles.diagnosisCard, { 
+            backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
+            borderColor: isDarkMode ? 'transparent' : '#E8EBF0'
+          }]}>
+            {/* Disease Name */}
+            <Text style={[styles.diagnosisCardDiseaseName, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+              {scan.disease}
+            </Text>
 
+            {/* Scientific Name */}
+            {getScientificName(scan.disease) && (
+              <Text style={[styles.scientificName, { color: isDarkMode ? themedColors.gray : '#666' }]}>
+                {getScientificName(scan.disease)}
+              </Text>
+            )}
+
+            {/* Divider */}
+            <View style={[styles.diagnosisDivider, { backgroundColor: isDarkMode ? '#333' : '#E8EBF0' }]} />
+
+            {/* Stage and Confidence Row */}
             <View style={styles.stageAndConfidenceRow}>
               <View style={styles.stageBadgeContainer}>
-                <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>{t('stage')}</Text>
-                <View style={[styles.stageBadge, { backgroundColor: getStageColor(scan.stage) }]}>
-                  <Text style={[styles.stageBadgeText, { color: COLORS.white }]}>{scan.stage === 'Healthy' ? t('healthy') : scan.stage}</Text>
-                </View>
+                <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>
+                  {t('stage')}
+                </Text>
+                <Text style={[styles.diagnosisStageText, { color: getStageColor(scan.stage) }]}>
+                  {scan.stage === 'Healthy' ? t('healthy') : scan.stage}
+                </Text>
               </View>
 
               <View style={styles.confidenceScoreContainer}>
-                <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>{t('confidence_score')}</Text>
-                <Text style={[styles.confidenceValueText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{scan.confidence}%</Text>
+                <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>
+                  {t('confidence_score')}
+                </Text>
+                <Text style={[styles.confidenceValueText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
+                  {scan.confidence}%
+                </Text>
               </View>
             </View>
 
-            <View style={[styles.confidenceProgressBar, { backgroundColor: isDarkMode ? themedColors.lightGray : '#E8EBF0', marginTop: 10 }]}>
+            {/* Progress Bar */}
+            <View style={[styles.confidenceProgressBar, { backgroundColor: isDarkMode ? themedColors.lightGray : '#E8EBF0' }]}>
               <View
                 style={[
                   styles.confidenceProgressBarFill,
@@ -243,7 +281,10 @@ const ViewScanScreen = () => {
               <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
             </View>
             {treatment && (
-              <View style={[styles.treatmentContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+              <View style={[styles.treatmentContainer, { 
+                backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
+                borderColor: isDarkMode ? 'transparent' : '#E8EBF0'
+              }]}>
                 <View style={styles.treatmentHeader}>
                   <Text style={[styles.treatmentHeaderTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
                     {scan.disease}
@@ -258,7 +299,7 @@ const ViewScanScreen = () => {
                 <View style={styles.treatmentCardsContainer}>
                   {/* Chemical Control Card */}
                   {treatment.chemical && treatment.chemical.length > 0 && (
-                    <View style={[styles.treatmentCard, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA' }]}>
+                    <View style={styles.treatmentCard}>
                       <View style={styles.treatmentCardHeader}>
                         <Ionicons name="flask" size={20} color={COLORS.primary} />
                         <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>
@@ -278,9 +319,14 @@ const ViewScanScreen = () => {
                     </View>
                   )}
                   
+                  {/* Divider between cards */}
+                  {treatment.chemical && treatment.chemical.length > 0 && treatment.cultural && treatment.cultural.length > 0 && (
+                    <View style={[styles.treatmentDivider, { backgroundColor: isDarkMode ? '#333' : '#E8EBF0' }]} />
+                  )}
+                  
                   {/* Cultural Control Card */}
                   {treatment.cultural && treatment.cultural.length > 0 && (
-                    <View style={[styles.treatmentCard, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA' }]}>
+                    <View style={styles.treatmentCard}>
                       <View style={styles.treatmentCardHeader}>
                         <Ionicons name="leaf" size={20} color={COLORS.primary} />
                         <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>
@@ -331,7 +377,10 @@ const ViewScanScreen = () => {
               <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
             </View>
             {treatmentRecommendations['Coffee Leaf Rust']?.Healthy?.[selectedVariety]?.cultural?.length ? (
-              <View style={[styles.treatmentContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+              <View style={[styles.treatmentContainer, { 
+                backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
+                borderColor: isDarkMode ? 'transparent' : '#E8EBF0'
+              }]}>
                 <View style={styles.treatmentHeader}>
                   <Text style={[styles.treatmentHeaderTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
                     {t('preventive_care_for_healthy_plants')}
@@ -414,7 +463,7 @@ const styles = StyleSheet.create({
   },
   fullWidthImageContainer: {
     width: '100%',
-    height: 250,
+    height: 300,
     overflow: 'hidden',
     marginBottom: 20,
     position: 'relative',
@@ -473,6 +522,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     letterSpacing: -0.5,
   },
+  scientificName: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    color: '#666',
+    marginTop: -12,
+    marginBottom: 16,
+  },
+  diagnosisDivider: {
+    height: 1,
+    backgroundColor: '#E8EBF0',
+    marginBottom: 16,
+  },
   stageAndConfidenceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -501,11 +562,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 0,
   },
+  diagnosisStageText: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
   confidenceScoreContainer: {
     alignItems: 'flex-end',
   },
   confidenceValueText: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.black,
   },
@@ -580,17 +645,15 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   treatmentCardsContainer: {
-    gap: 16,
+    // Removed gap, using dividers instead
   },
   treatmentCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    padding: 16,
+    paddingVertical: 8,
   },
   treatmentCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   treatmentCardTitle: {
     fontSize: 16,
@@ -599,7 +662,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   treatmentCardContent: {
-    gap: 8,
+    gap: 6,
   },
   treatmentItem: {
     flexDirection: 'row',
@@ -618,6 +681,11 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     flex: 1,
     lineHeight: 22,
+  },
+  treatmentDivider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 10,
   },
   sourcesContainer: {
     marginTop: 20,

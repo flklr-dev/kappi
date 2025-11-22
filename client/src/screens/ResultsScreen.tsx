@@ -120,22 +120,32 @@ const ResultsScreen = () => {
   console.log('SecondaryPrediction value:', diagnosis.secondaryPrediction);
   console.log('===================================');
 
+  // Helper to get scientific name for each disease
+  const getScientificName = (disease: string) => {
+    switch (disease) {
+      case 'Coffee Leaf Rust':
+        return 'Hemileia vastatrix';
+      case 'Coffee Brown Spot':
+        return 'Cercospora coffeicola';
+      case 'Coffee Leaf Spot':
+        return 'Phoma costaricensis';
+      case 'Coffee Sooty Mold':
+        return 'Capnodium / Cladosporium / Scorias spp.';
+      default:
+        return null;
+    }
+  };
+
   // Helper to get treatment recommendations with fallback to default
   const getTreatment = () => {
-    // Map disease names to treatment keys
-    const diseaseKey = diagnosis.disease === 'Coffee Brown Spot' ? 'Brown Spot' :
-                       diagnosis.disease === 'Coffee Leaf Spot' ? 'Leaf Spot' :
-                       diagnosis.disease === 'Coffee Sooty Mold' ? 'Sooty Mold' :
-                       diagnosis.disease;
-    
-    if (treatmentRecommendations[diseaseKey]) {
+    if (diagnosis.disease === 'Coffee Leaf Rust' && treatmentRecommendations['Coffee Leaf Rust']) {
       // Try to get stage-specific treatment
-      const stageTreatment = treatmentRecommendations[diseaseKey][diagnosis.stage];
+      const stageTreatment = treatmentRecommendations['Coffee Leaf Rust'][diagnosis.stage];
       if (stageTreatment && stageTreatment[selectedVariety]) {
         return stageTreatment[selectedVariety];
       }
       // Fallback to default if stage not found
-      const defaultTreatment = treatmentRecommendations[diseaseKey]['Default'];
+      const defaultTreatment = treatmentRecommendations['Coffee Leaf Rust']['Default'];
       if (defaultTreatment && defaultTreatment[selectedVariety]) {
         return defaultTreatment[selectedVariety];
       }
@@ -205,11 +215,24 @@ const ResultsScreen = () => {
         <>
           {/* Plant Health Section */}
           <View style={styles.section}>
-            <View style={[styles.diagnosisCard, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+            <View style={[styles.diagnosisCard, { 
+              backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
+              borderColor: isDarkMode ? 'transparent' : '#E8EBF0'
+            }]}>
               {/* Disease Name */}
               <Text style={[styles.diagnosisCardDiseaseName, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
                 {diagnosis.disease}
               </Text>
+
+              {/* Scientific Name */}
+              {getScientificName(diagnosis.disease) && (
+                <Text style={[styles.scientificName, { color: isDarkMode ? themedColors.gray : '#666' }]}>
+                  {getScientificName(diagnosis.disease)}
+                </Text>
+              )}
+
+              {/* Divider */}
+              <View style={[styles.diagnosisDivider, { backgroundColor: isDarkMode ? '#333' : '#E8EBF0' }]} />
 
               {/* Stage and Confidence Row */}
               <View style={styles.stageAndConfidenceRow}>
@@ -217,11 +240,9 @@ const ResultsScreen = () => {
                   <Text style={[styles.diagnosisDetailLabel, { color: themedColors.gray }]}>
                     {t('stage')}
                   </Text>
-                  <View style={[styles.stageBadge, { backgroundColor: getStageColor(diagnosis.stage) }]}>
-                    <Text style={styles.stageBadgeText}>
-                      {isHealthyStage(diagnosis.stage) ? t('healthy') : diagnosis.stage}
-                    </Text>
-                  </View>
+                  <Text style={[styles.diagnosisStageText, { color: getStageColor(diagnosis.stage) }]}>
+                    {isHealthyStage(diagnosis.stage) ? t('healthy') : diagnosis.stage}
+                  </Text>
                 </View>
 
                 <View style={styles.confidenceScoreContainer}>
@@ -269,8 +290,8 @@ const ResultsScreen = () => {
             </View>
           )}
 
-          {/* Treatment Recommendations - Show for all diseases except Healthy */}
-          {(diagnosis.disease !== 'Healthy Plant' && diagnosis.disease !== 'Healthy' && diagnosis.stage !== 'Healthy') && (
+          {/* Treatment Recommendations - Always show for Coffee Leaf Rust */}
+          {diagnosis.disease === 'Coffee Leaf Rust' && diagnosis.stage !== 'Healthy' && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
@@ -284,7 +305,10 @@ const ResultsScreen = () => {
                 <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
               </View>
               {treatment && (
-                <View style={[styles.treatmentContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+                <View style={[styles.treatmentContainer, { 
+                  backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
+                  borderColor: isDarkMode ? 'transparent' : '#E8EBF0'
+                }]}>
                   <View style={styles.treatmentHeader}>
                     <Text style={[styles.treatmentHeaderTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
                       {diagnosis.disease}
@@ -299,7 +323,7 @@ const ResultsScreen = () => {
                   <View style={styles.treatmentCardsContainer}>
                     {/* Chemical Control Card */}
                     {treatment.chemical && treatment.chemical.length > 0 && (
-                      <View style={[styles.treatmentCard, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA' }]}>
+                      <View style={styles.treatmentCard}>
                         <View style={styles.treatmentCardHeader}>
                           <Ionicons name="flask" size={20} color={COLORS.primary} />
                           <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>
@@ -319,9 +343,14 @@ const ResultsScreen = () => {
                       </View>
                     )}
                     
+                    {/* Divider between cards */}
+                    {treatment.chemical && treatment.chemical.length > 0 && treatment.cultural && treatment.cultural.length > 0 && (
+                      <View style={[styles.treatmentDivider, { backgroundColor: isDarkMode ? '#333' : '#E8EBF0' }]} />
+                    )}
+                    
                     {/* Cultural Control Card */}
                     {treatment.cultural && treatment.cultural.length > 0 && (
-                      <View style={[styles.treatmentCard, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA' }]}>
+                      <View style={styles.treatmentCard}>
                         <View style={styles.treatmentCardHeader}>
                           <Ionicons name="leaf" size={20} color={COLORS.primary} />
                           <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>
@@ -372,7 +401,10 @@ const ResultsScreen = () => {
                 <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
               </View>
               {treatmentRecommendations['Coffee Leaf Rust']?.Healthy?.[selectedVariety]?.cultural?.length ? (
-                <View style={[styles.treatmentContainer, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white }]}>
+                <View style={[styles.treatmentContainer, { 
+                  backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
+                  borderColor: isDarkMode ? 'transparent' : '#E8EBF0'
+                }]}>
                   <View style={styles.treatmentHeader}>
                     <Text style={[styles.treatmentHeaderTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>
                       {t('preventive_care_for_healthy_plants')}
@@ -413,7 +445,7 @@ const ResultsScreen = () => {
               onPress={() => navigation.navigate('MainTabs', { screen: 'ScanTab' })}
             >
               <Ionicons name="camera-outline" size={24} color={COLORS.white} />
-              <Text style={styles.actionButtonText}>{t('scan_another_image')}</Text>
+              <Text style={styles.actionButtonText}>{t('new_scan')}</Text>
             </TouchableOpacity>
           )}
         </>
@@ -463,7 +495,7 @@ const styles = StyleSheet.create({
   },
   fullWidthImageContainer: {
     width: '100%',
-    height: 250, // Fixed height for full-width image
+    height: 300, // Fixed height for full-width image
     overflow: 'hidden',
     marginBottom: 20,
     position: 'relative',
@@ -546,6 +578,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     letterSpacing: -0.5,
   },
+  scientificName: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    color: '#666',
+    marginTop: -12,
+    marginBottom: 16,
+  },
+  diagnosisDivider: {
+    height: 1,
+    backgroundColor: '#E8EBF0',
+    marginBottom: 16,
+  },
   diagnosisDetailsRow: {
     // Replaced by diseaseAndStageContainer and stageAndConfidenceRow
   },
@@ -570,10 +614,13 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 14,
     fontWeight: '600',
-    marginLeft: 0, // Removed marginLeft as icon is removed
+  },
+  diagnosisStageText: {
+    fontSize: 24,
+    fontWeight: '700',
   },
   confidenceValueText: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.black,
   },
@@ -642,6 +689,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 10,
   },
   secondaryButtonText: {
     // Removed
@@ -651,14 +699,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingVertical: 15,
-    borderRadius: 15,
-    marginHorizontal: 20, // Match section padding
-    marginBottom: 20, // Add bottom margin for spacing
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    marginTop: 10,
   },
   centeredContainer: {
     flex: 1,
@@ -785,17 +830,15 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   treatmentCardsContainer: {
-    gap: 16,
+    // Removed gap, using dividers instead
   },
   treatmentCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    padding: 16,
+    paddingVertical: 8,
   },
   treatmentCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   treatmentCardTitle: {
     fontSize: 16,
@@ -804,7 +847,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   treatmentCardContent: {
-    gap: 8,
+    gap: 6,
   },
   treatmentItem: {
     flexDirection: 'row',

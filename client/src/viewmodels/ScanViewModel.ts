@@ -18,6 +18,7 @@ export interface ScanResult {
   confidence: number;
   severity: 'low' | 'medium' | 'high' | 'healthy' | 'Unknown';
   stage: 'Early' | 'Progressive' | 'Severe' | 'Healthy' | 'Infected' | 'Unknown';
+  severityPercentage?: number;  // Raw percentage from segmentation
   secondaryPrediction?: {
     disease: string;
     confidence: number;
@@ -82,6 +83,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
       console.log('Raw confidence value:', result.confidence);
       console.log('Raw severity value:', result.severity);
       console.log('Raw stage value:', result.stage);
+      console.log('Raw severityPercentage:', result.severityPercentage);
       console.log('=====================');
 
       // Check for healthy plant - handle different possible formats
@@ -105,6 +107,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
           confidence: Math.round(result.confidence),
           severity: 'healthy' as const,
           stage: 'Healthy' as const,
+          severityPercentage: 0,
           secondaryPrediction
         };
         console.log('Processed healthy result:', healthyResult);
@@ -124,15 +127,13 @@ export const useScanStore = create<ScanState>((set, get) => ({
         formattedDiseaseName = 'Coffee Leaf Rust';
       }
       
-      // Since the model only classifies diseases (not severity stages),
-      // default to "Infected" stage for any disease detection
-      const stage = 'Infected' as const;
-      
+      // Use segmentation-derived severity and stage from native module
       const finalResult: ScanResult = {
         disease: formattedDiseaseName,
         confidence: Math.round(result.confidence),
-        severity: 'medium' as const, // Default severity for infected plants
-        stage,
+        severity: result.severity as 'low' | 'medium' | 'high',
+        stage: result.stage as 'Early' | 'Progressive' | 'Severe',
+        severityPercentage: result.severityPercentage || 0,
         secondaryPrediction
       };
 
