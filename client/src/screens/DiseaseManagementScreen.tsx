@@ -45,185 +45,157 @@ interface DiseaseInfo {
   prevention: string[];
   treatment: string[];
   image: ImageSourcePropType;
+  sources: string[];
 }
 
-// Mock data for diseases with images
+// Disease data based on detected diseases in the application
 const diseaseData: DiseaseInfo[] = [
   {
     id: '1',
-    name: 'Coffee Leaf Rust',
-    overview: 'A serious fungal disease affecting coffee plants worldwide, causing significant yield losses by damaging the leaves.',
+    name: 'Leaf Rust',
+    overview: 'Coffee Leaf Rust (Hemileia vastatrix) is one of the most devastating fungal diseases of coffee worldwide. It causes yellow-orange powdery pustules on leaf undersides, leading to premature leaf drop, reduced photosynthesis, and severe yield losses of up to 50% or more.',
     symptoms: [
       { 
-        description: 'Yellow-orange powdery spots on leaf undersides', 
-        image: require('../assets/coffee-leaf-rust.png')
-      },
-      { 
-        description: 'Leaf discoloration and premature dropping', 
+        description: 'Yellow-orange powdery pustules on leaf undersides', 
         image: require('../assets/coffee-rust.png')
       },
       { 
-        description: 'Reduced photosynthesis and plant vigor', 
-        image: require('../assets/coffee-rust.png')
-      }
+        description: 'Chlorotic spots on upper leaf surface', 
+        image: require('../assets/leaf-rust-2S.jpg')
+      },
+      { 
+        description: 'Premature defoliation and bare branches', 
+        image: require('../assets/leaf-rust-3S.jpg')
+      },
     ],
     prevention: [
-      'Plant resistant coffee varieties',
-      'Maintain proper plant spacing for air circulation',
-      'Regular pruning to improve airflow',
-      'Monitor weather conditions for early warnings'
+      'Plant rust-resistant varieties (e.g., Lempira, Obata)',
+      'Maintain proper spacing (2-3m) for air circulation',
+      'Prune regularly to open canopy and reduce humidity',
+      'Apply balanced fertilization to maintain plant health',
+      'Monitor after rainfall for early detection'
     ],
     treatment: [
-      'Apply copper-based fungicides preventively',
-      'Use systemic fungicides like triazoles during outbreaks',
-      'Remove and destroy severely infected plants',
-      'Implement integrated pest management practices'
+      'Apply copper-based fungicides during wet seasons',
+      'Use systemic triazole fungicides for active infections',
+      'Remove and destroy severely infected leaves',
+      'Alternate fungicide classes to prevent resistance',
+      'Implement integrated pest management strategies'
     ],
-    image: require('../assets/coffee-leaf-rust.png')
+    image: require('../assets/leaf-rust-overview.jpg'),
+    sources: [
+      'Agriculture Institute - Coffee Leaf Rust: Symptoms, Impact, and Control',
+      'Hawaii Coffee Ed - Coffee Leaf Rust'
+    ]
   },
   {
     id: '2',
-    name: 'Thread Blight',
-    overview: 'A fungal disease that affects the leaves of coffee plants, causing thread-like fungal growth and leaf damage.',
+    name: 'Leaf Spot',
+    overview: 'Leaf Spot (Phoma spp.) is a fungal disease common in high-altitude, humid regions. It causes dark necrotic lesions on leaves that enlarge over time, leading to defoliation and reduced plant vigor.',
     symptoms: [
       { 
-        description: 'Thread-like fungal strands on leaf surfaces', 
-        image: require('../assets/thread-blight.jpg')
+        description: 'Dark necrotic lesions on leaves', 
+        image: require('../assets/leaf-spot-1S.jpg')
       },
       { 
-        description: 'White to pale yellow fungal growth', 
-        image: require('../assets/thread-blight.jpg')
+        description: 'Lesions enlarge over time and can reach 2cm diameter', 
+        image: require('../assets/leaf-spot-2S.jpg')
       },
       { 
-        description: 'Leaf browning and wilting', 
-        image: require('../assets/thread-blight.jpg')
+        description: 'Severe leaf discoloration, yellowing, and browning', 
+        image: require('../assets/leaf-spot-overview.jpg')
       },
-      { 
-        description: 'Progressive leaf drop', 
-        image: require('../assets/thread-blight.jpg')
-      }
     ],
     prevention: [
-      'Maintain proper plant spacing to reduce humidity',
-      'Prune to improve air circulation',
-      'Remove infected plant debris',
-      'Avoid overhead watering during high humidity'
+      'Maintain proper plant spacing for air circulation',
+      'Reduce moisture levels through improved drainage',
+      'Practice meticulous sanitation (clean tools and boots)',
+      'Implement crop rotation with non-host plants',
+      'Consider intercropping with legumes to block spore movement'
     ],
     treatment: [
-      'Apply fungicides containing copper or mancozeb',
-      'Prune affected branches to reduce inoculum',
-      'Improve drainage around plants',
-      'Use biological control agents when possible'
+      'Apply foliar fertilizers (manganese-based most effective)',
+      'Use copper-based or protective fungicides during wet periods',
+      'Prune affected leaves to reduce inoculum spread',
+      'Improve air circulation between plants',
+      'Apply biological control agents when available'
     ],
-    image: require('../assets/thread-blight.jpg')
+    image: require('../assets/leaf-spot-overview.jpg'),
+    sources: [
+      'Ebru Coffee - Blight and Phoma Leaf Diseases',
+      'Revista Cultivar - Management of Phoma spot in coffee plants'
+    ]
   },
   {
     id: '3',
-    name: 'Anthracnose',
-    overview: 'A fungal disease that causes dark, sunken lesions on leaves, stems, and fruits of coffee plants.',
+    name: 'Brown Spot',
+    overview: 'Brown Spot (Cercospora coffeicola) is a common fungal disease affecting leaves. It thrives in high humidity and causes circular brown lesions, and reduced coffee quality.',
     symptoms: [
       { 
-        description: 'Dark, sunken lesions on leaves', 
-        image: require('../assets/anthracnose.png')
+        description: 'Circular brown spots with tan or gray centers on leaves', 
+        image: require('../assets/brown-spot-1S.jpg')
       },
       { 
-        description: 'Leaf spotting and blighting', 
-        image: require('../assets/anthracnose.png')
+        description: 'Yellow halos surrounding leaf spots', 
+        image: require('../assets/brown-spot-2S.jpg')
       },
       { 
-        description: 'Premature defoliation', 
-        image: require('../assets/anthracnose.png')
-      },
-      { 
-        description: 'Twig dieback in severe cases', 
+        description: 'Leaf yellowing and premature drop', 
         image: require('../assets/anthracnose.png')
       }
     ],
     prevention: [
-      'Avoid overhead irrigation',
-      'Maintain proper plant spacing',
-      'Remove and destroy infected plant material',
-      'Apply preventive fungicides during wet seasons'
+      'Maintain optimal shade levels (40-50%)',
+      'Ensure adequate micronutrient nutrition (zinc, manganese)',
+      'Improve soil drainage to reduce moisture',
+      'Practice good sanitation by removing infected berries',
+      'Mulch around plants to prevent soil splash'
     ],
     treatment: [
-      'Apply fungicides containing copper or chlorothalonil',
-      'Prune affected branches and twigs',
-      'Improve air circulation through pruning',
-      'Remove and destroy fallen leaves and debris'
+      'Apply copper hydroxide or mancozeb fungicides',
+      'Use systemic fungicides for progressive infections',
+      'Rotate fungicide classes to prevent resistance',
+      'Apply foliar micronutrients to strengthen plants',
+      'Implement complete IPM strategy for severe cases'
     ],
-    image: require('../assets/anthracnose.png')
+    image: require('../assets/anthracnose.png'),
+    sources: [
+      'CTAHR Hawaii - Cercospora Leaf Spot and Berry Blotch of Coffee'
+    ]
   },
   {
     id: '4',
-    name: 'Coffee Wilt Disease',
-    overview: 'A vascular disease caused by the fungus Fusarium xylarioides. It affects the vascular system of coffee plants, leading to wilting and death.',
+    name: 'Sooty Mold',
+    overview: 'Sooty Mold is a fungal disease that grows on honeydew secreted by sap-sucking insects like green scale, mealybugs, and aphids. While not directly parasitic, it forms a black coating on leaves that reduces photosynthesis, weakens plants, and decreases yields.',
     symptoms: [
       { 
-        description: 'Progressive wilting of leaves starting from the top', 
-        image: require('../assets/coffee-wilt.jpg')
+        description: 'Black, sooty coating on leaves', 
+        image: require('../assets/sooty-mold-1S.jpg')
       },
       { 
-        description: 'Dark streaking in the stem vascular tissue', 
-        image: require('../assets/coffee-wilt.jpg')
+        description: 'Presence of scale insects, mealybugs, or aphids', 
+        image: require('../assets/sooty-mold-2S.jpg')
       },
-      { 
-        description: 'Yellowing and dropping of leaves', 
-        image: require('../assets/coffee-wilt.jpg')
-      },
-      { 
-        description: 'Death of branches and eventually the entire plant', 
-        image: require('../assets/coffee-wilt.jpg')
-      }
     ],
     prevention: [
-      'Avoid planting in areas with previous wilt disease history',
-      'Use disease-free planting material',
-      'Practice proper soil drainage',
-      'Implement crop rotation with non-host plants'
+      'Control ant populations that protect scale insects',
+      'Monitor regularly for sap-sucking insects',
+      'Encourage beneficial insects and natural predators',
+      'Maintain good air circulation through pruning',
+      'Keep plantation clean and well-maintained'
     ],
     treatment: [
-      'Remove and destroy infected plants immediately',
-      'Apply soil fumigants in severely affected areas',
-      'Improve soil drainage and aeration',
-      'Consider resistant rootstocks for replanting'
+      'Control honeydew-producing insects with insecticides',
+      'Apply horticultural oils or insecticidal soaps',
+      'Wash affected leaves with water to remove mold',
+      'Use systemic insecticides for severe infestations',
+      'Apply biological controls like Verticillium lecanii'
     ],
-    image: require('../assets/coffee-wilt.jpg')
-  },
-  {
-    id: '5',
-    name: 'Coffee Berry Disease',
-    overview: 'A fungal disease that affects coffee berries, causing significant yield losses. The disease is caused by the fungus Colletotrichum kahawae.',
-    symptoms: [
-      { 
-        description: 'Dark, sunken lesions on coffee berries', 
-        image: require('../assets/coffee-berry-disease.jpg')
-      },
-      { 
-        description: 'Pinkish spore masses on infected berries', 
-        image: require('../assets/coffee-berry-disease.jpg')
-      },
-      { 
-        description: 'Premature berry drop', 
-        image: require('../assets/coffee-berry-disease.jpg')
-      },
-      { 
-        description: 'Mummified berries remaining on the plant', 
-        image: require('../assets/coffee-berry-disease.jpg')
-      }
-    ],
-    prevention: [
-      'Prune and remove infected branches regularly',
-      'Maintain proper spacing between plants for air circulation',
-      'Apply appropriate fungicides during high-risk periods',
-      'Remove and destroy fallen berries and plant debris'
-    ],
-    treatment: [
-      'Apply systemic fungicides like carbendazim or thiophanate-methyl',
-      'Use copper-based fungicides as a preventive measure',
-      'Implement integrated pest management practices',
-      'Consider resistant coffee varieties when replanting'
-    ],
-    image: require('../assets/coffee-berry-disease.jpg')
+    image: require('../assets/sooty-mold-overview.jpg'),
+    sources: [
+      'Hawaii Coffee Ed - Mealybug and Sooty Mold',
+      'Hawaii Coffee Ed - Green Scale and Sooty Mold'
+    ]
   }
 ];
 
@@ -373,6 +345,21 @@ const DiseaseManagementScreen = () => {
 
         {/* Treatment Section */}
         {renderSection('Treatment', selectedDisease.treatment, 'medical')}
+
+        {/* Sources Section */}
+        {selectedDisease.sources && selectedDisease.sources.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : themedColors.black }]}>Sources</Text>
+            </View>
+            {selectedDisease.sources.map((source, index) => (
+              <View key={index} style={styles.listItem}>
+                <Ionicons name="document-text" size={16} color={themedColors.primary} style={styles.bullet} />
+                <Text style={[styles.listItemText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{source}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         <View style={{ height: 30 }} />
       </ScrollView>
