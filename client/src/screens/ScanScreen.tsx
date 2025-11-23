@@ -29,7 +29,6 @@ import { RootStackParamList } from '../navigation/types';
 import { useScanStore } from '../viewmodels/ScanViewModel';
 import { useAuthStore } from '../stores/authStore';
 import { ThemeContext } from '../context/ThemeContext';
-import ScanningTipsModal from '../components/ScanningTipsModal';
 import { useLanguage } from '../context/LanguageContext';
 
 type ScanScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -289,12 +288,116 @@ const ScanScreen = () => {
         </View>
       </View>
 
-      {/* Scanning Tips Modal */}
-      <ScanningTipsModal
+      {/* Scanning Tips Modal - Complete Redesign */}
+      <Modal
+        animationType="slide"
+        transparent={true}
         visible={showTipsModal}
-        onClose={() => setShowTipsModal(false)}
-        isDarkMode={isDarkMode}
-      />
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowTipsModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]}>
+            {/* Modal Header */}
+            <View style={styles.modalHandleBar}>
+              <View style={[styles.handleIndicator, { backgroundColor: isDarkMode ? '#404040' : '#D1D5DB' }]} />
+            </View>
+            
+            <View style={styles.modalHeaderSection}>
+              <View style={styles.modalTitleRow}>
+                <View style={[styles.modalIconBadge, { backgroundColor: COLORS.primary + '15' }]}>
+                  <Ionicons name="bulb" size={24} color={COLORS.primary} />
+                </View>
+                <View style={styles.modalTitleTextContainer}>
+                  <Text style={[styles.modalMainTitle, { color: isDarkMode ? '#FFFFFF' : '#1F2937' }]}>
+                    {t('scanning_tips')}
+                  </Text>
+                  <Text style={[styles.modalSubtitleText, { color: isDarkMode ? '#9CA3AF' : '#6B7280' }]}>
+                    {t('follow_these_steps')}
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setShowTipsModal(false)}
+                  style={[styles.modalCloseBtn, { backgroundColor: isDarkMode ? '#2D2D2D' : '#F3F4F6' }]}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={22} color={isDarkMode ? '#FFFFFF' : '#1F2937'} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Scrollable Content */}
+            <ScrollView 
+              style={styles.modalScrollArea}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Scanning Tips - Clean 3-Step Layout */}
+              <View style={styles.tipsCompactContainer}>
+                {/* Tip 1 - Natural Light */}
+                <View style={[styles.tipCompactItem, { backgroundColor: isDarkMode ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.06)' }]}>
+                  <View style={[styles.tipCompactIcon, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
+                    <Ionicons name="sunny" size={24} color="#F59E0B" />
+                  </View>
+                  <View style={styles.tipCompactText}>
+                    <Text style={[styles.tipCompactTitle, { color: isDarkMode ? '#FFFFFF' : '#111827' }]}>
+                      {t('use_natural_light')}
+                    </Text>
+                    <Text style={[styles.tipCompactDesc, { color: isDarkMode ? '#9CA3AF' : '#6B7280' }]}>
+                      {t('best_results_in_daylight')}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Tip 2 - Get Close */}
+                <View style={[styles.tipCompactItem, { backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.06)' }]}>
+                  <View style={[styles.tipCompactIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                    <Ionicons name="camera" size={24} color="#3B82F6" />
+                  </View>
+                  <View style={styles.tipCompactText}>
+                    <Text style={[styles.tipCompactTitle, { color: isDarkMode ? '#FFFFFF' : '#111827' }]}>
+                      {t('get_close_to_plant')}
+                    </Text>
+                    <Text style={[styles.tipCompactDesc, { color: isDarkMode ? '#9CA3AF' : '#6B7280' }]}>
+                      {t('fill_frame_with_affected_area')}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Tip 3 - Hold Steady */}
+                <View style={[styles.tipCompactItem, { backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)' }]}>
+                  <View style={[styles.tipCompactIcon, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                    <Ionicons name="hand-left" size={24} color="#10B981" />
+                  </View>
+                  <View style={styles.tipCompactText}>
+                    <Text style={[styles.tipCompactTitle, { color: isDarkMode ? '#FFFFFF' : '#111827' }]}>
+                      {t('hold_steady')}
+                    </Text>
+                    <Text style={[styles.tipCompactDesc, { color: isDarkMode ? '#9CA3AF' : '#6B7280' }]}>
+                      {t('avoid_blurry_images')}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Footer Action Button */}
+            <View style={[styles.modalFooterSection, { 
+              borderTopColor: isDarkMode ? '#2D2D2D' : '#E5E7EB',
+              backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF'
+            }]}>
+              <TouchableOpacity 
+                style={[styles.primaryActionButton, { backgroundColor: COLORS.primary }]}
+                onPress={() => setShowTipsModal(false)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" />
+                <Text style={styles.primaryActionButtonText}>{t('got_it')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Unknown Result Modal */}
       <Modal
@@ -492,6 +595,143 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Redesigned Scanning Tips Modal - Complete New Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: height * 0.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  modalHandleBar: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+  handleIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#D1D5DB',
+  },
+  modalHeaderSection: {
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 14,
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalIconBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitleTextContainer: {
+    flex: 1,
+  },
+  modalMainTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+    letterSpacing: -0.3,
+  },
+  modalSubtitleText: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+  },
+  modalScrollArea: {
+    flexGrow: 0,
+  },
+  modalScrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  tipsCompactContainer: {
+    gap: 10,
+  },
+  tipCompactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    gap: 12,
+  },
+  tipCompactIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tipCompactText: {
+    flex: 1,
+  },
+  tipCompactTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+    lineHeight: 19,
+  },
+  tipCompactDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 16,
+  },
+  modalFooterSection: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 14,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  primaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 15,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryActionButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 });
 

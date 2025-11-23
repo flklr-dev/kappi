@@ -205,6 +205,16 @@ const translations: Translations = {
     "tap_once_and_wait": "Tap once and wait for analysis",
     "back": "Back",
     "start_scanning": "Start Scanning",
+    "scanning_tips": "Scanning Tips",
+    "best_practices": "Best Practices",
+    "use_natural_light": "Use natural light",
+    "best_results_in_daylight": "Best results in daylight (7-10 AM)",
+    "get_close_to_plant": "Get close to the plant",
+    "fill_frame_with_affected_area": "Fill the frame with affected area",
+    "hold_steady": "Hold steady",
+    "avoid_blurry_images": "Avoid blurry images",
+    "use_diffused_lighting": "Use even, diffused lighting",
+    "got_it": "Got It",
     
     // Reports Screen
     "scan_summary": "Scan Summary",
@@ -547,6 +557,16 @@ const translations: Translations = {
     "tap_once_and_wait": "Tap-a kausa ug hulat sa analisis",
     "back": "Balik",
     "start_scanning": "Pagsugod sa Pagscan",
+    "scanning_tips": "Mga Tip sa Pagscan",
+    "best_practices": "Maayong Mga Gawi",
+    "use_natural_light": "Gamita ang natural nga kahayag",
+    "best_results_in_daylight": "Labing maayo nga resulta sa kahayag sa adlaw (7-10 AM)",
+    "get_close_to_plant": "Duol sa tanom",
+    "fill_frame_with_affected_area": "Punua ang frame sa apektadong parte",
+    "hold_steady": "Hawdi og maayo",
+    "avoid_blurry_images": "Likayi ang blurry nga mga litrato",
+    "use_diffused_lighting": "Gamita ang parehas nga kahayag",
+    "got_it": "Nakasabot Ko",
     
     // Reports Screen
     "scan_summary": "Summary sa Pagscan",
