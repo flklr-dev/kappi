@@ -229,7 +229,7 @@ const RegisterScreen = () => {
           <View style={styles.content}>
             <View style={styles.formContainer}>
               <Image 
-                source={require('../assets/colored-logo.png')} 
+                source={require('../assets/logo-with-text-color.png')} 
                 style={styles.logo}
                 resizeMode="contain"
               />

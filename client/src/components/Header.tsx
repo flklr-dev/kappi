@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.primary,
-    paddingBottom: 15,
+    paddingBottom: 10,
     elevation: 4,
     shadowColor: 'rgba(0, 0, 0, 0.3)',
     shadowOffset: { width: 0, height: 2 },

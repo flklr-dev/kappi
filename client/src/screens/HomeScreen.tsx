@@ -270,8 +270,6 @@ const HomeScreen = () => {
         title="KAPPI"
       />
 
-      {/* Queue Status Indicator - removed per request */}
-
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Welcome Section with Location below name */}
         <View style={styles.welcomeSection}>
@@ -394,8 +392,8 @@ const HomeScreen = () => {
                 const isHealthy = scan.disease?.toLowerCase().includes('healthy');
                 const badgeText = isHealthy ? t('healthy') : (scan.stage || scan.severity || t('unknown'));
                 const badgeColor = isHealthy ? '#4CAF50' : 
-                                  scan.stage === 'Early' ? '#FF9800' :
-                                  scan.stage === 'Progressive' ? '#FF5722' :
+                                  scan.stage === 'Early' ? '#4CAF50' :
+                                  scan.stage === 'Progressive' ? '#FFA000' :
                                   scan.stage === 'Severe' ? '#F44336' : '#9E9E9E';
                 
                 return (
@@ -737,7 +735,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
-  // queue status styles removed
 });
 
 export default HomeScreen;

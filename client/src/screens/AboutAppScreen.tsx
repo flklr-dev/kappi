@@ -1,20 +1,29 @@
 import React, { useContext } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, StatusBar, Image, TouchableOpacity, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View, SafeAreaView, StatusBar, Image, ScrollView, Dimensions } from 'react-native';
 import { COLORS, DARK_COLORS } from '../constants/colors';
 import Header from '../components/Header';
 import { ThemeContext } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { useLanguage } from '../context/LanguageContext'; // Added LanguageContext import
+import { useLanguage } from '../context/LanguageContext';
 
 type AboutAppScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const { width } = Dimensions.get('window');
 
 const AboutAppScreen = () => {
   const { isDarkMode } = useContext(ThemeContext);
   const { t } = useLanguage(); // Added LanguageContext usage
-  const themedColors = isDarkMode ? DARK_COLORS : COLORS;
+  const themedColors = {
+    ...COLORS,
+    ...(isDarkMode ? DARK_COLORS : {}),
+    text: isDarkMode ? DARK_COLORS.white : COLORS.black,
+    textSecondary: isDarkMode ? DARK_COLORS.gray : COLORS.gray,
+    background: isDarkMode ? DARK_COLORS.background : COLORS.background,
+    primary: isDarkMode ? DARK_COLORS.primary : COLORS.primary,
+    gray: isDarkMode ? DARK_COLORS.gray : COLORS.gray
+  };
   const navigation = useNavigation<AboutAppScreenNavigationProp>();
 
   return (
@@ -29,49 +38,82 @@ const AboutAppScreen = () => {
         onBackPress={() => navigation.goBack()}
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerSection}>
-          <Image source={require('../../assets/icon.png')} style={styles.appIcon} />
-          <Text style={[styles.appName, { color: isDarkMode ? themedColors.primary : COLORS.primary }]}>Kappi</Text>
-          <Text style={[styles.appVersion, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>Version 1.0.0</Text>
+        <View style={styles.logoSection}>
+          <Image 
+            source={require('../assets/logo-with-text-color.png')} 
+            style={styles.appLogo} 
+          />
+          <Text style={[styles.version, { color: themedColors.gray }]}>
+            Version 1.0.0
+          </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('overview')}</Text>
-          <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>
+        <View style={styles.divider} />
+
+        <View style={styles.contentSection}>
+          <Text style={[styles.heading, { color: themedColors.text }]}>
+            {t('overview')}
+          </Text>
+          <Text style={[styles.bodyText, { color: themedColors.textSecondary }]}>
             {t('overview_description')}
           </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('key_features')}</Text>
-          <View>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('ai_powered_disease_detection_feature')}</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('personalized_recommendations_feature')}</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('scan_history_feature')}</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('user_profile_feature')}</Text>
+        <View style={styles.contentSection}>
+          <Text style={[styles.heading, { color: themedColors.text }]}>
+            {t('key_features')}
+          </Text>
+          <View style={styles.list}>
+            <Text style={[styles.listItem, { color: themedColors.textSecondary }]}>
+              {t('ai_powered_disease_detection_feature')}
+            </Text>
+            <Text style={[styles.listItem, { color: themedColors.textSecondary }]}>
+              {t('personalized_recommendations_feature')}
+            </Text>
+            <Text style={[styles.listItem, { color: themedColors.textSecondary }]}>
+              {t('scan_history_feature')}
+            </Text>
+            <Text style={[styles.listItem, { color: themedColors.textSecondary }]}>
+              {t('user_profile_feature')}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('supported_diseases')}</Text>
-          <View>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('kappi_currently_focuses_on_detecting')}</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('coffee_leaf_rust_disease')}</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('thread_blight_disease')}</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('anthracnose_disease')}</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('coffee_wilt_disease_disease')}</Text>
-            <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('coffee_berry_disease_disease')}</Text>
+        <View style={styles.contentSection}>
+          <Text style={[styles.heading, { color: themedColors.text }]}>
+            {t('supported_diseases')}
+          </Text>
+          <Text style={[styles.bodyText, { color: themedColors.textSecondary, marginBottom: 12 }]}>
+            {t('kappi_currently_focuses_on_detecting')}
+          </Text>
+          <View style={styles.list}>
+            <Text style={[styles.listItem, { color: themedColors.textSecondary }]}>
+              • Coffee Leaf Rust
+            </Text>
+            <Text style={[styles.listItem, { color: themedColors.textSecondary }]}>
+              • Leaf Spot (Phoma)
+            </Text>
+            <Text style={[styles.listItem, { color: themedColors.textSecondary }]}>
+              • Brown Spot (Cercospora)
+            </Text>
+            <Text style={[styles.listItem, { color: themedColors.textSecondary }]}>
+              • Sooty Mold
+            </Text>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('target_users')}</Text>
-          <Text style={[styles.sectionText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>
+        <View style={styles.contentSection}>
+          <Text style={[styles.heading, { color: themedColors.text }]}>
+            {t('target_users')}
+          </Text>
+          <Text style={[styles.bodyText, { color: themedColors.textSecondary }]}>
             {t('target_users_description')}
           </Text>
         </View>
 
-        <Text style={[styles.footerText, { color: isDarkMode ? themedColors.gray : COLORS.gray }]}>
+        <View style={styles.divider} />
+
+        <Text style={[styles.copyright, { color: themedColors.gray }]}>
           {t('kappi_team_copyright').replace('{year}', new Date().getFullYear().toString())}
         </Text>
       </ScrollView>
@@ -84,42 +126,58 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40, // Add some extra space at the bottom
+    flexGrow: 1,
+    paddingBottom: 40,
   },
-  headerSection: {
+  logoSection: {
     alignItems: 'center',
-    marginBottom: 30,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
-  appIcon: {
-    width: 100,
-    height: 100,
-    marginBottom: 15,
+  appLogo: {
+    width: width * 0.65,
+    height: width * 0.32,
+    resizeMode: 'contain',
   },
-  appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 5,
+  version: {
+    fontSize: 14,
+    fontWeight: '500',
   },
-  appVersion: {
-    fontSize: 16,
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 20,
+    opacity: 0.3,
   },
-  section: {
-    marginBottom: 25,
+  contentSection: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
+  heading: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+    letterSpacing: 0.3,
   },
-  sectionText: {
+  bodyText: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 24,
+    letterSpacing: 0.2,
   },
-  footerText: {
+  list: {
+    marginTop: 4,
+  },
+  listItem: {
+    fontSize: 15,
+    lineHeight: 28,
+    letterSpacing: 0.2,
+  },
+  copyright: {
     fontSize: 13,
     textAlign: 'center',
-    marginTop: 30,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    fontWeight: '400',
   },
 });
 
