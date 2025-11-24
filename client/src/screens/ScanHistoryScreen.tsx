@@ -147,8 +147,8 @@ const ScanHistoryScreen = () => {
     const isHealthy = item.disease?.toLowerCase().includes('healthy');
     const badgeText = isHealthy ? t('healthy') : (item.stage || item.severity || t('unknown'));
     const badgeColor = isHealthy ? '#4CAF50' : 
-                      item.stage === 'Early' ? '#FF9800' :
-                      item.stage === 'Progressive' ? '#FF5722' :
+                      item.stage === 'Early' ? '#4CAF50' :
+                      item.stage === 'Progressive' ? '#FFA000' :
                       item.stage === 'Severe' ? '#F44336' : '#9E9E9E';
 
     return (

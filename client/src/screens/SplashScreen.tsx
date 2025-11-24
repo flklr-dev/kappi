@@ -67,8 +67,11 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
       
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>KAPPI</Text>
-          <Text style={styles.tagline}>Coffee Plant Disease Detection</Text>
+          <Image
+            source={require('../assets/logo-with-text.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
         
         <View style={styles.loadingContainer}>
@@ -100,20 +103,13 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 40,
+    width: width * 0.95,
+    height: width * 0.70,
   },
-  logoText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    letterSpacing: 2,
-    marginBottom: 10,
-  },
-  tagline: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    fontWeight: '300',
+  logo: {
+    width: '100%',
+    height: '100%',
   },
   loadingContainer: {
     alignItems: 'center',

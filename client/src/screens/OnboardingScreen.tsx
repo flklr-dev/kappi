@@ -47,7 +47,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.introSection}>
           <View style={styles.imageContainer}>
             <Image 
-              source={require('../assets/farmer2.png')} // Updated image
+              source={require('../assets/onboarding-1.1.png')} // Updated image
               style={styles.captureImage}
               resizeMode="contain"
             />
@@ -63,7 +63,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.captureSection}>
           <View style={styles.imageContainer}>
             <Image 
-              source={require('../assets/plant-with-camera5.png')}
+              source={require('../assets/onboarding-2.png')}
               style={styles.captureImage}
               resizeMode="contain"
             />
@@ -79,7 +79,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.diseasesSection}>
           <View style={styles.imageContainer}>
             <Image 
-              source={require('../assets/disease-detect.png')}
+              source={require('../assets/leaf-diseases.png')}
               style={styles.captureImage}
               resizeMode="contain"
             />

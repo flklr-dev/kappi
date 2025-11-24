@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, DARK_COLORS } from '../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../context/ThemeContext';
+import { useOfflineQueue } from '../services/OfflineQueueManager'; // Added import
 
 const { width } = Dimensions.get('window');
 
@@ -24,17 +25,23 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
+  const { isOnline } = useOfflineQueue(); // Get online status
   const themedColors = isDarkMode ? DARK_COLORS : COLORS;
 
-  // Default right component is the theme toggle button
+  // Default right component is just the status indicator
   const defaultRightComponent = (
-    <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
-      <Ionicons 
-        name={isDarkMode ? 'sunny' : 'moon'} 
-        size={24} 
-        color={themedColors.white} 
-      />
-    </TouchableOpacity>
+    <View style={styles.statusContainer}>
+      <View style={[styles.statusIndicator, { backgroundColor: isOnline ? COLORS.success : COLORS.error }]}>
+        <Ionicons 
+          name={isOnline ? 'wifi' : 'wifi-outline'} 
+          size={16} 
+          color={COLORS.white} 
+        />
+      </View>
+      <Text style={[styles.statusText, { color: themedColors.white }]}>
+        {isOnline ? 'Online' : 'Offline'}
+      </Text>
+    </View>
   );
 
   const finalRightComponent = rightComponent || defaultRightComponent;
@@ -111,8 +118,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  themeButton: {
-    padding: Math.min(8, width * 0.02),
+  statusContainer: { // Container for status indicator and text
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusIndicator: { // Status indicator styles
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  statusText: { // Text style
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
