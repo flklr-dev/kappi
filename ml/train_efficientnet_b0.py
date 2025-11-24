@@ -164,17 +164,21 @@ def create_data_generators():
                         class_counts[category] = num_images
 
     # Identify minority classes
+    # NOTE: sooty_mold now has 500 images, no longer needs strong augmentation
     minority_classes = []
     if class_counts:
         max_count = max(class_counts.values())
         for class_name, count in class_counts.items():
-            if count < max_count * 0.5:
+            # Exclude sooty_mold from minority class treatment (now has 500 images)
+            if count < max_count * 0.5 and class_name != 'sooty_mold':
                 minority_classes.append(class_name)
         
         if minority_classes:
             print(f"\n⚠️  Minority classes detected: {', '.join(minority_classes)}")
             print(f"   STRONG aug: {', '.join(minority_classes)}")
             print(f"   MILD aug: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
+        else:
+            print(f"\n✅ All classes balanced - applying MILD augmentation to all classes")
 
     # MILD augmentation for majority classes
     mild_datagen = ImageDataGenerator(
@@ -251,6 +255,7 @@ def create_data_generators():
     return train_data, valid_data, test_data
 
 def build_model(num_classes):
+    """Build EfficientNetB0 model with standardized architecture."""
     inputs = Input(shape=(*CONFIG['img_size'], 3))
     base_model = EfficientNetB0(
         weights='imagenet',
@@ -258,19 +263,26 @@ def build_model(num_classes):
         input_tensor=inputs
     )
 
-    for layer in base_model.layers[:-20]:  # Unfreeze last 20 layers
+    for layer in base_model.layers[:-20]:  # Unfreeze last 20 layers for better adaptation
         layer.trainable = False
 
+    # Add custom layers - STANDARDIZED ARCHITECTURE
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = BatchNormalization()(x)
-    x = Dense(256, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
+    
+    # Two-layer classification head (same as ResNet50)
+    x = Dense(512, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
     x = BatchNormalization()(x)
     x = Dropout(CONFIG['dropout_rate'])(x)
+    x = Dense(256, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
+    x = BatchNormalization()(x)
+    x = Dropout(CONFIG['dropout_rate'] * 0.5)(x)
     predictions = Dense(num_classes, activation='softmax')(x)
 
     model = Model(inputs=inputs, outputs=predictions)
 
+    # Compile model - STANDARDIZED
     model.compile(
         optimizer=Adam(learning_rate=CONFIG['learning_rate'], amsgrad=True),
         loss='categorical_crossentropy',
@@ -316,31 +328,65 @@ def plot_training_history(history):
     plt.close()
 
 def convert_to_tflite(model):
-    """Convert Keras model to TFLite format with proper float32 handling."""
+    """Convert Keras model to TFLite format with robust error handling."""
+    import shutil
+    temp_model_path = os.path.join(CONFIG['model_export_path'], 'temp_saved_model_efficientnet')
+    
     try:
-        temp_model_path = os.path.join(CONFIG['model_export_path'], 'temp_saved_model')
-        model.save(temp_model_path, save_format='tf')  # SavedModel format
+        print("\n🔄 Converting EfficientNetB0 to TFLite...")
         
+        # Clean up any existing temp model
+        if os.path.exists(temp_model_path):
+            shutil.rmtree(temp_model_path)
+        
+        # Save model in SavedModel format
+        print("   → Saving as SavedModel format...")
+        model.save(temp_model_path, save_format='tf')
+        
+        # Create converter
+        print("   → Creating TFLite converter...")
         converter = tf.lite.TFLiteConverter.from_saved_model(temp_model_path)
-        try:
-            converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        except Exception as e:
-            print(f"   Warning: Could not set optimization: {e}")
         
+        # Set converter options for compatibility
+        converter.target_spec.supported_ops = [
+            tf.lite.OpsSet.TFLITE_BUILTINS,  # Enable TensorFlow Lite ops
+            tf.lite.OpsSet.SELECT_TF_OPS      # Enable TensorFlow ops (fallback)
+        ]
+        converter._experimental_lower_tensor_list_ops = False
+        
+        # Apply optimizations
+        print("   → Applying optimizations...")
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        
+        # Convert model
+        print("   → Converting model...")
         tflite_model = converter.convert()
+        
+        # Save TFLite model
         tflite_path = os.path.join(CONFIG['model_export_path'], 'model_efficientnet_b0.tflite')
         with open(tflite_path, 'wb') as f:
             f.write(tflite_model)
         
-        import shutil
-        if os.path.exists(temp_model_path):
-            shutil.rmtree(temp_model_path)
-        
         print(f"   ✅ TFLite model saved: {tflite_path}")
         print(f"   📏 Size: {len(tflite_model) / 1024 / 1024:.2f} MB")
+        
+        return True
+        
     except Exception as e:
-        print(f"   ⚠️  TFLite conversion failed: {e}")
-        print(f"   Skipping TFLite export (model.keras is still saved)")
+        print(f"   ❌ TFLite conversion failed: {str(e)}")
+        print(f"   ℹ️  Model.keras is still saved and can be used")
+        import traceback
+        traceback.print_exc()
+        return False
+        
+    finally:
+        # Always cleanup temp model
+        if os.path.exists(temp_model_path):
+            try:
+                shutil.rmtree(temp_model_path)
+                print("   → Cleaned up temporary files")
+            except Exception as e:
+                print(f"   ⚠️  Could not clean up temp files: {e}")
 
 def evaluate_model(model, test_data):
     """Evaluate model on test set with comprehensive metrics."""

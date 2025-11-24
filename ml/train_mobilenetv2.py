@@ -210,17 +210,21 @@ def create_data_generators():
                         class_counts[category] = num_images
     
     # Identify minority classes (those with <50% of max class count)
+    # NOTE: sooty_mold now has 500 images, no longer needs strong augmentation
     minority_classes = []
     if class_counts:
         max_count = max(class_counts.values())
         for class_name, count in class_counts.items():
-            if count < max_count * 0.5:
+            # Exclude sooty_mold from minority class treatment (now has 500 images)
+            if count < max_count * 0.5 and class_name != 'sooty_mold':
                 minority_classes.append(class_name)
         
         if minority_classes:
             print(f"\n⚠️  Minority classes detected: {', '.join(minority_classes)}")
             print(f"   Applying STRONG augmentation to: {', '.join(minority_classes)}")
             print(f"   Applying MILD augmentation to: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
+        else:
+            print(f"\n✅ All classes balanced - applying MILD augmentation to all classes")
     
     # MILD augmentation for majority classes (350 images)
     mild_datagen = ImageDataGenerator(
@@ -307,7 +311,7 @@ def create_data_generators():
     return train_data, valid_data, test_data
 
 def build_model(num_classes):
-    """Build MobileNetV2 model optimized for GPU training."""
+    """Build MobileNetV2 model with standardized architecture."""
     # Input layer
     inputs = Input(shape=(*CONFIG['img_size'], 3))
     
@@ -322,15 +326,18 @@ def build_model(num_classes):
     for layer in base_model.layers[:-20]:  # Unfreeze last 20 layers for better adaptation
         layer.trainable = False
     
-    # Add custom layers
+    # Add custom layers - STANDARDIZED ARCHITECTURE
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = BatchNormalization()(x)
     
-    # Classification head optimized for 5 classes
-    x = Dense(256, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
+    # Two-layer classification head (same as ResNet50)
+    x = Dense(512, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
     x = BatchNormalization()(x)
     x = Dropout(CONFIG['dropout_rate'])(x)
+    x = Dense(256, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
+    x = BatchNormalization()(x)
+    x = Dropout(CONFIG['dropout_rate'] * 0.5)(x)
     
     # Output layer
     predictions = Dense(num_classes, activation='softmax')(x)
@@ -338,22 +345,11 @@ def build_model(num_classes):
     # Create model
     model = Model(inputs=inputs, outputs=predictions)
     
-    # Use Adam optimizer
-    optimizer = Adam(
-        learning_rate=CONFIG['learning_rate'],
-        beta_1=0.9,
-        beta_2=0.999,
-        epsilon=1e-07,
-        amsgrad=True
-    )
-    
-    # Compile model
+    # Compile model - STANDARDIZED
     model.compile(
-        optimizer=optimizer,
+        optimizer=Adam(learning_rate=CONFIG['learning_rate'], amsgrad=True),
         loss='categorical_crossentropy',
-        metrics=['accuracy', 
-                Precision(name='precision'), 
-                Recall(name='recall')]
+        metrics=['accuracy', Precision(name='precision'), Recall(name='recall')]
     )
     
     return model
@@ -380,46 +376,71 @@ def plot_training_history(history):
     
     plt.tight_layout()
     
-    # Create model_export directory if it doesn't exist
+    # Save with model-specific name
     os.makedirs(CONFIG['model_export_path'], exist_ok=True)
-    plt.savefig(os.path.join(CONFIG['model_export_path'], 'training_history.png'))
+    plt.savefig(os.path.join(CONFIG['model_export_path'], 'training_history_mobilenetv2.png'))
     plt.close()
 
 def convert_to_tflite(model):
-    """Convert Keras model to TFLite format with proper float32 handling."""
+    """Convert Keras model to TFLite format with robust error handling."""
+    import shutil
+    temp_model_path = os.path.join(CONFIG['model_export_path'], 'temp_saved_model_mobilenet')
+    
     try:
-        # Save model in SavedModel format (not .keras)
-        temp_model_path = os.path.join(CONFIG['model_export_path'], 'temp_saved_model')
-        model.save(temp_model_path, save_format='tf')  # SavedModel format
+        print("\n🔄 Converting MobileNetV2 to TFLite...")
         
-        # Load and convert
+        # Clean up any existing temp model
+        if os.path.exists(temp_model_path):
+            shutil.rmtree(temp_model_path)
+        
+        # Save model in SavedModel format
+        print("   → Saving as SavedModel format...")
+        model.save(temp_model_path, save_format='tf')
+        
+        # Create converter
+        print("   → Creating TFLite converter...")
         converter = tf.lite.TFLiteConverter.from_saved_model(temp_model_path)
         
-        # Use default optimization (dynamic range quantization)
-        try:
-            converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        except Exception as e:
-            print(f"   Warning: Could not set optimization: {e}")
-            pass
+        # Set converter options for compatibility
+        converter.target_spec.supported_ops = [
+            tf.lite.OpsSet.TFLITE_BUILTINS,  # Enable TensorFlow Lite ops
+            tf.lite.OpsSet.SELECT_TF_OPS      # Enable TensorFlow ops (fallback)
+        ]
+        converter._experimental_lower_tensor_list_ops = False
         
+        # Apply optimizations
+        print("   → Applying optimizations...")
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        
+        # Convert model
+        print("   → Converting model...")
         tflite_model = converter.convert()
         
         # Save TFLite model
-        tflite_path = os.path.join(CONFIG['model_export_path'], 'model.tflite')
+        tflite_path = os.path.join(CONFIG['model_export_path'], 'model_mobilenetv2.tflite')
         with open(tflite_path, 'wb') as f:
             f.write(tflite_model)
-        
-        # Cleanup temp model
-        import shutil
-        if os.path.exists(temp_model_path):
-            shutil.rmtree(temp_model_path)
         
         print(f"   ✅ TFLite model saved: {tflite_path}")
         print(f"   📏 Size: {len(tflite_model) / 1024 / 1024:.2f} MB")
         
+        return True
+        
     except Exception as e:
-        print(f"   ⚠️  TFLite conversion failed: {e}")
-        print(f"   Skipping TFLite export (model.keras is still saved)")
+        print(f"   ❌ TFLite conversion failed: {str(e)}")
+        print(f"   ℹ️  Model.keras is still saved and can be used")
+        import traceback
+        traceback.print_exc()
+        return False
+        
+    finally:
+        # Always cleanup temp model
+        if os.path.exists(temp_model_path):
+            try:
+                shutil.rmtree(temp_model_path)
+                print("   → Cleaned up temporary files")
+            except Exception as e:
+                print(f"   ⚠️  Could not clean up temp files: {e}")
 
 def evaluate_model(model, test_data):
     """Evaluate model on test set with comprehensive metrics."""
@@ -477,13 +498,13 @@ def evaluate_model(model, test_data):
     }
     
     os.makedirs(CONFIG['model_export_path'], exist_ok=True)
-    with open(os.path.join(CONFIG['model_export_path'], 'test_metrics.json'), 'w') as f:
+    with open(os.path.join(CONFIG['model_export_path'], 'test_metrics_mobilenetv2.json'), 'w') as f:
         json.dump(metrics_data, f, indent=2)
     
     # Plot confusion matrix
     plt.figure(figsize=(8, 6))
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title('Confusion Matrix')
+    plt.title('Confusion Matrix - MobileNetV2')
     plt.colorbar()
     tick_marks = np.arange(len(class_labels))
     plt.xticks(tick_marks, class_labels, rotation=45)
@@ -499,7 +520,7 @@ def evaluate_model(model, test_data):
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
     plt.tight_layout()
-    plt.savefig(os.path.join(CONFIG['model_export_path'], 'confusion_matrix.png'))
+    plt.savefig(os.path.join(CONFIG['model_export_path'], 'confusion_matrix_mobilenetv2.png'))
     plt.close()
     
     return metrics_data
@@ -566,20 +587,10 @@ def train_model():
             layer.trainable = True
     
     # Recompile with lower learning rate for fine-tuning
-    optimizer = Adam(
-        learning_rate=CONFIG['learning_rate'] * 0.1,  # 10x lower LR for fine-tuning
-        beta_1=0.9,
-        beta_2=0.999,
-        epsilon=1e-07,
-        amsgrad=True
-    )
-    
     model.compile(
-        optimizer=optimizer,
+        optimizer=Adam(learning_rate=CONFIG['learning_rate'] * 0.1, amsgrad=True),
         loss='categorical_crossentropy',
-        metrics=['accuracy', 
-                Precision(name='precision'), 
-                Recall(name='recall')]
+        metrics=['accuracy', Precision(name='precision'), Recall(name='recall')]
     )
     
     # Continue training with unfrozen layers

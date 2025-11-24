@@ -164,17 +164,21 @@ def create_data_generators():
                         class_counts[category] = num_images
 
     # Identify minority classes
+    # NOTE: sooty_mold now has 500 images, no longer needs strong augmentation
     minority_classes = []
     if class_counts:
         max_count = max(class_counts.values())
         for class_name, count in class_counts.items():
-            if count < max_count * 0.5:
+            # Exclude sooty_mold from minority class treatment (now has 500 images)
+            if count < max_count * 0.5 and class_name != 'sooty_mold':
                 minority_classes.append(class_name)
         
         if minority_classes:
             print(f"\n⚠️  Minority classes detected: {', '.join(minority_classes)}")
             print(f"   STRONG aug: {', '.join(minority_classes)}")
             print(f"   MILD aug: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
+        else:
+            print(f"\n✅ All classes balanced - applying MILD augmentation to all classes")
 
     # MILD augmentation for majority classes
     mild_datagen = ImageDataGenerator(
@@ -319,31 +323,73 @@ def plot_training_history(history):
     plt.close()
 
 def convert_to_tflite(model):
-    """Convert Keras model to TFLite format with proper float32 handling."""
+    """Convert Keras model to TFLite format with robust error handling - ResNet50 optimized."""
+    import shutil
+    temp_model_path = os.path.join(CONFIG['model_export_path'], 'temp_saved_model_resnet50')
+    
     try:
-        temp_model_path = os.path.join(CONFIG['model_export_path'], 'temp_saved_model')
-        model.save(temp_model_path, save_format='tf')  # SavedModel format
+        print("\n🔄 Converting ResNet50 to TFLite...")
+        print("   ℹ️  ResNet50 is complex - conversion may take longer")
         
+        # Clean up any existing temp model
+        if os.path.exists(temp_model_path):
+            shutil.rmtree(temp_model_path)
+        
+        # Save model in SavedModel format
+        print("   → Saving as SavedModel format...")
+        model.save(temp_model_path, save_format='tf')
+        
+        # Create converter
+        print("   → Creating TFLite converter...")
         converter = tf.lite.TFLiteConverter.from_saved_model(temp_model_path)
-        try:
-            converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        except Exception as e:
-            print(f"   Warning: Could not set optimization: {e}")
         
+        # CRITICAL for ResNet50: Enable SELECT_TF_OPS for complex operations
+        print("   → Configuring converter for ResNet50 compatibility...")
+        converter.target_spec.supported_ops = [
+            tf.lite.OpsSet.TFLITE_BUILTINS,  # Enable TensorFlow Lite ops
+            tf.lite.OpsSet.SELECT_TF_OPS      # Enable TensorFlow ops (REQUIRED for ResNet50)
+        ]
+        
+        # Additional ResNet50-specific settings
+        converter._experimental_lower_tensor_list_ops = False
+        converter.allow_custom_ops = True  # Allow custom operations if needed
+        
+        # Apply optimizations (may increase conversion time)
+        print("   → Applying optimizations...")
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        
+        # Convert model
+        print("   → Converting model (this may take 1-2 minutes)...")
         tflite_model = converter.convert()
+        
+        # Save TFLite model
         tflite_path = os.path.join(CONFIG['model_export_path'], 'model_resnet50.tflite')
         with open(tflite_path, 'wb') as f:
             f.write(tflite_model)
         
-        import shutil
-        if os.path.exists(temp_model_path):
-            shutil.rmtree(temp_model_path)
-        
         print(f"   ✅ TFLite model saved: {tflite_path}")
         print(f"   📏 Size: {len(tflite_model) / 1024 / 1024:.2f} MB")
+        print(f"   ⚠️  Note: This model uses SELECT_TF_OPS - ensure your deployment supports it")
+        
+        return True
+        
     except Exception as e:
-        print(f"   ⚠️  TFLite conversion failed: {e}")
-        print(f"   Skipping TFLite export (model.keras is still saved)")
+        print(f"   ❌ TFLite conversion failed: {str(e)}")
+        print(f"   ℹ️  This is common with ResNet50 due to complex operations")
+        print(f"   ℹ️  Model.keras is still saved and can be used for deployment")
+        print(f"   💡 Alternative: Use model.keras directly or try ONNX format")
+        import traceback
+        traceback.print_exc()
+        return False
+        
+    finally:
+        # Always cleanup temp model
+        if os.path.exists(temp_model_path):
+            try:
+                shutil.rmtree(temp_model_path)
+                print("   → Cleaned up temporary files")
+            except Exception as e:
+                print(f"   ⚠️  Could not clean up temp files: {e}")
 
 def evaluate_model(model, test_data):
     """Evaluate model on test set with comprehensive metrics."""
