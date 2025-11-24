@@ -57,11 +57,11 @@ const ViewScanScreen = () => {
 
   const getStageColor = (stage: string) => {
     switch (stage.toLowerCase()) {
-      case 'early': return '#4CAF50'; // Green
-      case 'progressive': return '#FFA000'; // Yellow/Orange
-      case 'severe': return '#F44336'; // Red
-      case 'infected': return '#F44336'; // Red
-      case 'healthy': return '#4CAF50'; // Green
+      case 'early': return '#4CAF50';
+      case 'progressive': return '#FFA000';
+      case 'severe': return '#F44336';
+      case 'healthy': return '#4CAF50';
+      case 'infected': return '#FF6B6B';
       default: return '#9E9E9E';
     }
   };
@@ -89,12 +89,16 @@ const ViewScanScreen = () => {
   // Helper to get scientific name for each disease
   const getScientificName = (disease: string) => {
     switch (disease) {
+      case 'Leaf Rust':
       case 'Coffee Leaf Rust':
         return 'Hemileia vastatrix';
+      case 'Brown Spot':
       case 'Coffee Brown Spot':
         return 'Cercospora coffeicola';
+      case 'Leaf Spot':
       case 'Coffee Leaf Spot':
         return 'Phoma costaricensis';
+      case 'Sooty Mold':
       case 'Coffee Sooty Mold':
         return 'Capnodium / Cladosporium / Scorias spp.';
       default:
@@ -104,18 +108,18 @@ const ViewScanScreen = () => {
 
   // Helper to get treatment recommendations with fallback to default
   const getTreatment = () => {
-    // Get the disease name from scan
-    const diseaseName = scan.disease;
+    // Normalize disease name - remove "Coffee" prefix if present
+    const normalizedDisease = scan.disease.replace('Coffee ', '').trim();
     
     // Check if treatment recommendations exist for this disease
-    if (treatmentRecommendations[diseaseName]) {
+    if (treatmentRecommendations[normalizedDisease]) {
       // Try to get stage-specific treatment
-      const stageTreatment = treatmentRecommendations[diseaseName][scan.stage];
+      const stageTreatment = treatmentRecommendations[normalizedDisease][scan.stage];
       if (stageTreatment && stageTreatment[selectedVariety]) {
         return stageTreatment[selectedVariety];
       }
       // Fallback to default if stage not found
-      const defaultTreatment = treatmentRecommendations[diseaseName]['Default'];
+      const defaultTreatment = treatmentRecommendations[normalizedDisease]['Default'];
       if (defaultTreatment && defaultTreatment[selectedVariety]) {
         return defaultTreatment[selectedVariety];
       }
@@ -376,7 +380,7 @@ const ViewScanScreen = () => {
             <View style={styles.varietySelectorContainer}>
               <VarietySelector value={selectedVariety} onChange={setSelectedVariety} />
             </View>
-            {treatmentRecommendations['Coffee Leaf Rust']?.Healthy?.[selectedVariety]?.cultural?.length ? (
+            {treatmentRecommendations['Leaf Rust']?.Healthy?.[selectedVariety]?.cultural?.length ? (
               <View style={[styles.treatmentContainer, { 
                 backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white,
                 borderColor: isDarkMode ? 'transparent' : '#E8EBF0'
@@ -396,7 +400,7 @@ const ViewScanScreen = () => {
                     <Text style={[styles.treatmentCardTitle, { color: isDarkMode ? themedColors.white : themedColors.primary }]}>{t('cultural_tips')}</Text>
                   </View>
                   <View style={styles.treatmentCardContent}>
-                    {treatmentRecommendations['Coffee Leaf Rust'].Healthy[selectedVariety].cultural.map((item, idx) => (
+                    {treatmentRecommendations['Leaf Rust'].Healthy[selectedVariety].cultural.map((item, idx) => (
                       <View key={idx} style={styles.treatmentItem}>
                         <View style={[styles.bulletPoint, { backgroundColor: COLORS.primary }]} />
                         <Text style={[styles.treatmentItemText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{item}</Text>
