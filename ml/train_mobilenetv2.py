@@ -2,7 +2,6 @@ import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, BatchNormalization, Input
@@ -16,6 +15,25 @@ import json
 import math
 import itertools
 import random
+
+# Standardized preprocessing function for all models ([-1, 1] normalization)
+def standardized_preprocess_input(x):
+    """
+    Standardized preprocessing for all classification models.
+    Normalizes pixel values from [0, 255] to [-1, 1] range.
+    
+    This matches the mobile inference preprocessing in TensorFlowModule.java:
+    (pixel / 127.5) - 1.0
+    
+    Args:
+        x: Input image array with pixel values in [0, 255] range
+    
+    Returns:
+        Preprocessed image array with values in [-1, 1] range
+    """
+    x = x.astype(np.float32)
+    x = (x / 127.5) - 1.0
+    return x
 
 # Set random seeds for reproducibility
 def set_global_seeds(seed=42):
@@ -163,9 +181,9 @@ class ClassSpecificImageDataGenerator(tf.keras.utils.Sequence):
                 # Mild augmentation for majority classes
                 img_array = self.mild_datagen.random_transform(img_array)
             
-            # CRITICAL FIX: Apply preprocessing consistently using preprocess_input
-            # Don't use datagen.standardize() - it may use wrong normalization
-            img_array = preprocess_input(img_array)
+            # CRITICAL: Apply standardized preprocessing for consistency across all models
+            # This ensures inference preprocessing matches: (x/127.5) - 1.0 → [-1, 1]
+            img_array = standardized_preprocess_input(img_array)
             
             batch_images.append(img_array)
             batch_labels.append(label)
@@ -227,8 +245,9 @@ def create_data_generators():
             print(f"\n✅ All classes balanced - applying MILD augmentation to all classes")
     
     # MILD augmentation for majority classes (350 images)
+    # NOTE: Using standardized preprocessing ([-1, 1] range) for all models
     mild_datagen = ImageDataGenerator(
-        preprocessing_function=preprocess_input,
+        preprocessing_function=standardized_preprocess_input,  # Standardized: (x/127.5) - 1.0
         rotation_range=15,          # ±15° rotation
         horizontal_flip=True,       # Random horizontal flip
         width_shift_range=0.1,      # ±10% horizontal shift
@@ -240,7 +259,7 @@ def create_data_generators():
     
     # STRONG augmentation for minority classes (sooty_mold: 140 images)
     strong_datagen = ImageDataGenerator(
-        preprocessing_function=preprocess_input,
+        preprocessing_function=standardized_preprocess_input,  # Standardized: (x/127.5) - 1.0
         rotation_range=30,          # ±30° rotation (2x stronger)
         horizontal_flip=True,       # Random horizontal flip
         vertical_flip=True,         # Vertical flip (NEW)
@@ -253,10 +272,10 @@ def create_data_generators():
     )
     
     # Validation data generator (no augmentation)
-    valid_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
+    valid_datagen = ImageDataGenerator(preprocessing_function=standardized_preprocess_input)  # Standardized
     
     # Test data generator (no augmentation)
-    test_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
+    test_datagen = ImageDataGenerator(preprocessing_function=standardized_preprocess_input)  # Standardized
     
     # Training data with class-specific augmentation
     if minority_classes:
