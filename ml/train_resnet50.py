@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.applications.resnet import ResNet50, preprocess_input
+from tensorflow.keras.applications.resnet import ResNet50
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input  # Use MobileNetV2 preprocessing for consistency
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, BatchNormalization, Input
@@ -121,8 +122,8 @@ class ClassSpecificImageDataGenerator(tf.keras.utils.Sequence):
             else:
                 img_array = self.mild_datagen.random_transform(img_array)
             
-            # CRITICAL FIX: Apply preprocessing consistently using preprocess_input
-            # Don't use datagen.standardize() - it may use wrong normalization
+            # CRITICAL: Apply MobileNetV2-style preprocessing for consistency across all models
+            # This ensures inference preprocessing matches: (x/127.5) - 1.0 → [-1, 1]
             img_array = preprocess_input(img_array)
             
             batch_images.append(img_array)
@@ -181,8 +182,9 @@ def create_data_generators():
             print(f"\n✅ All classes balanced - applying MILD augmentation to all classes")
 
     # MILD augmentation for majority classes
+    # NOTE: Using MobileNetV2 preprocessing ([-1, 1] range) for all models for consistency
     mild_datagen = ImageDataGenerator(
-        preprocessing_function=preprocess_input,
+        preprocessing_function=preprocess_input,  # MobileNetV2-style: (x/127.5) - 1.0
         rotation_range=15,
         horizontal_flip=True,
         width_shift_range=0.1,
@@ -194,7 +196,7 @@ def create_data_generators():
 
     # STRONG augmentation for minority classes
     strong_datagen = ImageDataGenerator(
-        preprocessing_function=preprocess_input,
+        preprocessing_function=preprocess_input,  # MobileNetV2-style: (x/127.5) - 1.0
         rotation_range=30,
         horizontal_flip=True,
         vertical_flip=True,
@@ -206,8 +208,8 @@ def create_data_generators():
         fill_mode='nearest'
     )
 
-    valid_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
-    test_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
+    valid_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)  # MobileNetV2-style
+    test_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)  # MobileNetV2-style
 
     # Training data with class-specific augmentation
     if minority_classes:
