@@ -53,7 +53,7 @@ gpu_available = False
 
 CONFIG = {
     'img_size': (224, 224),  
-    'batch_size': 32 if gpu_available else 16,  # Adaptive batch size (reduced for 5 classes)
+    'batch_size': 32,  # Standardized batch size for fair comparison
     'epochs': 100,  # Sufficient epochs for 5-class problem
     'learning_rate': 0.0001,  # Lower initial LR for stable training
     'dropout_rate': 0.4,  # Increased dropout for generalization
@@ -69,7 +69,8 @@ CONFIG = {
     'label_smoothing': 0.0,  # No label smoothing for small dataset
     'warmup_epochs': 0,  # No warmup needed
     'cosine_restarts': False,
-    'gpu_enabled': gpu_available  # Flag for GPU-specific optimizations
+    'gpu_enabled': gpu_available,  # Flag for GPU-specific optimizations
+    'unfreeze_layers': 30  # Standardized fine-tuning depth
 }
 
 print(f"\n📊 Training Configuration:")
@@ -227,24 +228,22 @@ def create_data_generators():
                     if split == 'train':
                         class_counts[category] = num_images
     
-    # Identify minority classes (those with <50% of max class count)
-    # NOTE: sooty_mold now has 500 images, no longer needs strong augmentation
+    # Identify challenging classes that benefit from strong augmentation
+    # Apply strong augmentation to disease classes (excluding healthy) for better generalization
+    challenging_classes = ['leaf_rust', 'leaf_spot', 'brown_spot', 'sooty_mold']
     minority_classes = []
     if class_counts:
-        max_count = max(class_counts.values())
-        for class_name, count in class_counts.items():
-            # Exclude sooty_mold from minority class treatment (now has 500 images)
-            if count < max_count * 0.5 and class_name != 'sooty_mold':
-                minority_classes.append(class_name)
+        # Use challenging classes instead of minority classes
+        minority_classes = [cls for cls in challenging_classes if cls in class_counts]
         
         if minority_classes:
-            print(f"\n⚠️  Minority classes detected: {', '.join(minority_classes)}")
-            print(f"   Applying STRONG augmentation to: {', '.join(minority_classes)}")
-            print(f"   Applying MILD augmentation to: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
+            print(f"\n🎯 Targeted augmentation strategy:")
+            print(f"   Applying STRONG augmentation to challenging classes: {', '.join(minority_classes)}")
+            print(f"   Applying ENHANCED MILD augmentation to remaining classes: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
         else:
-            print(f"\n✅ All classes balanced - applying MILD augmentation to all classes")
+            print(f"\n✅ Balanced dataset - applying enhanced mild augmentation to all classes")
     
-    # MILD augmentation for majority classes (350 images)
+    # MILD augmentation for all classes (enhanced for better generalization)
     # NOTE: Using standardized preprocessing ([-1, 1] range) for all models
     mild_datagen = ImageDataGenerator(
         preprocessing_function=standardized_preprocess_input,  # Standardized: (x/127.5) - 1.0
@@ -252,12 +251,14 @@ def create_data_generators():
         horizontal_flip=True,       # Random horizontal flip
         width_shift_range=0.1,      # ±10% horizontal shift
         height_shift_range=0.1,     # ±10% vertical shift
-        zoom_range=0.1,             # 10% zoom in/out
-        brightness_range=[0.8, 1.2], # ±20% brightness
+        zoom_range=0.15,            # 15% zoom in/out (increased)
+        brightness_range=[0.6, 1.4], # ±40% brightness (match strong augmentation)
+        shear_range=0.10,           # Add shear transformation
+        channel_shift_range=30,     # Add channel shift for color variation
         fill_mode='nearest'
     )
     
-    # STRONG augmentation for minority classes (sooty_mold: 140 images)
+    # STRONG augmentation for challenging classes
     strong_datagen = ImageDataGenerator(
         preprocessing_function=standardized_preprocess_input,  # Standardized: (x/127.5) - 1.0
         rotation_range=30,          # ±30° rotation (2x stronger)
@@ -267,7 +268,8 @@ def create_data_generators():
         height_shift_range=0.2,     # ±20% vertical shift (2x stronger)
         zoom_range=0.2,             # 20% zoom in/out (2x stronger)
         shear_range=0.15,           # Shear transformation
-        brightness_range=[0.6, 1.4], # ±40% brightness (2x stronger)
+        brightness_range=[0.5, 1.5], # ±50% brightness (even stronger)
+        channel_shift_range=50,     # Stronger channel shift
         fill_mode='nearest'
     )
     
@@ -279,9 +281,9 @@ def create_data_generators():
     
     # Training data with class-specific augmentation
     if minority_classes:
-        print(f"\n🎯 Using TRUE class-specific augmentation strategy")
-        print(f"   Minority classes get STRONG aug: {', '.join(minority_classes)}")
-        print(f"   Majority classes get MILD aug: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
+        print(f"\n🎯 Using targeted class-specific augmentation strategy")
+        print(f"   Challenging classes get STRONG aug: {', '.join(minority_classes)}")
+        print(f"   Other classes get ENHANCED MILD aug: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
         
         # Use custom generator with class-specific augmentation
         train_data = ClassSpecificImageDataGenerator(
@@ -598,7 +600,7 @@ def train_model():
     
     # Phase 2: fine-tune deeper layers with lower LR
     print("\nPhase 2: Fine-tuning deeper layers...")
-    unfreeze_from = max(0, len(model.layers) - 30)  # Unfreeze last 30 layers
+    unfreeze_from = max(0, len(model.layers) - CONFIG['unfreeze_layers'])  # Standardized unfreezing
     
     # Unfreeze layers for fine-tuning
     for layer in model.layers[unfreeze_from:]:

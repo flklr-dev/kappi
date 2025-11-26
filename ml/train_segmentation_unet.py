@@ -48,8 +48,8 @@ CONFIG = {
     'min_lesion_area_pct': 0.05,  # Remove lesions < 0.05% of leaf area (noise)
     'morphology_kernel_size': 3,
     'severity_thresholds': {
-        'early': 10.0,      # <10% diseased area
-        'progressive': 30.0  # 10-30% diseased area, >30% = severe
+        'early': 10.0,      # <10% diseased area (MATCHES ANDROID)
+        'progressive': 30.0  # 10-30% diseased area, >30% = severe (MATCHES ANDROID)
     },
     'model_export_path': 'model_export',
     'data_dir': Path('data/processed'),
@@ -315,8 +315,11 @@ class SegmentationDataGenerator(tf.keras.utils.Sequence):
                 img = cv2.warpAffine(img, M, self.image_size)
                 mask = cv2.warpAffine(mask, M, self.image_size, flags=cv2.INTER_NEAREST)
             
-            # Normalize image
-            img = img.astype(np.float32) / 255.0
+            # CRITICAL FIX: Use [-1, 1] normalization to match classification models
+            # This ensures consistency with ImageNet-pretrained backbones
+            # Formula: (pixel / 127.5) - 1.0  → range [-1, 1]
+            img = img.astype(np.float32)
+            img = (img / 127.5) - 1.0
             
             batch_images.append(img)
             batch_masks.append(mask)
