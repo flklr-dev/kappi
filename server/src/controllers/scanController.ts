@@ -13,7 +13,7 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    console.log('Saving scan for user:', req.user._id);
+    console.log('[SAVE_SCAN] Saving scan for user:', req.user._id);
     
     let { disease, confidence, severity, stage, imageUri, coordinates, address } = req.body as any;
 
@@ -26,17 +26,25 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
     }
 
     // Log received data
-    console.log('Received scan data:', { disease, confidence, severity, stage, imageUri, coordinates, address });
+    console.log('[SAVE_SCAN] Received scan data:', { 
+      disease, 
+      confidence, 
+      severity, 
+      stage, 
+      imageUri: imageUri ? 'present' : 'missing',
+      coordinates, 
+      address 
+    });
 
     // If multer uploaded a file to Cloudinary, set imageUri to Cloudinary URL
     if ((req as any).file) {
       imageUri = (req as any).file.path; // Cloudinary URL
-      console.log('Using Cloudinary URL from uploaded file:', imageUri);
+      console.log('[SAVE_SCAN] Using Cloudinary URL from uploaded file:', imageUri);
     } else if (imageUri) {
       // Direct upload case: imageUri is already a Cloudinary URL
-      console.log('Using provided Cloudinary URL:', imageUri);
+      console.log('[SAVE_SCAN] Using provided Cloudinary URL:', imageUri);
     } else {
-      console.log('No image provided for scan');
+      console.log('[SAVE_SCAN] No image provided for scan');
     }
 
     const numericConfidence = typeof confidence === 'string' ? parseFloat(confidence) : confidence;
@@ -51,28 +59,36 @@ export const saveScan = async (req: AuthRequest, res: Response) => {
     
     // Set location data (virtuals will encrypt automatically)
     if (coordinates) {
+      console.log('[SAVE_SCAN] Setting coordinates:', coordinates);
       scan.coordinates = {
         latitude: coordinates.latitude,
         longitude: coordinates.longitude
       } as any;
+    } else {
+      console.log('[SAVE_SCAN] No coordinates provided');
     }
+    
     if (address) {
+      console.log('[SAVE_SCAN] Setting address:', address);
       scan.address = {
         barangay: address.barangay,
         cityMunicipality: address.cityMunicipality,
         province: address.province
       } as any;
+    } else {
+      console.log('[SAVE_SCAN] No address provided');
     }
     
-    console.log('Saving scan to database with imageUri:', imageUri);
+    console.log('[SAVE_SCAN] Saving scan to database with imageUri:', imageUri);
     await scan.save();
-    console.log('Scan saved successfully:', scan._id);
+    console.log('[SAVE_SCAN] Scan saved successfully with ID:', scan._id);
     
     // Return scan with decrypted location data via virtuals
     const scanResponse = scan.toObject({ virtuals: true });
+    console.log('[SAVE_SCAN] Sending response with scan data');
     res.status(201).json({ scan: scanResponse });
   } catch (error) {
-    console.error('Error saving scan:', error);
+    console.error('[SAVE_SCAN] Error saving scan:', error);
     res.status(500).json({ message: 'Error saving scan result' });
   }
 };

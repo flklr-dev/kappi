@@ -321,27 +321,57 @@ export const updateLocation = async (req: AuthRequest, res: Response) => {
     const userId = req.user._id;
     const { coordinates, address } = req.body;
 
-    // Update user's location (virtuals will handle encryption)
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        'location.coordinates.latitude': coordinates?.latitude,
-        'location.coordinates.longitude': coordinates?.longitude,
-        'location.address.barangay': address?.barangay,
-        'location.address.cityMunicipality': address?.cityMunicipality,
-        'location.address.province': address?.province
-      },
-      { new: true }
-    ).select('-password');
+    console.log('[UPDATE_LOCATION] Received request:', { userId, coordinates, address });
+
+    // Find the user first (don't use findByIdAndUpdate with virtuals)
+    const user = await User.findById(userId).select('-password');
 
     if (!user) {
+      console.log('[UPDATE_LOCATION] User not found:', userId);
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Initialize location object if it doesn't exist
+    if (!user.location) {
+      user.location = { coordinates: {} as any, address: {} as any };
+    }
+
+    // Use virtual setters to encrypt and save location data
+    if (coordinates) {
+      if (coordinates.latitude !== undefined && coordinates.latitude !== null) {
+        (user as any).set('location.coordinates.latitude', coordinates.latitude);
+        console.log('[UPDATE_LOCATION] Set latitude:', coordinates.latitude);
+      }
+      if (coordinates.longitude !== undefined && coordinates.longitude !== null) {
+        (user as any).set('location.coordinates.longitude', coordinates.longitude);
+        console.log('[UPDATE_LOCATION] Set longitude:', coordinates.longitude);
+      }
+    }
+
+    if (address) {
+      if (address.barangay) {
+        (user as any).set('location.address.barangay', address.barangay);
+        console.log('[UPDATE_LOCATION] Set barangay:', address.barangay);
+      }
+      if (address.cityMunicipality) {
+        (user as any).set('location.address.cityMunicipality', address.cityMunicipality);
+        console.log('[UPDATE_LOCATION] Set city:', address.cityMunicipality);
+      }
+      if (address.province) {
+        (user as any).set('location.address.province', address.province);
+        console.log('[UPDATE_LOCATION] Set province:', address.province);
+      }
+    }
+
+    // Save the user document
+    await user.save();
+    console.log('[UPDATE_LOCATION] Location saved successfully');
+
     // Return decrypted location data via virtuals
+    const userObject = user.toObject({ virtuals: true });
     res.json({ 
       user: {
-        ...user.toObject({ virtuals: true }),
+        ...userObject,
         location: {
           coordinates: {
             latitude: user.location?.coordinates?.latitude,
@@ -355,8 +385,9 @@ export const updateLocation = async (req: AuthRequest, res: Response) => {
         }
       }
     });
+    console.log('[UPDATE_LOCATION] Response sent with location data');
   } catch (error) {
-    console.error('Update location error:', error);
+    console.error('[UPDATE_LOCATION] Error updating location:', error);
     res.status(500).json({ message: 'Error updating location' });
   }
 }; 

@@ -231,19 +231,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     const { setAuthenticated, setUser } = get();
     try {
+      console.log('[AUTH_STORE] Checking authentication...');
       // Try to get token from secure storage first
       const tokenData = await secureStorage.getItem(TOKEN_KEY) as TokenData | null;
       const userData = await secureStorage.getItem(USER_KEY) as User | null;
+      
+      console.log('[AUTH_STORE] Retrieved from secure storage:', {
+        hasToken: !!tokenData,
+        hasUser: !!userData,
+        userLocation: userData?.location
+      });
       
       if (tokenData && userData) {
         const { expiresAt } = tokenData;
         
         // Check if token is not expired
         if (Date.now() < expiresAt) {
+          console.log('[AUTH_STORE] Token valid, setting user with location:', userData.location);
           setAuthenticated(true);
           setUser(userData);
           return;
         } else {
+          console.log('[AUTH_STORE] Token expired, cleaning up');
           // Token is expired, clean up
           await secureStorage.removeItem(TOKEN_KEY);
           await secureStorage.removeItem(USER_KEY);
@@ -255,6 +264,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await AsyncStorage.getItem('user');
       
       if (token && user) {
+        console.log('[AUTH_STORE] Migrating from AsyncStorage to secure storage');
         // Migrate to secure storage
         const expiresAt = Date.now() + TOKEN_EXPIRY;
         await secureStorage.setItem(TOKEN_KEY, {
@@ -453,7 +463,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateUserLocation: async (location: LocationData) => {
     try {
       const { user, setUser } = get();
-      if (!user) return;
+      if (!user) {
+        console.log('[AUTH_STORE] Cannot update location: no user logged in');
+        return;
+      }
+
+      console.log('[AUTH_STORE] Updating user location:', location);
 
       // Update user object with new location
       const updatedUser = {
@@ -461,18 +476,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         location
       };
 
+      console.log('[AUTH_STORE] Updated user object:', updatedUser);
+
       // Save to secure storage
       await secureStorage.setItem(USER_KEY, updatedUser);
+      console.log('[AUTH_STORE] Location saved to secure storage');
       
       // Update state
       setUser(updatedUser);
+      console.log('[AUTH_STORE] Location updated in state');
 
       // Try to update on server, fallback to queue if offline
       try {
+        console.log('[AUTH_STORE] Attempting to update location on server...');
         await authService.updateLocation(location);
-        console.log('Location updated on server successfully');
+        console.log('[AUTH_STORE] Location updated on server successfully');
       } catch (error: any) {
-        console.log('Failed to update location on server, adding to queue:', error.message);
+        console.log('[AUTH_STORE] Failed to update location on server, adding to queue:', error.message);
         
         // Add to offline queue if network error
         if (error.code === 'NETWORK_ERROR' || !navigator.onLine || error.message?.includes('Network Error')) {
@@ -483,13 +503,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             priority: 'MEDIUM',
             maxRetries: 2,
           });
-          console.log('Location update added to offline queue');
+          console.log('[AUTH_STORE] Location update added to offline queue');
         } else {
+          console.error('[AUTH_STORE] Non-network error updating location:', error);
           throw error; // Re-throw if it's not a network error
         }
       }
     } catch (error) {
-      console.error('Error updating location:', error);
+      console.error('[AUTH_STORE] Error updating location:', error);
     }
   },
 
