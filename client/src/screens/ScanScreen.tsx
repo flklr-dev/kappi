@@ -120,12 +120,31 @@ const ScanScreen = () => {
       setIsCameraActive(false);
       setIsPostProcessing(true);
       try {
-        await saveScanResult({
+        console.log('[SCAN] User location data:', {
+          hasUser: !!user,
+          hasLocation: !!user?.location,
+          hasCoordinates: !!user?.location?.coordinates,
+          hasAddress: !!user?.location?.address,
+          coordinates: user?.location?.coordinates,
+          address: user?.location?.address
+        });
+        
+        const scanData = {
           ...result,
           imageUri: `file://${photo.path}`,
           coordinates: user?.location?.coordinates,
           address: user?.location?.address,
+        };
+        
+        console.log('[SCAN] Saving scan with data:', {
+          disease: scanData.disease,
+          hasCoordinates: !!scanData.coordinates,
+          hasAddress: !!scanData.address,
+          coordinates: scanData.coordinates,
+          address: scanData.address
         });
+        
+        await saveScanResult(scanData);
       } finally {
         setIsPostProcessing(false);
       }
@@ -168,12 +187,31 @@ const ScanScreen = () => {
         setIsCameraActive(false);
         setIsPostProcessing(true);
         try {
-          await saveScanResult({
+          console.log('[SCAN_GALLERY] User location data:', {
+            hasUser: !!user,
+            hasLocation: !!user?.location,
+            hasCoordinates: !!user?.location?.coordinates,
+            hasAddress: !!user?.location?.address,
+            coordinates: user?.location?.coordinates,
+            address: user?.location?.address
+          });
+          
+          const scanData = {
             ...result,
             imageUri: pickerResult.assets[0].uri,
             coordinates: user?.location?.coordinates,
             address: user?.location?.address,
+          };
+          
+          console.log('[SCAN_GALLERY] Saving scan with data:', {
+            disease: scanData.disease,
+            hasCoordinates: !!scanData.coordinates,
+            hasAddress: !!scanData.address,
+            coordinates: scanData.coordinates,
+            address: scanData.address
           });
+          
+          await saveScanResult(scanData);
         } finally {
           setIsPostProcessing(false);
         }
@@ -459,7 +497,7 @@ const styles = StyleSheet.create({
   },
   cameraControlsOverlay: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 80 : 100,
+    top: Platform.OS === 'android' ? 100 : 120,
     right: 16,
     zIndex: 11,
   },

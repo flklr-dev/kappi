@@ -53,7 +53,7 @@ const ScanHistoryScreen = () => {
   const { t } = useLanguage();
   // Use inline object for dark colors to avoid TypeScript issues
   const themedColors = isDarkMode ? {
-    primary: '#6F8F3F',
+    primary: '#1aa34a',
     background: '#121212',
     secondary: '#2A2A2A',
     accent: '#804E49',
@@ -73,8 +73,8 @@ const ScanHistoryScreen = () => {
   const [diseaseFilterVisible, setDiseaseFilterVisible] = useState(false); // State for disease filter modal
   const [stageFilterVisible, setStageFilterVisible] = useState(false); // State for stage filter modal
 
-  // Dummy disease options (will be replaced by actual data)
-  const diseaseOptions = [t('all_diseases'), 'Coffee Leaf Rust', 'Anthracnose', 'Thread Blight', 'Coffee Berry Disease', 'Coffee Wilt Disease', t('healthy')];
+  // Disease and stage filter options
+  const diseaseOptions = [t('all_diseases'), 'Coffee Leaf Rust', 'Coffee Berry Disease', 'Cercospora Leaf Spot', 'Coffee Wilt Disease', 'Phoma Leaf Spot', 'Sooty Mold', t('healthy')];
   const stageOptions = [t('all_stages'), 'Early', 'Progressive', 'Severe', t('healthy'), t('unknown')];
 
   const fetchRemote = async () => {
@@ -178,7 +178,7 @@ const ScanHistoryScreen = () => {
           </View>
           {/* Delete button - positioned absolutely within the image container */}
           <TouchableOpacity 
-            style={styles.deleteButton}
+            style={[styles.deleteButton, { backgroundColor: isDarkMode ? 'rgba(42, 42, 42, 0.95)' : 'rgba(255, 255, 255, 0.9)' }]}
             onPress={(e) => {
               e.stopPropagation(); // Prevent triggering the parent onPress
               handleDeleteScan(item._id, item.disease);
@@ -224,16 +224,16 @@ const ScanHistoryScreen = () => {
           style={[styles.filterButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white, borderColor: isDarkMode ? themedColors.lightGray : COLORS.lightGray }]} 
           onPress={() => setDiseaseFilterVisible(true)}
         >
-          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{selectedDisease || t('all_diseases')}</Text>
-          <Ionicons name="chevron-down" size={width * 0.04} color={isDarkMode ? themedColors.white : themedColors.black} />
+          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.black : COLORS.black }]}>{selectedDisease || t('all_diseases')}</Text>
+          <Ionicons name="chevron-down" size={width * 0.04} color={isDarkMode ? themedColors.black : COLORS.black} />
         </TouchableOpacity>
 
         <TouchableOpacity 
           style={[styles.filterButton, { backgroundColor: isDarkMode ? themedColors.secondary : themedColors.white, borderColor: isDarkMode ? themedColors.lightGray : COLORS.lightGray }]} 
           onPress={() => setStageFilterVisible(true)}
         >
-          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.white : themedColors.black }]}>{selectedStage || t('all_stages')}</Text>
-          <Ionicons name="chevron-down" size={width * 0.04} color={isDarkMode ? themedColors.white : themedColors.black} />
+          <Text style={[styles.filterButtonText, { color: isDarkMode ? themedColors.black : COLORS.black }]}>{selectedStage || t('all_stages')}</Text>
+          <Ionicons name="chevron-down" size={width * 0.04} color={isDarkMode ? themedColors.black : COLORS.black} />
         </TouchableOpacity>
       </View>
 
@@ -259,7 +259,7 @@ const ScanHistoryScreen = () => {
                   setDiseaseFilterVisible(false);
                 }}
               >
-                <Text style={[styles.modalOptionText, { color: isDarkMode ? themedColors.white : themedColors.black }, selectedDisease === option && styles.selectedOptionText]}>
+                <Text style={[styles.modalOptionText, { color: isDarkMode ? themedColors.black : COLORS.black }, selectedDisease === option && { fontWeight: '700', color: themedColors.primary }]}>
                   {option}
                 </Text>
                 {selectedDisease === option && <Ionicons name="checkmark" size={width * 0.05} color={themedColors.primary} />}
@@ -291,7 +291,7 @@ const ScanHistoryScreen = () => {
                   setStageFilterVisible(false);
                 }}
               >
-                <Text style={[styles.modalOptionText, { color: isDarkMode ? themedColors.white : themedColors.black }, selectedStage === option && styles.selectedOptionText]}>
+                <Text style={[styles.modalOptionText, { color: isDarkMode ? themedColors.black : COLORS.black }, selectedStage === option && { fontWeight: '700', color: themedColors.primary }]}>
                   {option}
                 </Text>
                 {selectedStage === option && <Ionicons name="checkmark" size={width * 0.05} color={themedColors.primary} />}
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   },
   selectedOptionText: {
     fontWeight: '700',
-    color: COLORS.primary,
+    // color set inline based on theme
   },
   
   // Delete button styles
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     width: width * 0.08,
     height: width * 0.08,
     borderRadius: (width * 0.08) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    // backgroundColor set inline based on theme
     justifyContent: 'center',
     alignItems: 'center',
     // Add subtle shadow for depth

@@ -12,7 +12,8 @@ import {
   Modal,
   Image,
   TextInput,
-  Dimensions
+  Dimensions,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -354,6 +355,36 @@ const ProfileScreen = () => {
     navigation.navigate('AboutApp');
   };
 
+  const handleOpenPrivacyPolicy = async () => {
+    try {
+      const url = 'https://kappi-landing-page-2.vercel.app/privacy-policy';
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(t('error_message'), t('cannot_open_url'));
+      }
+    } catch (error) {
+      console.error('Error opening privacy policy:', error);
+      Alert.alert(t('error_message'), t('failed_to_open_privacy_policy'));
+    }
+  };
+
+  const handleOpenTermsAndConditions = async () => {
+    try {
+      const url = 'https://kappi-landing-page-2.vercel.app/terms-and-conditions';
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(t('error_message'), t('cannot_open_url'));
+      }
+    } catch (error) {
+      console.error('Error opening terms and conditions:', error);
+      Alert.alert(t('error_message'), t('failed_to_open_terms'));
+    }
+  };
+
   const handleSaveProfile = async () => {
     setProfileError(null);
     setProfileLoading(true);
@@ -581,14 +612,14 @@ const ProfileScreen = () => {
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={() => console.log('Terms & Conditions')}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDarkMode ? themedColors.lightGray : COLORS.secondary + '20' }]} onPress={handleOpenTermsAndConditions}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="document-text-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
                 <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('terms_and_conditions')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDarkMode ? themedColors.gray : COLORS.gray} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={() => console.log('Privacy Policy')}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={handleOpenPrivacyPolicy}>
               <View style={styles.menuItemContent}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={themedColors.primary} style={styles.menuIcon} />
                 <Text style={[styles.menuText, { color: isDarkMode ? themedColors.white : COLORS.black }]}>{t('privacy_policy')}</Text>

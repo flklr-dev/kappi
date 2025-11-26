@@ -431,9 +431,9 @@ const HomeScreen = () => {
                         </View>
                         
                         {scan.address && (
-                          <View style={styles.locationContainer}>
+                          <View style={[styles.locationContainer, { backgroundColor: isDarkMode ? themedColors.background : '#F8F9FA', borderColor: isDarkMode ? themedColors.secondary : '#E9ECEF' }]}>
                             <Ionicons name="location" size={12} color={COLORS.primary} />
-                            <Text style={styles.scanLocation} numberOfLines={1}>
+                            <Text style={[styles.scanLocation, { color: isDarkMode ? themedColors.gray : '#6C757D' }]} numberOfLines={1}>
                               {[scan.address.barangay, scan.address.cityMunicipality, scan.address.province]
                                 .filter(Boolean)
                                 .join(', ')}
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 6,
   },
   scanTitleContainer: {
     flex: 1,
