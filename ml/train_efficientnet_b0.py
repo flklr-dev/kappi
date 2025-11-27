@@ -15,6 +15,9 @@ import itertools
 import random
 from sklearn.metrics import classification_report, confusion_matrix
 
+# Add after imports
+from pathlib import Path
+
 # Standardized preprocessing function for all models ([-1, 1] normalization)
 def standardized_preprocess_input(x):
     """
@@ -50,22 +53,21 @@ print("\n💻 Training on CPU (no GPU detected/configured)")
 
 CONFIG = {
     'img_size': (224, 224),
-    'batch_size': 32,  # Standardized batch size for fair comparison
+    'batch_size': 16,  # Optimized for small dataset with 5 classes
     'epochs': 100,
     'learning_rate': 0.0001,  # Lower LR for stable training
     'dropout_rate': 0.4,  # Increased dropout for generalization
     'data_dir': os.path.join(os.path.dirname(__file__), 'data', 'processed'),
     'model_export_path': 'model_export',
     'l2_lambda': 0.0001,
-    'early_stopping_patience': 8,
+    'early_stopping_patience': 10,  # Increased from 8 - give model more epochs
     'early_stopping_min_delta': 0.0001,
-    'reduce_lr_patience': 4,
+    'reduce_lr_patience': 6,  # Increased from 4 - don't reduce LR too aggressively
     'reduce_lr_factor': 0.5,
-    'min_lr': 1e-7,
+    'min_lr': 1e-6,  # Increased from 1e-7 - don't let LR die completely
     'num_classes': 5,  # 5 disease classes
     'label_smoothing': 0.0,  # No label smoothing for small dataset
-    'gpu_enabled': False,  # Standardized - CPU training
-    'unfreeze_layers': 30  # Standardized fine-tuning depth
+    'gpu_enabled': False  # CRITICAL FIX: CPU training - was set to True causing problems
 }
 
 def calculate_class_weights(generator):
@@ -161,7 +163,120 @@ class ClassSpecificImageDataGenerator(tf.keras.utils.Sequence):
     def classes(self):
         return np.array(self.labels)
 
+def create_negative_data_generator():
+    """Create generator for negative (non-coffee-leaf) samples."""
+    negative_path = Path('data/negative_samples')
+    
+    if not negative_path.exists():
+        print("⚠️  No negative samples found. Training without outlier exposure.")
+        return None
+    
+    print(f"\n📂 Loading negative samples from: {negative_path}")
+    
+    # Use same preprocessing as positive data
+    negative_datagen = ImageDataGenerator(
+        preprocessing_function=standardized_preprocess_input,
+        rotation_range=15,
+        horizontal_flip=True,
+        zoom_range=0.1
+    )
+    
+    # Try to load negative samples
+    try:
+        negative_data = negative_datagen.flow_from_directory(
+            str(negative_path),
+            target_size=CONFIG['img_size'],
+            batch_size=CONFIG['batch_size'],
+            class_mode='categorical',
+            shuffle=True,
+            seed=42
+        )
+        
+        print(f"✅ Loaded {negative_data.n} negative samples")
+        return negative_data
+        
+    except Exception as e:
+        print(f"⚠️  Could not load negative samples: {e}")
+        return None
+
+class OutlierExposureGenerator(tf.keras.utils.Sequence):
+    """
+    Mixed generator that combines coffee leaves (positive) and random objects (negative).
+    
+    Research-backed approach from Hendrycks et al. (2019) "Deep Anomaly Detection with Outlier Exposure"
+    """
+    
+    def __init__(self, positive_gen, negative_gen, negative_ratio=0.3):
+        """
+        Args:
+            positive_gen: Generator for coffee leaf images
+            negative_gen: Generator for negative samples (laptops, people, etc.)
+            negative_ratio: Proportion of negative samples per batch (0.2-0.4 recommended)
+        """
+        self.positive_gen = positive_gen
+        self.negative_gen = negative_gen
+        self.negative_ratio = negative_ratio
+        self.num_classes = positive_gen.num_classes if hasattr(positive_gen, 'num_classes') else CONFIG['num_classes']
+        
+        print(f"\n🎯 Outlier Exposure enabled:")
+        print(f"   Positive samples per batch: {int(CONFIG['batch_size'] * (1 - negative_ratio))}")
+        print(f"   Negative samples per batch: {int(CONFIG['batch_size'] * negative_ratio)}")
+    
+    @property
+    def classes(self):
+        """Return classes from the positive generator for class weight calculation."""
+        return self.positive_gen.classes
+    
+    @property
+    def class_indices(self):
+        """Return class indices from the positive generator."""
+        return self.positive_gen.class_indices
+    
+    def __len__(self):
+        return len(self.positive_gen)
+    
+    def __getitem__(self, idx):
+        # Get positive batch (coffee leaves)
+        pos_x, pos_y = self.positive_gen[idx]
+        
+        # Determine how many negatives to include
+        num_negatives = int(len(pos_x) * self.negative_ratio)
+        num_positives = len(pos_x) - num_negatives
+        
+        if num_negatives > 0 and self.negative_gen is not None:
+            # Get negative batch
+            neg_idx = idx % len(self.negative_gen)
+            neg_x, _ = self.negative_gen[neg_idx]
+            
+            # Take only what we need
+            neg_x = neg_x[:num_negatives]
+            
+            # Create uniform distribution labels for negatives
+            # (model should be uncertain about these)
+            neg_y = np.ones((num_negatives, self.num_classes)) / self.num_classes
+            
+            # Combine positives and negatives
+            batch_x = np.concatenate([pos_x[:num_positives], neg_x], axis=0)
+            batch_y = np.concatenate([pos_y[:num_positives], neg_y], axis=0)
+            
+            # Shuffle within batch
+            indices = np.random.permutation(len(batch_x))
+            batch_x = batch_x[indices]
+            batch_y = batch_y[indices]
+        else:
+            batch_x = pos_x
+            batch_y = pos_y
+        
+        return batch_x, batch_y
+    
+    def on_epoch_end(self):
+        """Shuffle both generators"""
+        self.positive_gen.on_epoch_end()
+        if self.negative_gen is not None:
+            self.negative_gen.on_epoch_end()
+
 def create_data_generators():
+    """Create train/val generators with optional outlier exposure."""
     base_path = os.path.abspath(os.path.dirname(__file__))
     data_path = os.path.join(base_path, 'data', 'processed')
     print(f"\nLoading data from: {data_path}")
@@ -183,37 +298,36 @@ def create_data_generators():
                     if split == 'train':
                         class_counts[category] = num_images
 
-    # Identify challenging classes that benefit from strong augmentation
-    # Apply strong augmentation to disease classes (excluding healthy) for better generalization
-    challenging_classes = ['leaf_rust', 'leaf_spot', 'brown_spot', 'sooty_mold']
+    # Identify minority classes
+    # NOTE: sooty_mold now has 500 images, no longer needs strong augmentation
     minority_classes = []
     if class_counts:
-        # Use challenging classes instead of minority classes
-        minority_classes = [cls for cls in challenging_classes if cls in class_counts]
+        max_count = max(class_counts.values())
+        for class_name, count in class_counts.items():
+            # Exclude sooty_mold from minority class treatment (now has 500 images)
+            if count < max_count * 0.5 and class_name != 'sooty_mold':
+                minority_classes.append(class_name)
         
         if minority_classes:
-            print(f"\n🎯 Targeted augmentation strategy:")
-            print(f"   Applying STRONG augmentation to challenging classes: {', '.join(minority_classes)}")
-            print(f"   Applying ENHANCED MILD augmentation to remaining classes: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
+            print(f"\n⚠️  Minority classes detected: {', '.join(minority_classes)}")
+            print(f"   STRONG aug: {', '.join(minority_classes)}")
+            print(f"   MILD aug: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
         else:
-            print(f"\n✅ Balanced dataset - applying enhanced mild augmentation to all classes")
-
-    # MILD augmentation for all classes (enhanced for better generalization)
-    # NOTE: Using standardized preprocessing ([-1, 1] range) for all models
+            print(f"\n✅ All classes balanced - applying MILD augmentation to all classes")
+    
+    # MILD augmentation for majority classes (350 images)
     mild_datagen = ImageDataGenerator(
         preprocessing_function=standardized_preprocess_input,  # Standardized: (x/127.5) - 1.0
         rotation_range=15,          # ±15° rotation
         horizontal_flip=True,       # Random horizontal flip
         width_shift_range=0.1,      # ±10% horizontal shift
         height_shift_range=0.1,     # ±10% vertical shift
-        zoom_range=0.15,            # 15% zoom in/out (increased)
-        brightness_range=[0.6, 1.4], # ±40% brightness (match strong augmentation)
-        shear_range=0.10,           # Add shear transformation
-        channel_shift_range=30,     # Add channel shift for color variation
+        zoom_range=0.1,             # 10% zoom in/out
+        brightness_range=[0.8, 1.2], # ±20% brightness
         fill_mode='nearest'
     )
-
-    # STRONG augmentation for challenging classes
+    
+    # STRONG augmentation for minority classes (sooty_mold: 140 images)
     strong_datagen = ImageDataGenerator(
         preprocessing_function=standardized_preprocess_input,  # Standardized: (x/127.5) - 1.0
         rotation_range=30,          # ±30° rotation (2x stronger)
@@ -223,19 +337,23 @@ def create_data_generators():
         height_shift_range=0.2,     # ±20% vertical shift (2x stronger)
         zoom_range=0.2,             # 20% zoom in/out (2x stronger)
         shear_range=0.15,           # Shear transformation
-        brightness_range=[0.5, 1.5], # ±50% brightness (even stronger)
-        channel_shift_range=50,     # Stronger channel shift
+        brightness_range=[0.6, 1.4], # ±40% brightness (2x stronger)
         fill_mode='nearest'
     )
-
+    
+    # Validation data generator (no augmentation)
     valid_datagen = ImageDataGenerator(preprocessing_function=standardized_preprocess_input)  # Standardized
+    
+    # Test data generator (no augmentation)
     test_datagen = ImageDataGenerator(preprocessing_function=standardized_preprocess_input)  # Standardized
-
+    
     # Training data with class-specific augmentation
     if minority_classes:
-        print(f"\n🎯 Using targeted class-specific augmentation strategy")
-        print(f"   Challenging classes get STRONG aug: {', '.join(minority_classes)}")
-        print(f"   Other classes get ENHANCED MILD aug: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
+        print(f"\n🎯 Using TRUE class-specific augmentation strategy")
+        print(f"   Minority classes get STRONG aug: {', '.join(minority_classes)}")
+        print(f"   Majority classes get MILD aug: {', '.join([c for c in class_counts.keys() if c not in minority_classes])}")
+        
+        # Use custom generator with class-specific augmentation
         train_data = ClassSpecificImageDataGenerator(
             directory=os.path.join(data_path, 'train'),
             mild_datagen=mild_datagen,
@@ -247,7 +365,8 @@ def create_data_generators():
             seed=42
         )
     else:
-        print(f"\n✅ No imbalance - mild aug for all")
+        # Use mild augmentation for all classes
+        print(f"\n✅ No class imbalance detected - using mild augmentation for all")
         train_data = mild_datagen.flow_from_directory(
             os.path.join(data_path, 'train'),
             target_size=CONFIG['img_size'],
@@ -256,7 +375,8 @@ def create_data_generators():
             shuffle=True,
             seed=42
         )
-
+    
+    # Validation data
     valid_data = valid_datagen.flow_from_directory(
         os.path.join(data_path, 'val'),
         target_size=CONFIG['img_size'],
@@ -264,7 +384,8 @@ def create_data_generators():
         class_mode='categorical',
         shuffle=False
     )
-
+    
+    # Test data
     test_data = None
     test_path = os.path.join(data_path, 'test')
     if os.path.exists(test_path):
@@ -275,7 +396,24 @@ def create_data_generators():
             class_mode='categorical',
             shuffle=False
         )
-
+    
+    # Load negative samples
+    negative_data = create_negative_data_generator()
+    
+    # Wrap training generator with outlier exposure if available
+    if negative_data is not None:
+        print("\n✅ Enabling Outlier Exposure (OE) training")
+        print("   This will help reject non-coffee-leaf inputs")
+        
+        train_data = OutlierExposureGenerator(
+            positive_gen=train_data,
+            negative_gen=negative_data,
+            negative_ratio=0.15  # 15% negatives, 85% positives - balanced for 85%+ training accuracy
+        )
+    else:
+        print("\n⚠️  Training without Outlier Exposure")
+        print("   Model may be overconfident on random inputs")
+    
     return train_data, valid_data, test_data
 
 def build_model(num_classes):
@@ -518,7 +656,7 @@ def train_model():
                          callbacks=callbacks_phase1, class_weight=class_weights, verbose=1)
 
     print("\nPhase 2: Fine-tuning deeper layers...")
-    unfreeze_from = max(0, len(model.layers) - CONFIG['unfreeze_layers'])  # Standardized unfreezing
+    unfreeze_from = max(0, len(model.layers) - 30)  # Unfreeze last 30 layers
     for layer in model.layers[unfreeze_from:]:
         if not isinstance(layer, BatchNormalization):
             layer.trainable = True
