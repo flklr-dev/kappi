@@ -78,7 +78,7 @@ scanSchema.virtual('coordinates.latitude')
       try {
         return parseFloat(decrypt(this.coordinates.encryptedLatitude));
       } catch (error) {
-        console.error('Error decrypting scan latitude:', error);
+        console.warn('⚠️  Warning: Could not decrypt latitude for scan', this._id, '- returning undefined');
         return undefined;
       }
     }
@@ -99,7 +99,7 @@ scanSchema.virtual('coordinates.longitude')
       try {
         return parseFloat(decrypt(this.coordinates.encryptedLongitude));
       } catch (error) {
-        console.error('Error decrypting scan longitude:', error);
+        console.warn('⚠️  Warning: Could not decrypt longitude for scan', this._id, '- returning undefined');
         return undefined;
       }
     }
@@ -121,7 +121,7 @@ scanSchema.virtual('address.barangay')
       try {
         return decrypt(this.address.encryptedBarangay);
       } catch (error) {
-        console.error('Error decrypting scan barangay:', error);
+        console.warn('⚠️  Warning: Could not decrypt barangay for scan', this._id, '- returning undefined');
         return undefined;
       }
     }
@@ -142,7 +142,7 @@ scanSchema.virtual('address.cityMunicipality')
       try {
         return decrypt(this.address.encryptedCity);
       } catch (error) {
-        console.error('Error decrypting scan city:', error);
+        console.warn('⚠️  Warning: Could not decrypt city for scan', this._id, '- returning undefined');
         return undefined;
       }
     }
@@ -163,7 +163,7 @@ scanSchema.virtual('address.province')
       try {
         return decrypt(this.address.encryptedProvince);
       } catch (error) {
-        console.error('Error decrypting scan province:', error);
+        console.warn('⚠️  Warning: Could not decrypt province for scan', this._id, '- returning undefined');
         return undefined;
       }
     }
