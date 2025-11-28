@@ -371,15 +371,7 @@ public class TensorFlowModule extends ReactContextBaseJavaModule {
                 return;
             }
 
-            // Check image brightness and provide soft feedback
-            float brightness = getImageBrightness(bitmap);
-            String brightnessWarning = null;
-            
-            if (brightness < 20) {
-                brightnessWarning = "Image is very dim. Results may be less accurate. Try taking photo under better lighting for optimal accuracy.";
-            } else if (brightness < 30) {
-                brightnessWarning = "Image is dim. Try taking photo under better lighting for optimal accuracy.";
-            }
+
             
             // Create input buffer with correct size
             ByteBuffer inputBuffer = ByteBuffer.allocateDirect(
@@ -466,17 +458,7 @@ public class TensorFlowModule extends ReactContextBaseJavaModule {
             float confidence = maxProb;
             float severityPercentage = 0.0f;
 
-            // Adjust confidence based on image brightness for better handling of dark images
-            boolean isVeryDark = brightness < 20;
-            boolean isDim = brightness < 30 && brightness >= 20;
-            
-            if (isVeryDark && maxProb >= MIN_CONFIDENCE * 0.7f && maxProb < MIN_CONFIDENCE) {
-                // For very dark images with borderline confidence, still classify but indicate uncertainty
-                confidence = maxProb * 0.8f; // Slightly reduce confidence to indicate uncertainty
-            } else if (isDim && maxProb >= MIN_CONFIDENCE * 0.85f && maxProb < MIN_CONFIDENCE) {
-                // For dim images with borderline confidence, still classify but indicate uncertainty
-                confidence = maxProb * 0.9f; // Slightly reduce confidence to indicate uncertainty
-            } else if (!isLikelyLeaf || maxProb < MIN_CONFIDENCE || maxProb > MAX_CONFIDENCE) {
+            if (!isLikelyLeaf || maxProb < MIN_CONFIDENCE || maxProb > MAX_CONFIDENCE) {
                 confidence = 0.0f;
             } else {
                 // Step 1: Classify disease type
@@ -522,10 +504,7 @@ public class TensorFlowModule extends ReactContextBaseJavaModule {
             result.putDouble("confidence", confidence * 100);  // Convert to percentage
             result.putDouble("severityPercentage", severityPercentage);  // Add raw severity percentage
             
-            // Add brightness warning if applicable
-            if (brightnessWarning != null) {
-                result.putString("warning", brightnessWarning);
-            }
+
             
             // Add secondary prediction if available and different from primary
             if (secondMaxIndex != -1 && secondMaxIndex != maxIndex && secondMaxProb > 0.1f) {
