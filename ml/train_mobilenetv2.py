@@ -19,6 +19,30 @@ import random
 # Add after imports
 from pathlib import Path
 
+# ADD FOCAL LOSS for hard samples (brown_spot vs leaf_rust)
+def focal_loss(gamma=2.0, alpha=0.25):
+    """
+    Focal loss to focus on hard-to-classify samples.
+    Helps with brown_spot vs leaf_rust confusion.
+    """
+    def focal_loss_fixed(y_true, y_pred):
+        epsilon = tf.keras.backend.epsilon()
+        y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
+        
+        # Calculate cross entropy
+        ce = -y_true * tf.math.log(y_pred)
+        
+        # Calculate focal term: (1 - p_t)^gamma
+        p_t = tf.reduce_sum(y_true * y_pred, axis=-1, keepdims=True)
+        focal_term = tf.pow(1.0 - p_t, gamma)
+        
+        # Focal loss
+        loss = alpha * focal_term * ce
+        
+        return tf.reduce_mean(tf.reduce_sum(loss, axis=-1))
+    
+    return focal_loss_fixed
+
 # Standardized preprocessing function for all models ([-1, 1] normalization)
 def standardized_preprocess_input(x):
     """
@@ -58,19 +82,19 @@ CONFIG = {
     'img_size': (224, 224),  
     'batch_size': 32 if gpu_available else 16,  # Adaptive batch size (reduced for 5 classes)
     'epochs': 100,  # Sufficient epochs for 5-class problem
-    'learning_rate': 0.0001,  # Lower initial LR for stable training
-    'dropout_rate': 0.4,  # Increased dropout for generalization
-    'data_dir': os.path.join(os.path.dirname(__file__), 'data', 'processed'),
-    'model_export_path': 'model_export',
+    'learning_rate': 0.00015,  # Slightly higher for better discrimination
+    'dropout_rate': 0.35,  # Reduced slightly for better feature learning
+    'data_dir': os.path.join(os.path.dirname(__file__), 'data', 'augmented_backgrounds'),  # ✅ NEW DATA
+    'model_export_path': os.path.join('model_export', 'mobilenetv2-v2'),  # Versioned output directory
     'l2_lambda': 0.0001,
-    'early_stopping_patience': 8,  # Standard patience
+    'early_stopping_patience': 12,  # More patience
     'early_stopping_min_delta': 0.0001,
-    'reduce_lr_patience': 4,  # Reduce LR more responsively
+    'reduce_lr_patience': 6,  # Increased patience
     'reduce_lr_factor': 0.5,
     'min_lr': 1e-7,
     'num_classes': 5,  # 5 disease classes: healthy, leaf_rust, leaf_spot, brown_spot, sooty_mold
-    'label_smoothing': 0.0,  # No label smoothing for small dataset
-    'warmup_epochs': 0,  # No warmup needed
+    'label_smoothing': 0.05,  # Add mild label smoothing
+    'warmup_epochs': 5,  # Short warmup to stabilize early training
     'cosine_restarts': False,
     'gpu_enabled': gpu_available  # Flag for GPU-specific optimizations
 }
@@ -109,11 +133,21 @@ def save_training_metrics(history, model_name="MobileNetV2"):
         json.dump(metrics, f, indent=2)
     
 def calculate_class_weights(generator):
-    """Calculate class weights based on the distribution of samples."""
+    """Enhanced class weights with manual boost for problematic classes."""
     total_counts = generator.classes.shape[0]
     class_counts = np.bincount(generator.classes)
+    
+    # Base weights
     class_weights = {i: total_counts / (len(class_counts) * count) 
                     for i, count in enumerate(class_counts)}
+    
+    # Manually boost brown_spot weight due to low recall
+    class_indices = generator.class_indices if hasattr(generator, 'class_indices') else {}
+    if isinstance(class_indices, dict) and 'brown_spot' in class_indices:
+        bs_idx = class_indices['brown_spot']
+        class_weights[bs_idx] = class_weights.get(bs_idx, 1.0) * 1.5
+        print(f"\n🎯 Boosted brown_spot class weight: {class_weights[bs_idx]:.4f}")
+    
     return class_weights
 
 class ClassSpecificImageDataGenerator(tf.keras.utils.Sequence):
@@ -320,7 +354,7 @@ class OutlierExposureGenerator(tf.keras.utils.Sequence):
 def create_data_generators():
     """Create train/val generators with optional outlier exposure."""
     base_path = os.path.abspath(os.path.dirname(__file__))
-    data_path = os.path.join(base_path, 'data', 'processed')
+    data_path = os.path.join(base_path, 'data', 'augmented_backgrounds')
     
     print(f"\nLoading data from: {data_path}")
     
@@ -352,6 +386,11 @@ def create_data_generators():
             if count < max_count * 0.5 and class_name != 'sooty_mold':
                 minority_classes.append(class_name)
         
+        # Force brown_spot into strong augmentation
+        if 'brown_spot' not in minority_classes:
+            minority_classes.append('brown_spot')
+            print("🎯 FORCING brown_spot strong augmentation due to confusion with leaf_rust")
+        
         if minority_classes:
             print(f"\n⚠️  Minority classes detected: {', '.join(minority_classes)}")
             print(f"   Applying STRONG augmentation to: {', '.join(minority_classes)}")
@@ -363,27 +402,28 @@ def create_data_generators():
     # NOTE: Using standardized preprocessing ([-1, 1] range) for all models
     mild_datagen = ImageDataGenerator(
         preprocessing_function=standardized_preprocess_input,  # Standardized: (x/127.5) - 1.0
-        rotation_range=15,          # ±15° rotation
+        rotation_range=20,          # ±20° rotation (increased for more variation)
         horizontal_flip=True,       # Random horizontal flip
-        width_shift_range=0.1,      # ±10% horizontal shift
-        height_shift_range=0.1,     # ±10% vertical shift
-        zoom_range=0.1,             # 10% zoom in/out
-        brightness_range=[0.8, 1.2], # ±20% brightness
-        fill_mode='nearest'
+        width_shift_range=0.15,     # ±15% horizontal shift (increased)
+        height_shift_range=0.15,    # ±15% vertical shift (increased)
+        zoom_range=[0.8, 1.2],      # Zoom 80%-120% (allows zoom OUT to add border context)
+        brightness_range=[0.7, 1.3], # ±30% brightness (more variation)
+        fill_mode='reflect'         # Reflect pixels at borders instead of white
     )
     
     # STRONG augmentation for minority classes (sooty_mold: 140 images)
     strong_datagen = ImageDataGenerator(
         preprocessing_function=standardized_preprocess_input,  # Standardized: (x/127.5) - 1.0
-        rotation_range=30,          # ±30° rotation (2x stronger)
+        rotation_range=35,          # ±35° rotation (stronger)
         horizontal_flip=True,       # Random horizontal flip
-        vertical_flip=True,         # Vertical flip (NEW)
-        width_shift_range=0.2,      # ±20% horizontal shift (2x stronger)
-        height_shift_range=0.2,     # ±20% vertical shift (2x stronger)
-        zoom_range=0.2,             # 20% zoom in/out (2x stronger)
-        shear_range=0.15,           # Shear transformation
-        brightness_range=[0.6, 1.4], # ±40% brightness (2x stronger)
-        fill_mode='nearest'
+        vertical_flip=True,         # Vertical flip
+        width_shift_range=0.25,     # ±25% horizontal shift (stronger)
+        height_shift_range=0.25,    # ±25% vertical shift (stronger)
+        zoom_range=[0.7, 1.3],      # Zoom 70%-130% (allows zoom OUT)
+        shear_range=0.20,           # Stronger shear transformation
+        brightness_range=[0.5, 1.5], # ±50% brightness (stronger)
+        channel_shift_range=25.0,   # ✅ INCREASED: Better color discrimination
+        fill_mode='reflect'         # Reflect pixels at borders
     )
     
     # Validation data generator (no augmentation)
@@ -453,7 +493,7 @@ def create_data_generators():
         train_data = OutlierExposureGenerator(
             positive_gen=train_data,
             negative_gen=negative_data,
-            negative_ratio=0.15  # 15% negatives, 85% positives - balanced for 85%+ training accuracy
+            negative_ratio=0.25  # ✅ INCREASED to 25% negatives for better outlier rejection
         )
     else:
         print("\n⚠️  Training without Outlier Exposure")
@@ -470,11 +510,12 @@ def build_model(num_classes):
     base_model = MobileNetV2(
         weights='imagenet',
         include_top=False,
-        input_tensor=inputs
+        input_tensor=inputs,
+        alpha=1.4
     )
     
     # Freeze most of the base model initially
-    for layer in base_model.layers[:-20]:  # Unfreeze last 20 layers for better adaptation
+    for layer in base_model.layers[:-30]:  # Unfreeze last 30 layers for better adaptation
         layer.trainable = False
     
     # Add custom layers - STANDARDIZED ARCHITECTURE
@@ -483,12 +524,12 @@ def build_model(num_classes):
     x = BatchNormalization()(x)
     
     # Two-layer classification head (same as ResNet50)
-    x = Dense(512, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
+    x = Dense(768, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
     x = BatchNormalization()(x)
     x = Dropout(CONFIG['dropout_rate'])(x)
-    x = Dense(256, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
+    x = Dense(384, activation='relu', kernel_regularizer=l2(CONFIG['l2_lambda']))(x)
     x = BatchNormalization()(x)
-    x = Dropout(CONFIG['dropout_rate'] * 0.5)(x)
+    x = Dropout(0.25)(x)
     
     # Output layer
     predictions = Dense(num_classes, activation='softmax')(x)
@@ -496,10 +537,10 @@ def build_model(num_classes):
     # Create model
     model = Model(inputs=inputs, outputs=predictions)
     
-    # Compile model - STANDARDIZED
+    # ✅ CRITICAL: Use Focal Loss instead of regular categorical crossentropy
     model.compile(
         optimizer=Adam(learning_rate=CONFIG['learning_rate'], amsgrad=True),
-        loss='categorical_crossentropy',
+        loss=focal_loss(gamma=2.0, alpha=0.25),  # ✅ NEW: Focuses on hard samples
         metrics=['accuracy', Precision(name='precision'), Recall(name='recall')]
     )
     
@@ -544,9 +585,9 @@ def convert_to_tflite(model):
         if os.path.exists(temp_model_path):
             shutil.rmtree(temp_model_path)
         
-        # Save model in SavedModel format
+        # Save model in SavedModel format (Keras 3 compatible)
         print("   → Saving as SavedModel format...")
-        model.save(temp_model_path, save_format='tf')
+        tf.saved_model.save(model, temp_model_path)
         
         # Create converter
         print("   → Creating TFLite converter...")
@@ -717,7 +758,8 @@ def train_model():
         TensorBoard(
             log_dir=os.path.join(CONFIG['model_export_path'], 'logs'),
             histogram_freq=1
-        )
+        ),
+        LearningRateScheduler(cosine_annealing_schedule)
     ]
     history1 = model.fit(
         train_data,
@@ -740,7 +782,7 @@ def train_model():
     # Recompile with lower learning rate for fine-tuning
     model.compile(
         optimizer=Adam(learning_rate=CONFIG['learning_rate'] * 0.1, amsgrad=True),
-        loss='categorical_crossentropy',
+        loss=focal_loss(gamma=2.0, alpha=0.25),  # ✅ NEW: Focuses on hard samples
         metrics=['accuracy', Precision(name='precision'), Recall(name='recall')]
     )
     
@@ -767,7 +809,8 @@ def train_model():
             min_delta=CONFIG['early_stopping_min_delta'],
             restore_best_weights=True,
             verbose=1
-        )
+        ),
+        LearningRateScheduler(cosine_annealing_schedule)
     ]
     
     # Train for additional epochs or until early stopping
@@ -821,4 +864,4 @@ def main():
         raise
 
 if __name__ == "__main__":
-    main() 
+    main()

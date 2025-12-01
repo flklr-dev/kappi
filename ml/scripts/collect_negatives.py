@@ -46,31 +46,59 @@ def collect_negative_samples():
     print(f"📂 Creating negative samples directory: {OUTPUT_DIR}")
     
     # Category: Query mappings with more specific terms to avoid ambiguity
+    # ✅ INCREASED the number of samples per category for better training
     categories = {
         'electronics': [
-            ('laptop computer screen', 15),
-            ('smartphone mobile phone', 15),
-            ('tablet device ipad', 10)
+            ('laptop computer screen', 25),
+            ('smartphone mobile phone', 25),
+            ('tablet device ipad', 15),
+            ('computer keyboard', 15),
+            ('computer mouse', 10)
         ],
         'people': [
-            ('portrait photography face', 15),  # More specific for actual faces
-            ('selfie photograph person', 15),   # Real selfies, not diagrams
-            ('human hand holding', 10)           # Actual hands
+            ('portrait photography face', 25),  # More specific for actual faces
+            ('selfie photograph person', 25),   # Real selfies, not diagrams
+            ('human hand holding', 20),         # Actual hands
+            ('person walking', 15),
+            ('group of people', 10)
         ],
         'furniture': [
-            ('wooden desk office', 12),         # More specific
-            ('dining table wood', 12),          # More specific
-            ('white wall background', 8)        # Simpler query
+            ('wooden desk office', 20),         # More specific
+            ('dining table wood', 20),          # More specific
+            ('white wall background', 15),      # Simpler query
+            ('office chair', 10),
+            ('bookshelf', 10)
         ],
         'textures': [
-            ('concrete wall texture', 10),
-            ('hardwood floor pattern', 10),
-            ('fabric cloth texture', 8)
+            ('concrete wall texture', 20),
+            ('hardwood floor pattern', 20),
+            ('fabric cloth texture', 15),
+            ('metal surface', 10),
+            ('stone wall', 10)
         ],
         'other_plants': [
-            ('tomato plant leaves', 10),
-            ('rose flower garden', 10),
-            ('green grass lawn', 8)
+            ('tomato plant leaves', 15),
+            ('rose flower garden', 15),
+            ('green grass lawn', 15),
+            ('tree bark', 10),
+            ('fern leaves', 10)
+        ],
+        # ✅ NEW CATEGORY: Pure colors and simple shapes that might confuse the model
+        'pure_colors': [
+            ('solid black background', 20),
+            ('solid white background', 20),
+            ('solid red background', 10),
+            ('solid green background', 10),
+            ('solid blue background', 10)
+        ],
+        # ✅ NEW CATEGORY: Random objects that are not leaves
+        'random_objects': [
+            ('coffee cup', 15),
+            ('book cover', 15),
+            ('newspaper', 10),
+            ('magazine', 10),
+            ('plastic bottle', 10),
+            ('paper', 10)
         ]
     }
     
@@ -91,7 +119,7 @@ def collect_negative_samples():
             if isinstance(query_info, tuple):
                 query, limit = query_info
             else:
-                query, limit = query_info, 15
+                query, limit = query_info, 25
                 
             print(f"  → Searching for: {query} (limit: {limit})")
             
