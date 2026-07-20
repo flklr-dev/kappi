@@ -76,118 +76,79 @@ KAPPI is specifically trained to detect the following coffee foliage diseases:
 
 ---
 
-## 📐 System Architecture & Design
 
-KAPPI is built with a decoupled three-tier architecture: the React Native Mobile Client, Node.js Express API Server, and Python/PyTorch Machine Learning pipeline.
+## 📐 Architecture
 
-```mermaid
-graph TD
-    %% Styling
-    classDef client fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
-    classDef server fill:#d4edda,stroke:#155724,stroke-width:2px;
-    classDef db fill:#fff3cd,stroke:#856404,stroke-width:2px;
-    classDef ml fill:#f8d7da,stroke:#721c24,stroke-width:2px;
+KAPPI follows a three-tier, offline-first architecture. The mobile client handles all AI inference locally, while the backend provides cloud sync, authentication, and image storage.
 
-    subgraph Mobile_Client["📱 Mobile Client (React Native + Expo)"]
-        UI["App UI / Screens (TypeScript)"]
-        Zustand["Zustand State Stores<br>(Auth, Scan, Settings)"]
-        TFLite["On-Device TFLite Engine<br>(MobileNetV2/EfficientNet)"]
-        LocalStorage["Secure Local Caching<br>(SecureStore & Storage)"]
-        GPS["Expo Location & Geocoding"]
-        Camera["Expo Image Picker / Vision Camera"]
-    end
-    class Mobile_Client,UI,Zustand,TFLite,LocalStorage,GPS,Camera client;
+### 📱 Mobile Client — React Native + Expo
 
-    subgraph Backend_Server["⚙️ Backend Server (Express & Node.js)"]
-        Router["Express Router & Rate Limiters"]
-        AuthCtrl["Auth Controller<br>(JWT, Bcrypt, OTP)"]
-        ScanCtrl["Scan History Controller"]
-        UploadCtrl["Cloudinary Upload Handler"]
-    end
-    class Backend_Server,Router,AuthCtrl,ScanCtrl,UploadCtrl server;
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| Framework | React Native 0.79 · Expo 53 | Cross-platform mobile app |
+| Language | TypeScript 5.0+ | Type-safe application logic |
+| State | Zustand · MobX | Global state management |
+| Navigation | React Navigation (Stack + Tabs) | Screen routing |
+| Camera | Vision Camera · Expo Image Picker | Leaf photo capture & import |
+| AI Engine | TensorFlow Lite (on-device) | Classification + U-Net segmentation |
+| Location | Expo Location | GPS tagging & reverse geocoding |
+| Storage | Expo SecureStore · AsyncStorage | Encrypted offline scan cache |
+| Networking | Axios | REST API communication |
+| Auth | Firebase Auth · Google Sign-In | Social & email authentication |
 
-    subgraph Services_DB["💾 Databases & Services"]
-        MongoDB[("MongoDB Database<br>(User info & Scan logs)")]
-        Cloudinary["Cloudinary Cloud Storage<br>(Image hosting)"]
-        Nodemailer["Nodemailer Email Service<br>(Password reset OTPs)"]
-    end
-    class Services_DB,MongoDB,Cloudinary,Nodemailer db;
+### ⚙️ Backend Server — Node.js + Express
 
-    subgraph ML_Pipeline["🧠 Machine Learning Pipeline (Python)"]
-        Dataset["Image Dataset (Raw)"]
-        CVAT["CVAT Annotation Tool"]
-        Train["PyTorch / TensorFlow Training<br>(YOLOv8, ResNet50, MobileNetV2)"]
-        Export["TFLite Quantized Converter<br>(INT8 / FP16)"]
-    end
-    class ML_Pipeline,Dataset,CVAT,Train,Export ml;
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| Runtime | Node.js 18+ · Express 4 | RESTful API server |
+| Database | MongoDB · Mongoose | User accounts & scan history |
+| Auth | JWT · bcrypt.js | Token-based authentication |
+| Security | Helmet · express-rate-limit | HTTP hardening & rate limiting |
+| Email | Nodemailer | Password reset OTP delivery |
+| Images | Cloudinary · Multer | Leaf photo upload & CDN hosting |
+| Validation | express-validator | Request input sanitization |
 
-    %% Data Flow
-    UI --> Zustand
-    Zustand --> LocalStorage
-    UI --> Camera
-    Camera --> TFLite
-    UI --> GPS
-    
-    %% API Interactions
-    UI -- "HTTPS / REST API" --> Router
-    Router --> AuthCtrl
-    Router --> ScanCtrl
-    Router --> UploadCtrl
-    
-    %% Database / Service Connections
-    AuthCtrl -- "Send Verification Email" --> Nodemailer
-    ScanCtrl -- "Write Metadata" --> MongoDB
-    UploadCtrl -- "Upload Image" --> Cloudinary
-    
-    %% ML Pipeline Flow
-    Dataset --> CVAT
-    CVAT --> Train
-    Train --> Export
-    Export -.-> |"Packaged into app assets"| TFLite
-```
+### 🧠 Machine Learning Pipeline — Python
 
-### 📂 Repository File Structure
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| Classification | MobileNetV2 · ResNet50 · EfficientNetB0 | Disease identification |
+| Segmentation | U-Net (MobileNetV2 backbone) | Leaf vs. lesion pixel mapping |
+| Detection | YOLOv8 Nano *(planned)* | Coffee leaf localization |
+| Training | TensorFlow · Keras · Ultralytics | Model training & evaluation |
+| Annotation | CVAT | Bounding box & mask labeling |
+| Deployment | TFLite (INT8 / FP16 quantized) | On-device mobile inference |
+| Data Science | NumPy · OpenCV · scikit-learn · Pandas | Preprocessing & analysis |
+
+### 🔄 How It All Connects
 
 ```
-kappi/
-├── client/                  # 📱 Mobile Frontend (React Native & Expo)
-│   ├── assets/              # Static media assets, icons, and logo formats
-│   ├── src/
-│   │   ├── components/      # Shared presentation UI components
-│   │   ├── config/          # Client environment keys & configurations
-│   │   ├── constants/       # Fixed values (colors, styling, localization strings)
-│   │   ├── context/         # Custom React contexts
-│   │   ├── hooks/           # Reusable React hooks
-│   │   ├── navigation/      # React Navigation setup (Stack/Tab bars)
-│   │   ├── screens/         # Page components (Home, Scan, Result, History)
-│   │   ├── services/        # Axios API clients for communicating with backend
-│   │   ├── stores/          # Zustand State Management stores
-│   │   ├── types/           # TypeScript declaration files
-│   │   ├── utils/           # Helper utility functions
-│   │   └── viewmodels/      # Screen business logic (MVVM architecture)
-│   └── package.json
-│
-├── server/                  # ⚙️ REST API Backend (Node.js & Express)
-│   ├── src/
-│   │   ├── config/          # DB connection, Mail configuration, Env checkers
-│   │   ├── controllers/     # Incoming HTTP request handlers
-│   │   ├── middleware/      # Express authorization, Rate-limiting, Validation
-│   │   ├── models/          # Mongoose database models (User, Scan, OTP)
-│   │   ├── routes/          # API route definitions
-│   │   └── index.ts         # Main Express entry point
-│   └── package.json
-│
-└── ml/                      # 🧠 Machine Learning Engine (Python)
-    ├── data/                # Dataset splitting scripts & metadata folders
-    ├── model_export/        # Converted mobile TFLite models
-    ├── scripts/             # Helper processing and dataset cleaning scripts
-    ├── training scripts     # Python scripts for ResNet, MobileNet, EfficientNet training
-    └── requirements.txt     # Python dependencies
+┌─────────────────────────────────────────────────────────────┐
+│                    📱  MOBILE CLIENT                        │
+│                                                             │
+│   Camera ──► TFLite Classifier ──► U-Net Segmentation       │
+│                  │                       │                  │
+│              Disease ID            Severity %               │
+│                  └───────┬───────────┘                      │
+│                          ▼                                  │
+│                   Scan Result                               │
+│              (cached locally offline)                       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │  online sync
+                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│                    ⚙️  BACKEND SERVER                        │
+│                                                              │
+│   /api/auth  ──► JWT Auth ──► MongoDB (users)                │
+│   /api/scans ──► Scan Controller ──► MongoDB (scan logs)     │
+│   /api/upload ──► Multer ──► Cloudinary (leaf images)        │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 🛠️ Development Setup & Installation
+
 
 ### Prerequisites
 *   [Node.js](https://nodejs.org/) (v18 or higher recommended)
